@@ -1,0 +1,144 @@
+{% extends "admin/base.html" %}
+{% block nav_title %}일반설정{% endblock %}
+
+{% macro sv(key) %}{{ settings[key].value if key in settings else '' }}{% endmacro %}
+
+{% block content %}
+<!-- 탭 -->
+<ul class="nav nav-tabs mb-4">
+    <li class="nav-item"><a class="nav-link active" href="{{ url_for('admin.settings_general') }}">기본설정</a></li>
+    <li class="nav-item"><a class="nav-link" href="{{ url_for('admin.settings_meta') }}">메타태그설정</a></li>
+</ul>
+
+<div class="card">
+    <div class="card-header"><strong>기본정보</strong></div>
+    <div class="card-body">
+        <form method="post">
+            <!-- 기본 정보 -->
+            <h6 class="text-muted border-bottom pb-2 mb-3">매체 정보</h6>
+            <div class="row g-3">
+                <div class="col-md-6 mb-3">
+                    <label class="form-label fw-bold">웹브라우저 타이틀</label>
+                    <input type="text" name="site_name" class="form-control" value="{{ sv('site_name') }}">
+                </div>
+                <div class="col-md-6 mb-3">
+                    <label class="form-label fw-bold">매체명</label>
+                    <input type="text" name="site_tagline" class="form-control" value="{{ sv('site_tagline') }}">
+                </div>
+                <div class="col-md-6 mb-3">
+                    <label class="form-label fw-bold">회사명</label>
+                    <input type="text" name="company_name" class="form-control" value="{{ sv('company_name') }}">
+                </div>
+                <div class="col-md-6 mb-3">
+                    <label class="form-label fw-bold">대표전화</label>
+                    <input type="text" name="tel" class="form-control" value="{{ sv('tel') }}">
+                </div>
+                <div class="col-md-6 mb-3">
+                    <label class="form-label fw-bold">팩스번호</label>
+                    <input type="text" name="fax" class="form-control" value="{{ sv('fax') }}">
+                </div>
+                <div class="col-md-6 mb-3">
+                    <label class="form-label fw-bold">관리자이메일</label>
+                    <input type="email" name="email" class="form-control" value="{{ sv('email') }}">
+                </div>
+            </div>
+
+            <h6 class="text-muted border-bottom pb-2 mb-3 mt-4">발행인/편집인</h6>
+            <div class="row g-3">
+                <div class="col-md-6 mb-3">
+                    <label class="form-label fw-bold">발행인</label>
+                    <input type="text" name="publisher" class="form-control" value="{{ sv('publisher') }}">
+                </div>
+                <div class="col-md-6 mb-3">
+                    <label class="form-label fw-bold">편집인</label>
+                    <input type="text" name="editor_name" class="form-control" value="{{ sv('editor_name') }}">
+                </div>
+            </div>
+
+            <h6 class="text-muted border-bottom pb-2 mb-3 mt-4">등록 정보</h6>
+            <div class="row g-3">
+                <div class="col-md-4 mb-3">
+                    <label class="form-label fw-bold">등록번호</label>
+                    <input type="text" name="registration_no" class="form-control" value="{{ sv('registration_no') }}">
+                </div>
+                <div class="col-md-4 mb-3">
+                    <label class="form-label fw-bold">등록일자</label>
+                    <input type="date" name="registration_date" class="form-control" value="{{ sv('registration_date') }}">
+                </div>
+                <div class="col-md-4 mb-3">
+                    <label class="form-label fw-bold">발행일자</label>
+                    <input type="date" name="publication_date" class="form-control" value="{{ sv('publication_date') }}">
+                </div>
+            </div>
+
+            <h6 class="text-muted border-bottom pb-2 mb-3 mt-4">주소</h6>
+            <div class="row g-3">
+                <div class="col-md-3 mb-3">
+                    <label class="form-label fw-bold">우편번호</label>
+                    <input type="text" name="zipcode" class="form-control" value="{{ sv('zipcode') }}">
+                </div>
+                <div class="col-md-9 mb-3">
+                    <label class="form-label fw-bold">주소</label>
+                    <input type="text" name="address" class="form-control" value="{{ sv('address') }}">
+                </div>
+                <div class="col-12 mb-3">
+                    <label class="form-label fw-bold">상세주소</label>
+                    <input type="text" name="address2" class="form-control" value="{{ sv('address2') }}">
+                </div>
+            </div>
+
+            <h6 class="text-muted border-bottom pb-2 mb-3 mt-4">정보책임관리자</h6>
+            <div class="row g-3">
+                <div class="col-md-4 mb-3">
+                    <label class="form-label fw-bold">성명</label>
+                    <input type="text" name="p_person" class="form-control" value="{{ sv('p_person') }}">
+                </div>
+                <div class="col-md-4 mb-3">
+                    <label class="form-label fw-bold">전화번호</label>
+                    <input type="tel" name="p_tel" class="form-control" value="{{ sv('p_tel') }}">
+                </div>
+                <div class="col-md-4 mb-3">
+                    <label class="form-label fw-bold">이메일</label>
+                    <input type="email" name="p_email" class="form-control" value="{{ sv('p_email') }}">
+                </div>
+            </div>
+
+            <h6 class="text-muted border-bottom pb-2 mb-3 mt-4">청소년보호책임자</h6>
+            <div class="row g-3">
+                <div class="col-md-4 mb-3">
+                    <label class="form-label fw-bold">성명</label>
+                    <input type="text" name="y_person" class="form-control" value="{{ sv('y_person') }}">
+                </div>
+                <div class="col-md-4 mb-3">
+                    <label class="form-label fw-bold">전화번호</label>
+                    <input type="tel" name="y_tel" class="form-control" value="{{ sv('y_tel') }}">
+                </div>
+                <div class="col-md-4 mb-3">
+                    <label class="form-label fw-bold">이메일</label>
+                    <input type="email" name="y_email" class="form-control" value="{{ sv('y_email') }}">
+                </div>
+            </div>
+
+            <h6 class="text-muted border-bottom pb-2 mb-3 mt-4">저작권담당자</h6>
+            <div class="row g-3">
+                <div class="col-md-4 mb-3">
+                    <label class="form-label fw-bold">성명</label>
+                    <input type="text" name="copy_person" class="form-control" value="{{ sv('copy_person') }}">
+                </div>
+                <div class="col-md-4 mb-3">
+                    <label class="form-label fw-bold">전화번호</label>
+                    <input type="tel" name="copy_tel" class="form-control" value="{{ sv('copy_tel') }}">
+                </div>
+                <div class="col-md-4 mb-3">
+                    <label class="form-label fw-bold">이메일</label>
+                    <input type="email" name="copy_email" class="form-control" value="{{ sv('copy_email') }}">
+                </div>
+            </div>
+
+            <div class="d-grid mt-4">
+                <button type="submit" class="btn btn-primary"><i class="bi bi-save"></i> 설정 저장</button>
+            </div>
+        </form>
+    </div>
+</div>
+{% endblock %}

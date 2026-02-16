@@ -1,0 +1,44 @@
+{% extends "admin/base.html" %}
+{% block nav_title %}연재설정{% endblock %}
+{% block content %}
+<div class="row">
+    <div class="col-lg-4 mb-3">
+        <div class="card">
+            <div class="card-header"><strong>연재 추가</strong></div>
+            <div class="card-body">
+                <form method="post" action="{{ url_for('admin.serial_add') }}">
+                    <div class="mb-2"><input type="text" name="code" class="form-control form-control-sm" placeholder="코드 (예: SR001)" required></div>
+                    <div class="mb-2"><input type="text" name="name" class="form-control form-control-sm" placeholder="연재명" required></div>
+                    <button class="btn btn-primary btn-sm w-100"><i class="bi bi-plus-lg"></i> 추가</button>
+                </form>
+            </div>
+        </div>
+    </div>
+    <div class="col-lg-8">
+        <div class="card">
+            <div class="card-header"><strong>연재 목록</strong></div>
+            <div class="table-responsive">
+                <table class="table table-hover mb-0">
+                    <thead class="table-light"><tr><th>코드</th><th>연재명</th><th>상태</th><th>등록일</th><th>관리</th></tr></thead>
+                    <tbody>
+                        {% for s in serials %}
+                        <tr>
+                            <td><code>{{ s.code }}</code></td><td>{{ s.name }}</td>
+                            <td><span class="badge {% if s.is_active %}bg-success{% else %}bg-danger{% endif %}">{{ '활성' if s.is_active else '비활성' }}</span></td>
+                            <td>{{ s.created_at.strftime('%Y-%m-%d') }}</td>
+                            <td>
+                                <form method="post" action="{{ url_for('admin.serial_delete', serial_id=s.id) }}" class="d-inline" onsubmit="return confirm('삭제?')">
+                                    <button class="btn btn-sm btn-outline-danger"><i class="bi bi-trash"></i></button>
+                                </form>
+                            </td>
+                        </tr>
+                        {% else %}
+                        <tr><td colspan="5" class="text-center text-muted py-3">연재가 없습니다.</td></tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

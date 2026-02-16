@@ -1,0 +1,67 @@
+/* 관리자 공통 */
+body { font-family: 'Noto Sans KR', sans-serif; background: #f0f2f5; margin: 0; }
+
+/* 헤더 */
+.admin-header {
+    position: fixed; top: 0; left: 0; right: 0; z-index: 1000;
+    height: 56px; background: #1e1e2d; color: #fff;
+    display: flex; align-items: center; padding: 0 20px;
+}
+.admin-logo { text-decoration: none; display: flex; align-items: center; gap: 8px; }
+.admin-logo .logo-text { color: #fff; font-size: 18px; font-weight: 700; }
+.admin-logo .logo-badge { background: #5e1985; color: #fff; font-size: 11px; padding: 2px 8px; border-radius: 4px; font-weight: 500; }
+.admin-nav-title { color: rgba(255,255,255,0.7); font-size: 14px; }
+
+/* 레이아웃 */
+.admin-layout { display: flex; margin-top: 56px; min-height: calc(100vh - 56px); }
+
+/* 사이드바 */
+.admin-sidebar {
+    width: 240px; min-width: 240px; background: #1e1e2d; padding: 15px 0;
+    position: fixed; top: 56px; bottom: 0; left: 0; overflow-y: auto;
+}
+.sidebar-nav { list-style: none; padding: 0; margin: 0; }
+.sidebar-nav > li > a {
+    display: flex; align-items: center; gap: 10px; padding: 11px 20px;
+    color: rgba(255,255,255,0.65); text-decoration: none; font-size: 14px;
+    transition: all 0.2s;
+}
+.sidebar-nav > li > a:hover, .sidebar-nav > li.active > a { color: #fff; background: rgba(255,255,255,0.08); }
+.sidebar-nav > li.active > a { border-left: 3px solid #5e1985; }
+.nav-sub { list-style: none; padding: 0; margin: 0; display: none; background: rgba(0,0,0,0.15); }
+.nav-group.open .nav-sub { display: block; }
+.nav-sub li a {
+    display: block; padding: 9px 20px 9px 48px; color: rgba(255,255,255,0.5);
+    text-decoration: none; font-size: 13px; transition: all 0.2s;
+}
+.nav-sub li a:hover, .nav-sub li.active a { color: #fff; }
+.nav-group-toggle .ms-auto { font-size: 10px; transition: transform 0.2s; }
+.nav-group.open .nav-group-toggle .ms-auto { transform: rotate(180deg); }
+
+/* 메인 콘텐츠 */
+.admin-content { flex: 1; margin-left: 240px; padding: 24px; }
+
+/* 통계 카드 */
+.stat-card {
+    background: #fff; border-radius: 10px; padding: 20px; text-align: center;
+    box-shadow: 0 1px 3px rgba(0,0,0,0.06); border-left: 4px solid #5e1985;
+}
+.stat-card.warning { border-left-color: #ffc107; }
+.stat-card.info { border-left-color: #17a2b8; }
+.stat-card.danger { border-left-color: #dc3545; }
+.stat-number { font-size: 28px; font-weight: 700; color: #333; }
+.stat-label { font-size: 13px; color: #888; margin-top: 4px; }
+
+/* 카드 */
+.card { border: none; box-shadow: 0 1px 3px rgba(0,0,0,0.06); border-radius: 8px; }
+.card-header { background: #fff; border-bottom: 1px solid #eee; font-weight: 500; }
+
+/* 테이블 */
+.table th { font-weight: 500; font-size: 13px; color: #666; background: #fafafa; }
+.table td { font-size: 14px; vertical-align: middle; }
+.table td a { color: #333; text-decoration: none; }
+.table td a:hover { color: #5e1985; }
+
+/* 버튼 */
+.btn-primary { background: #5e1985; border-color: #5e1985; }
+.btn-primary:hover { background: #4a1369; border-color: #4a1369; }

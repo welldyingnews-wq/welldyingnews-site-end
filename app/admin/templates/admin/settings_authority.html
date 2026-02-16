@@ -1,0 +1,42 @@
+{% extends "admin/base.html" %}
+{% block nav_title %}기사설정{% endblock %}
+{% block content %}
+<!-- 탭 -->
+<ul class="nav nav-tabs mb-4">
+    <li class="nav-item"><a class="nav-link" href="{{ url_for('admin.settings_sections') }}">섹션설정</a></li>
+    <li class="nav-item"><a class="nav-link active" href="{{ url_for('admin.settings_authority') }}">권한설정</a></li>
+</ul>
+
+<h5 class="mb-3">회원 권한 설정</h5>
+<div class="card">
+    <div class="table-responsive">
+        <table class="table table-hover mb-0">
+            <thead class="table-light">
+                <tr><th>아이디</th><th>이름</th><th>부서</th><th>현재 권한</th><th>권한 변경</th></tr>
+            </thead>
+            <tbody>
+                {% for m in members %}
+                <tr>
+                    <td>{{ m.user_id }}</td><td>{{ m.name }}</td><td>{{ m.department or '-' }}</td>
+                    <td>
+                        {% if m.level == 'admin' %}<span class="badge bg-danger">관리자</span>
+                        {% elif m.level == 'editor' %}<span class="badge bg-warning text-dark">편집자</span>
+                        {% else %}<span class="badge bg-secondary">기자</span>{% endif %}
+                    </td>
+                    <td>
+                        <form method="post" action="{{ url_for('admin.authority_update', member_id=m.id) }}" class="d-flex gap-1">
+                            <select name="level" class="form-select form-select-sm" style="width:120px">
+                                <option value="admin" {% if m.level == 'admin' %}selected{% endif %}>관리자</option>
+                                <option value="editor" {% if m.level == 'editor' %}selected{% endif %}>편집자</option>
+                                <option value="reporter" {% if m.level == 'reporter' %}selected{% endif %}>기자</option>
+                            </select>
+                            <button class="btn btn-sm btn-primary">변경</button>
+                        </form>
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>
+{% endblock %}

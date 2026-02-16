@@ -1,0 +1,66 @@
+{% extends "public/base.html" %}
+{% block title %}
+{% if subsection %}{{ subsection.name }} < {% endif %}
+{% if section %}{{ section.name }} < {% endif %}
+기사목록 - 웰다잉뉴스
+{% endblock %}
+
+{% block content %}
+<div class="page-header">
+    <nav class="breadcrumbs">
+        <a href="{{ url_for('public.index') }}">홈</a>
+        {% if section %}<span>&gt;</span> <a href="{{ url_for('public.article_list', sc_section_code=section.code) }}">{{ section.name }}</a>{% endif %}
+        {% if subsection %}<span>&gt;</span> <a href="{{ url_for('public.article_list', sc_sub_section_code=subsection.code) }}">{{ subsection.name }}</a>{% endif %}
+    </nav>
+    <h2 class="page-title">
+        {% if subsection %}{{ subsection.name }}
+        {% elif section %}{{ section.name }}
+        {% elif sc_word %}"{{ sc_word }}" 검색결과
+        {% else %}전체기사{% endif %}
+    </h2>
+    {% if section and section.subsections.count() > 0 %}
+    <div class="sub-tabs">
+        <a href="{{ url_for('public.article_list', sc_section_code=section.code) }}" class="{% if not subsection %}active{% endif %}">전체</a>
+        {% for sub in section.subsections %}
+        <a href="{{ url_for('public.article_list', sc_sub_section_code=sub.code) }}" class="{% if subsection and subsection.id == sub.id %}active{% endif %}">{{ sub.name }}</a>
+        {% endfor %}
+    </div>
+    {% endif %}
+</div>
+
+<div class="article-list-wrap">
+    {% for article in articles %}
+    <article class="list-item">
+        <a href="{{ url_for('public.article_view', idxno=article.id) }}">
+            {% if article.thumbnail_path %}
+            <div class="list-thumb"><img src="{{ url_for('static', filename=article.thumbnail_path) }}" alt=""></div>
+            {% endif %}
+            <div class="list-info">
+                <h3>{{ article.title }}</h3>
+                <p class="summary">{{ article.summary_text|truncate(150) }}</p>
+                <div class="list-meta">
+                    {% if article.subsection %}<span class="section-tag">{{ article.subsection.name }}</span>{% endif %}
+                    <span>{{ article.author_name }}</span>
+                    <span>{{ article.created_at.strftime('%Y-%m-%d %H:%M') }}</span>
+                </div>
+            </div>
+        </a>
+    </article>
+    {% else %}
+    <div class="empty-list">등록된 기사가 없습니다.</div>
+    {% endfor %}
+</div>
+
+{% if pagination.pages > 1 %}
+<nav class="pagination-wrap">
+    {% for p in pagination.iter_pages(left_edge=1, right_edge=1, left_current=3, right_current=3) %}
+    {% if p %}
+    <a href="{{ url_for('public.article_list', page=p, sc_section_code=sc_section_code, sc_sub_section_code=sc_sub_section_code, sc_word=sc_word) }}"
+       class="page-link {% if p == pagination.page %}active{% endif %}">{{ p }}</a>
+    {% else %}
+    <span class="page-dots">...</span>
+    {% endif %}
+    {% endfor %}
+</nav>
+{% endif %}
+{% endblock %}

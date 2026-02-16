@@ -1,0 +1,34 @@
+{% extends "admin/base.html" %}
+{% block nav_title %}팝업관리{% endblock %}
+{% block content %}
+<div class="d-flex justify-content-between align-items-center mb-3">
+    <h4>팝업 관리</h4>
+    <a href="{{ url_for('admin.popup_new') }}" class="btn btn-primary btn-sm"><i class="bi bi-plus-lg"></i> 팝업등록</a>
+</div>
+<div class="table-responsive">
+    <table class="table table-hover">
+        <thead class="table-light">
+            <tr><th>번호</th><th>이름</th><th>크기</th><th>링크</th><th>상태</th><th>등록일</th><th>관리</th></tr>
+        </thead>
+        <tbody>
+            {% for p in popups %}
+            <tr>
+                <td>{{ p.id }}</td><td>{{ p.name }}</td>
+                <td>{{ p.width }}x{{ p.height }}</td>
+                <td><small>{{ p.link_url|truncate(40) }}</small></td>
+                <td><span class="badge {% if p.is_active %}bg-success{% else %}bg-danger{% endif %}">{{ '활성' if p.is_active else '비활성' }}</span></td>
+                <td>{{ p.created_at.strftime('%Y-%m-%d') }}</td>
+                <td>
+                    <a href="{{ url_for('admin.popup_edit', popup_id=p.id) }}" class="btn btn-sm btn-outline-primary"><i class="bi bi-pencil"></i></a>
+                    <form method="post" action="{{ url_for('admin.popup_delete', popup_id=p.id) }}" class="d-inline" onsubmit="return confirm('삭제?')">
+                        <button class="btn btn-sm btn-outline-danger"><i class="bi bi-trash"></i></button>
+                    </form>
+                </td>
+            </tr>
+            {% else %}
+            <tr><td colspan="7" class="text-center text-muted py-4">팝업이 없습니다.</td></tr>
+            {% endfor %}
+        </tbody>
+    </table>
+</div>
+{% endblock %}

@@ -1,0 +1,117 @@
+{% extends "admin/base.html" %}
+{% block nav_title %}회원목록{% endblock %}
+
+{% block content %}
+<div class="d-flex justify-content-between align-items-center mb-3">
+    <h5 class="mb-0">회원목록 <span class="badge bg-secondary">회원수: {{ member_count }}명</span></h5>
+</div>
+
+<!-- 검색 필터 -->
+<div class="card mb-3">
+    <div class="card-body py-2">
+        <form method="get" class="row g-2 align-items-end">
+            <div class="col-md-2">
+                <label class="form-label small mb-1">검색항목</label>
+                <select name="stype" class="form-select form-select-sm">
+                    <option value="">전체</option>
+                    <option value="I" {% if stype == 'I' %}selected{% endif %}>아이디</option>
+                    <option value="N" {% if stype == 'N' %}selected{% endif %}>이름</option>
+                    <option value="E" {% if stype == 'E' %}selected{% endif %}>이메일</option>
+                </select>
+            </div>
+            <div class="col-md-2">
+                <label class="form-label small mb-1">관리등급</label>
+                <select name="admin_level" class="form-select form-select-sm">
+                    <option value="">전체</option>
+                    <option value="admin" {% if admin_level == 'admin' %}selected{% endif %}>관리자</option>
+                    <option value="editor" {% if admin_level == 'editor' %}selected{% endif %}>편집기자</option>
+                    <option value="reporter" {% if admin_level == 'reporter' %}selected{% endif %}>기자</option>
+                </select>
+            </div>
+            <div class="col-md-2">
+                <label class="form-label small mb-1">회원상태</label>
+                <select name="user_state" class="form-select form-select-sm">
+                    <option value="">전체</option>
+                    <option value="A" {% if user_state == 'A' %}selected{% endif %}>활동</option>
+                    <option value="H" {% if user_state == 'H' %}selected{% endif %}>휴면</option>
+                </select>
+            </div>
+            <div class="col-md-3">
+                <label class="form-label small mb-1">검색어</label>
+                <input type="text" name="sword" class="form-control form-control-sm" value="{{ sword }}" placeholder="검색어 입력">
+            </div>
+            <div class="col-md-1">
+                <button type="submit" class="btn btn-primary btn-sm w-100"><i class="bi bi-search"></i></button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<!-- 회원 테이블 -->
+<div class="card">
+    <div class="table-responsive">
+        <table class="table table-hover table-sm mb-0 align-middle">
+            <thead class="table-light">
+                <tr>
+                    <th>아이디</th>
+                    <th>이름</th>
+                    <th>이메일</th>
+                    <th width="80">관리등급</th>
+                    <th width="70">상태</th>
+                    <th width="100">등록일</th>
+                    <th width="150">관리</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for member in members %}
+                <tr>
+                    <td>{{ member.user_id }}</td>
+                    <td><strong>{{ member.name }}</strong></td>
+                    <td class="small">{{ member.email or '-' }}</td>
+                    <td>
+                        {% if member.level == 'admin' %}
+                        <span class="badge bg-danger">관리자</span>
+                        {% elif member.level == 'editor' %}
+                        <span class="badge bg-primary">편집기자</span>
+                        {% elif member.level == 'reporter' %}
+                        <span class="badge bg-success">기자</span>
+                        {% else %}
+                        <span class="text-muted">-</span>
+                        {% endif %}
+                    </td>
+                    <td>
+                        {% if member.is_dormant %}
+                        <span class="badge bg-secondary">휴면</span>
+                        {% elif member.is_active %}
+                        <span class="text-success">정상</span>
+                        {% else %}
+                        <span class="text-danger">비활성</span>
+                        {% endif %}
+                    </td>
+                    <td class="small">{{ member.created_at.strftime('%Y-%m-%d') }}</td>
+                    <td>
+                        <a href="{{ url_for('admin.member_edit', member_id=member.id) }}" class="btn btn-sm btn-outline-primary">
+                            <i class="bi bi-pencil"></i> 수정
+                        </a>
+                        {% if member.id != current_user.id %}
+                        <form method="post" action="{{ url_for('admin.member_delete', member_id=member.id) }}" class="d-inline" onsubmit="return confirm('정말 삭제하시겠습니까?')">
+                            <button type="submit" class="btn btn-sm btn-outline-danger">
+                                <i class="bi bi-trash"></i> 삭제
+                            </button>
+                        </form>
+                        {% endif %}
+                    </td>
+                </tr>
+                {% else %}
+                <tr><td colspan="7" class="text-center text-muted py-4">회원이 없습니다.</td></tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+    <div class="card-footer d-flex justify-content-end py-2">
+        <a href="{{ url_for('admin.member_new') }}" class="btn btn-sm btn-primary">
+            <i class="bi bi-plus-lg"></i> 등록
+        </a>
+    </div>
+</div>
+{% endblock %}

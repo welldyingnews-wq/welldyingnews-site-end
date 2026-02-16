@@ -1,0 +1,233 @@
+{% extends "admin/base.html" %}
+{% block nav_title %}{{ '휴지통' if show_deleted else '기사검색' }}{% endblock %}
+
+{% block content %}
+{% if not show_deleted %}
+<!-- 검색 폼 -->
+<div class="card mb-3">
+    <div class="card-header py-2"><strong>기사검색</strong></div>
+    <div class="card-body">
+        <form method="get" id="searchForm">
+            <table class="table table-sm table-bordered mb-3" style="table-layout:fixed">
+                <tbody>
+                    <tr>
+                        <th class="bg-light text-center" width="120">검색섹션</th>
+                        <td>
+                            <div class="d-flex flex-wrap gap-2">
+                                <div class="form-check form-check-inline">
+                                    <input class="form-check-input" type="radio" name="sc_section_code" value="" id="sec_all" {% if not sc_section_code %}checked{% endif %}>
+                                    <label class="form-check-label" for="sec_all">전체</label>
+                                </div>
+                                {% for sec in sections %}
+                                <div class="form-check form-check-inline">
+                                    <input class="form-check-input" type="radio" name="sc_section_code" value="{{ sec.id }}" id="sec_{{ sec.id }}" {% if sc_section_code == sec.id|string %}checked{% endif %}>
+                                    <label class="form-check-label" for="sec_{{ sec.id }}">{{ sec.name }}</label>
+                                </div>
+                                {% endfor %}
+                            </div>
+                        </td>
+                    </tr>
+                    <tr>
+                        <th class="bg-light text-center">검색영역</th>
+                        <td>
+                            <div class="btn-group btn-group-sm">
+                                <input type="radio" class="btn-check" name="sc_area" value="A" id="area_a" {% if sc_area == 'A' %}checked{% endif %}>
+                                <label class="btn btn-outline-secondary" for="area_a">전체</label>
+                                <input type="radio" class="btn-check" name="sc_area" value="T" id="area_t" {% if sc_area == 'T' %}checked{% endif %}>
+                                <label class="btn btn-outline-secondary" for="area_t">제목+부제목</label>
+                                <input type="radio" class="btn-check" name="sc_area" value="B" id="area_b" {% if sc_area == 'B' %}checked{% endif %}>
+                                <label class="btn btn-outline-secondary" for="area_b">본문</label>
+                            </div>
+                        </td>
+                    </tr>
+                    <tr>
+                        <th class="bg-light text-center">기사등급</th>
+                        <td>
+                            <div class="btn-group btn-group-sm">
+                                <input type="radio" class="btn-check" name="sc_level" value="" id="lv_all" {% if not sc_level %}checked{% endif %}>
+                                <label class="btn btn-outline-secondary" for="lv_all">전체</label>
+                                <input type="radio" class="btn-check" name="sc_level" value="B" id="lv_b" {% if sc_level == 'B' %}checked{% endif %}>
+                                <label class="btn btn-outline-secondary" for="lv_b">일반기사</label>
+                                <input type="radio" class="btn-check" name="sc_level" value="I" id="lv_i" {% if sc_level == 'I' %}checked{% endif %}>
+                                <label class="btn btn-outline-secondary" for="lv_i">중요기사</label>
+                                <input type="radio" class="btn-check" name="sc_level" value="T" id="lv_t" {% if sc_level == 'T' %}checked{% endif %}>
+                                <label class="btn btn-outline-secondary" for="lv_t">헤드라인</label>
+                            </div>
+                        </td>
+                    </tr>
+                    <tr>
+                        <th class="bg-light text-center">기사형태</th>
+                        <td>
+                            <div class="btn-group btn-group-sm">
+                                <input type="radio" class="btn-check" name="sc_article_type" value="" id="at_all" {% if not sc_article_type %}checked{% endif %}>
+                                <label class="btn btn-outline-secondary" for="at_all">전체</label>
+                                <input type="radio" class="btn-check" name="sc_article_type" value="B" id="at_b" {% if sc_article_type == 'B' %}checked{% endif %}>
+                                <label class="btn btn-outline-secondary" for="at_b">일반</label>
+                                <input type="radio" class="btn-check" name="sc_article_type" value="P" id="at_p" {% if sc_article_type == 'P' %}checked{% endif %}>
+                                <label class="btn btn-outline-secondary" for="at_p">카드뉴스</label>
+                                <input type="radio" class="btn-check" name="sc_article_type" value="G" id="at_g" {% if sc_article_type == 'G' %}checked{% endif %}>
+                                <label class="btn btn-outline-secondary" for="at_g">갤러리</label>
+                            </div>
+                        </td>
+                    </tr>
+                    <tr>
+                        <th class="bg-light text-center">기자이름</th>
+                        <td>
+                            <input type="text" name="sc_user_name" class="form-control form-control-sm" style="width:200px;display:inline-block" value="{{ sc_user_name }}" placeholder="기자이름">
+                        </td>
+                    </tr>
+                    <tr>
+                        <th class="bg-light text-center">검색기간</th>
+                        <td>
+                            <div class="d-flex align-items-center gap-2">
+                                <input type="date" name="sc_sdate" class="form-control form-control-sm" style="width:160px" value="{{ sc_sdate }}">
+                                <span>~</span>
+                                <input type="date" name="sc_edate" class="form-control form-control-sm" style="width:160px" value="{{ sc_edate }}">
+                            </div>
+                        </td>
+                    </tr>
+                    <tr>
+                        <th class="bg-light text-center">정렬방식</th>
+                        <td>
+                            <select name="sc_order_by" class="form-select form-select-sm" style="width:150px;display:inline-block">
+                                <option value="E" {% if sc_order_by == 'E' %}selected{% endif %}>승인일</option>
+                                <option value="C" {% if sc_order_by == 'C' %}selected{% endif %}>조회수</option>
+                            </select>
+                        </td>
+                    </tr>
+                    <tr>
+                        <th class="bg-light text-center">검색단어</th>
+                        <td>
+                            <div class="d-flex align-items-center gap-2">
+                                <input type="text" name="sc_word" class="form-control form-control-sm" style="width:200px" value="{{ sc_word }}" placeholder="검색단어1">
+                                <select name="sc_andor" class="form-select form-select-sm" style="width:80px">
+                                    <option value="OR" {% if sc_andor == 'OR' %}selected{% endif %}>또는</option>
+                                    <option value="AND" {% if sc_andor == 'AND' %}selected{% endif %}>와</option>
+                                </select>
+                                <input type="text" name="sc_word2" class="form-control form-control-sm" style="width:200px" value="{{ sc_word2 }}" placeholder="검색단어2">
+                            </div>
+                        </td>
+                    </tr>
+                </tbody>
+            </table>
+            <div class="text-center">
+                <button type="submit" class="btn btn-primary"><i class="bi bi-search"></i> 확인</button>
+            </div>
+        </form>
+    </div>
+</div>
+{% else %}
+<!-- 휴지통 간단 필터 -->
+<div class="card mb-3">
+    <div class="card-body py-2">
+        <form method="get" class="row g-2 align-items-end">
+            <input type="hidden" name="deleted" value="1">
+            <div class="col-md-3">
+                <select name="section_id" class="form-select form-select-sm">
+                    <option value="">전체 섹션</option>
+                    {% for sec in sections %}
+                    <option value="{{ sec.id }}" {% if section_id == sec.id|string %}selected{% endif %}>{{ sec.name }}</option>
+                    {% endfor %}
+                </select>
+            </div>
+            <div class="col-md-5">
+                <input type="text" name="q" class="form-control form-control-sm" value="{{ q }}" placeholder="검색어">
+            </div>
+            <div class="col-md-2">
+                <button type="submit" class="btn btn-primary btn-sm w-100"><i class="bi bi-search"></i> 검색</button>
+            </div>
+        </form>
+    </div>
+</div>
+{% endif %}
+
+<!-- 기사 목록 -->
+<div class="card">
+    <div class="card-header d-flex justify-content-between align-items-center py-2">
+        <span>총 <strong>{{ pagination.total }}</strong>건</span>
+        {% if not show_deleted %}
+        <a href="{{ url_for('admin.article_new') }}" class="btn btn-sm btn-primary"><i class="bi bi-plus-lg"></i> 기사등록</a>
+        {% endif %}
+    </div>
+    <div class="table-responsive">
+        <table class="table table-hover table-sm mb-0 align-middle">
+            <thead class="table-light">
+                <tr>
+                    <th width="50">번호</th>
+                    <th>제목</th>
+                    <th width="80">섹션</th>
+                    <th width="60">상태</th>
+                    <th width="70">등급</th>
+                    <th width="70">기자</th>
+                    <th width="50">조회</th>
+                    <th width="110">등록일</th>
+                    <th width="60">관리</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for article in articles %}
+                <tr>
+                    <td class="small">{{ article.id }}</td>
+                    <td>
+                        <a href="{{ url_for('admin.article_edit', article_id=article.id) }}" class="text-decoration-none">
+                            {{ article.title|truncate(50) }}
+                        </a>
+                        {% if article.comments.count() > 0 %}
+                        <span class="badge bg-warning text-dark">{{ article.comments.count() }}</span>
+                        {% endif %}
+                    </td>
+                    <td class="small">
+                        {% if article.subsection %}{{ article.subsection.name }}
+                        {% elif article.section %}{{ article.section.name }}
+                        {% else %}-{% endif %}
+                    </td>
+                    <td>
+                        {% if article.recognition == 'E' %}<span class="badge bg-success">승인</span>
+                        {% elif article.recognition == 'C' %}<span class="badge bg-warning text-dark">미승인</span>
+                        {% else %}<span class="badge bg-danger">반려</span>{% endif %}
+                    </td>
+                    <td>
+                        {% if article.level == 'T' %}<span class="badge bg-dark">헤드</span>
+                        {% elif article.level == 'I' %}<span class="badge bg-info text-dark">중요</span>
+                        {% else %}<span class="text-muted small">일반</span>{% endif %}
+                    </td>
+                    <td class="small">{{ article.author_name }}</td>
+                    <td class="small">{{ article.view_count }}</td>
+                    <td class="small">{{ article.created_at.strftime('%m-%d %H:%M') }}</td>
+                    <td>
+                        {% if show_deleted %}
+                        <form method="post" action="{{ url_for('admin.article_restore', article_id=article.id) }}" class="d-inline">
+                            <button class="btn btn-sm btn-outline-success" title="복원"><i class="bi bi-arrow-counterclockwise"></i></button>
+                        </form>
+                        {% else %}
+                        <form method="post" action="{{ url_for('admin.article_delete', article_id=article.id) }}" class="d-inline" onsubmit="return confirm('삭제하시겠습니까?')">
+                            <button class="btn btn-sm btn-outline-danger" title="삭제"><i class="bi bi-trash"></i></button>
+                        </form>
+                        {% endif %}
+                    </td>
+                </tr>
+                {% else %}
+                <tr><td colspan="9" class="text-center py-4 text-muted">기사가 없습니다.</td></tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+    {% if pagination.pages > 1 %}
+    <div class="card-footer py-2">
+        <nav>
+            <ul class="pagination pagination-sm justify-content-center mb-0">
+                {% for p in pagination.iter_pages(left_edge=1, right_edge=1, left_current=2, right_current=2) %}
+                {% if p %}
+                <li class="page-item {% if p == pagination.page %}active{% endif %}">
+                    <a class="page-link" href="{{ url_for('admin.article_list', page=p, deleted='1' if show_deleted else '0', sc_section_code=sc_section_code, sc_level=sc_level, sc_word=sc_word, sc_area=sc_area, sc_order_by=sc_order_by) }}">{{ p }}</a>
+                </li>
+                {% else %}
+                <li class="page-item disabled"><span class="page-link">...</span></li>
+                {% endif %}
+                {% endfor %}
+            </ul>
+        </nav>
+    </div>
+    {% endif %}
+</div>
+{% endblock %}

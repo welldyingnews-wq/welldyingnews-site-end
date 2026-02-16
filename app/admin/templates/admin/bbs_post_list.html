@@ -1,0 +1,50 @@
+{% extends "admin/base.html" %}
+{% block nav_title %}게시물관리{% endblock %}
+{% block content %}
+<div class="d-flex justify-content-between align-items-center mb-3">
+    <h4>게시물 관리</h4>
+    <form class="d-flex gap-2" method="get">
+        <select name="board_id" class="form-select form-select-sm" style="width:150px">
+            <option value="">전체 게시판</option>
+            {% for b in boards %}<option value="{{ b.id }}" {% if board_id == b.id|string %}selected{% endif %}>{{ b.name }}</option>{% endfor %}
+        </select>
+        <input type="text" name="q" class="form-control form-control-sm" placeholder="제목 검색" value="{{ q }}" style="width:180px">
+        <button class="btn btn-sm btn-primary">검색</button>
+    </form>
+</div>
+<div class="table-responsive">
+    <table class="table table-hover">
+        <thead class="table-light">
+            <tr><th style="width:50px">번호</th><th>게시판</th><th>제목</th><th>작성자</th><th>조회</th><th>등록일</th><th>관리</th></tr>
+        </thead>
+        <tbody>
+            {% for p in posts %}
+            <tr class="{% if p.is_hidden %}table-secondary{% endif %}">
+                <td>{{ p.id }}</td>
+                <td><span class="badge bg-secondary">{{ p.board.name if p.board else '-' }}</span></td>
+                <td>{{ p.title|truncate(50) }}</td><td>{{ p.author_name }}</td><td>{{ p.view_count }}</td>
+                <td>{{ p.created_at.strftime('%Y-%m-%d') }}</td>
+                <td>
+                    <form method="post" action="{{ url_for('admin.bbs_post_toggle', post_id=p.id) }}" class="d-inline">
+                        <button class="btn btn-sm {% if p.is_hidden %}btn-outline-success{% else %}btn-outline-warning{% endif %}">{{ '공개' if p.is_hidden else '숨김' }}</button>
+                    </form>
+                    <form method="post" action="{{ url_for('admin.bbs_post_delete', post_id=p.id) }}" class="d-inline" onsubmit="return confirm('삭제?')">
+                        <button class="btn btn-sm btn-outline-danger"><i class="bi bi-trash"></i></button>
+                    </form>
+                </td>
+            </tr>
+            {% else %}
+            <tr><td colspan="7" class="text-center text-muted py-4">게시물이 없습니다.</td></tr>
+            {% endfor %}
+        </tbody>
+    </table>
+</div>
+{% if pagination.pages > 1 %}
+<nav class="d-flex justify-content-center"><ul class="pagination">
+{% for p in pagination.iter_pages(left_edge=1, right_edge=1, left_current=2, right_current=2) %}
+{% if p %}<li class="page-item {% if p == pagination.page %}active{% endif %}"><a class="page-link" href="{{ url_for('admin.bbs_post_list', page=p, board_id=board_id, q=q) }}">{{ p }}</a></li>
+{% else %}<li class="page-item disabled"><span class="page-link">...</span></li>{% endif %}
+{% endfor %}
+</ul></nav>
+{% endif %}
+{% endblock %}

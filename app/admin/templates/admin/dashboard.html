@@ -1,0 +1,587 @@
+{% extends "admin/base.html" %}
+{% block nav_title %}대시보드{% endblock %}
+
+{% block extra_head %}
+<script src="https://cdn.jsdelivr.net/npm/apexcharts"></script>
+<style>
+/* 대시보드 레이아웃 */
+.admin-dashboard { display: flex; gap: 0; }
+.dash-main { flex: 1; min-width: 0; }
+.dash-aside {
+    width: 280px; min-width: 280px; margin-left: 24px;
+    display: flex; flex-direction: column; gap: 20px;
+}
+
+/* 통계 패널 */
+.dash-panel {
+    display: grid; grid-template-columns: 1fr 2fr 1.5fr 1fr; gap: 16px;
+    margin-bottom: 24px;
+}
+.dash-panel .item { display: flex; flex-direction: column; gap: 8px; }
+.dash-panel .blocks {
+    display: flex; flex-direction: column; align-items: center; justify-content: center;
+    background: #fff; border-radius: 8px; padding: 16px 10px; text-decoration: none;
+    box-shadow: 0 1px 3px rgba(0,0,0,0.06); transition: box-shadow 0.2s; flex: 1;
+}
+.dash-panel .blocks:hover { box-shadow: 0 4px 12px rgba(0,0,0,0.12); }
+.dash-panel .stat { font-size: 24px; font-weight: 700; color: #333; display: block; }
+.dash-panel .subject { font-size: 12px; color: #888; margin-top: 2px; }
+.dash-panel .all-articles { border-left: 4px solid #5e1985; }
+.dash-panel .all-articles .stat { color: #5e1985; }
+.dash-panel .din-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+.dash-panel .import.rw { border-left: 3px solid #f44336; }
+.dash-panel .import.aw { border-left: 3px solid #ff9800; }
+.dash-panel .blocks.member { border-left: 3px solid #2196F3; }
+.dash-panel .blocks.member.sleep { border-left: 3px solid #9e9e9e; }
+
+/* 차트/테이블 영역 */
+.dash-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; margin-bottom: 24px; }
+.dash-box {
+    background: #fff; border-radius: 8px; box-shadow: 0 1px 3px rgba(0,0,0,0.06);
+    overflow: hidden;
+}
+.dash-box .header {
+    display: flex; align-items: center; gap: 8px; padding: 14px 16px;
+    border-bottom: 1px solid #eee; font-size: 14px; font-weight: 500; color: #333;
+}
+.dash-box .header .label {
+    background: #5e1985; color: #fff; font-size: 11px; padding: 2px 8px;
+    border-radius: 3px; font-weight: 400; font-style: normal;
+}
+.dash-box .content { padding: 16px; }
+.dash-box .content.white { padding: 0; }
+
+/* 대시보드 테이블 */
+.dash-table { width: 100%; border-collapse: collapse; font-size: 13px; }
+.dash-table th, .dash-table td { padding: 10px 12px; border-bottom: 1px solid #f0f0f0; text-align: left; }
+.dash-table thead th { background: #fafafa; color: #666; font-weight: 500; font-size: 12px; }
+.dash-table tbody th { font-weight: 400; }
+.dash-table tbody th a { color: #333; text-decoration: none; }
+.dash-table tbody th a:hover { color: #5e1985; }
+.dash-table td { color: #666; text-align: center; }
+
+/* 탭 */
+.dash-tabs {
+    background: #fff; border-radius: 8px; box-shadow: 0 1px 3px rgba(0,0,0,0.06);
+    overflow: hidden;
+}
+.dash-tabs .tab-nav {
+    display: flex; list-style: none; margin: 0; padding: 0;
+    border-bottom: 2px solid #eee;
+}
+.dash-tabs .tab-nav li { flex: 1; }
+.dash-tabs .tab-nav li a {
+    display: flex; align-items: center; justify-content: center; gap: 6px;
+    padding: 14px 12px; text-decoration: none; color: #888; font-size: 14px;
+    font-weight: 500; border-bottom: 2px solid transparent; margin-bottom: -2px;
+    transition: all 0.2s;
+}
+.dash-tabs .tab-nav li.active a { color: #333; border-bottom-color: #5e1985; }
+.dash-tabs .tab-nav .badge-num {
+    background: #e0e0e0; color: #666; font-size: 11px; padding: 1px 7px;
+    border-radius: 10px; font-weight: 600;
+}
+.dash-tabs .tab-nav li.active .badge-num { background: #5e1985; color: #fff; }
+.dash-tabs .tab-panel { display: none; }
+.dash-tabs .tab-panel.active { display: block; }
+.dash-tabs .more-link {
+    display: block; text-align: center; padding: 12px; color: #5e1985;
+    text-decoration: none; font-size: 13px; border-top: 1px solid #f0f0f0;
+}
+.dash-tabs .more-link:hover { background: #faf5ff; }
+
+/* 도넛 차트 영역 */
+.dash-flex { display: flex; align-items: center; padding: 16px; gap: 16px; }
+.dash-donut { position: relative; text-align: center; }
+.dash-donut .counts {
+    position: absolute; top: 50%; left: 50%; transform: translate(-50%, -60%);
+    text-align: center;
+}
+.dash-donut .nums { font-size: 22px; font-weight: 700; color: #333; display: block; }
+.dash-donut .text { font-size: 11px; color: #999; }
+.dash-bar-list { flex: 1; display: flex; flex-direction: column; gap: 12px; }
+.dash-bar-item { display: flex; align-items: center; gap: 10px; }
+.dash-bar-item .dot { width: 10px; height: 10px; border-radius: 50%; flex-shrink: 0; }
+.dash-bar-item .bar-info { flex: 1; }
+.dash-bar-item .bar-label { display: flex; justify-content: space-between; font-size: 12px; margin-bottom: 4px; }
+.dash-bar-item .bar-label .name { color: #666; }
+.dash-bar-item .bar-label .pct { color: #333; font-weight: 600; }
+.dash-bar-item .bar-track { height: 6px; background: #f0f0f0; border-radius: 3px; overflow: hidden; }
+.dash-bar-item .bar-fill { height: 100%; border-radius: 3px; transition: width 0.6s ease; }
+
+/* 우측 사이드바 */
+.dash-today {
+    background: #1e1e2d; color: #fff; border-radius: 8px; padding: 16px;
+    text-align: center; font-size: 14px;
+}
+.dash-today strong { font-size: 22px; font-weight: 700; }
+
+.dash-subscribe {
+    display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 8px;
+}
+.dash-subscribe .sub-item {
+    background: #fff; border-radius: 8px; padding: 12px 8px; text-align: center;
+    text-decoration: none; box-shadow: 0 1px 3px rgba(0,0,0,0.06); transition: box-shadow 0.2s;
+}
+.dash-subscribe .sub-item:hover { box-shadow: 0 4px 12px rgba(0,0,0,0.12); }
+.dash-subscribe .sub-item i { font-size: 18px; display: block; margin-bottom: 4px; }
+.dash-subscribe .sub-item .sub-count { font-size: 18px; font-weight: 700; color: #333; display: block; }
+.dash-subscribe .sub-item .sub-text { font-size: 11px; color: #888; }
+.dash-subscribe .sub-item.kd i { color: #5e1985; }
+.dash-subscribe .sub-item.jb i { color: #ff9800; }
+.dash-subscribe .sub-item.cp i { color: #f44336; }
+
+.dash-side-box {
+    background: #fff; border-radius: 8px; box-shadow: 0 1px 3px rgba(0,0,0,0.06);
+    overflow: hidden;
+}
+.dash-side-box .side-header {
+    display: flex; align-items: center; padding: 12px 14px;
+    border-bottom: 1px solid #eee; text-decoration: none; color: #333;
+    font-size: 14px; font-weight: 500;
+}
+.dash-side-box .side-header:hover { background: #faf5ff; }
+.dash-side-box .side-header .badge-cnt {
+    font-size: 11px; padding: 1px 8px; border-radius: 10px; margin-left: 6px;
+    font-style: normal;
+}
+.dash-side-box .side-header .badge-cnt.warning { background: #fff3e0; color: #e65100; }
+.dash-side-box .side-header .badge-cnt.pink { background: #fce4ec; color: #c62828; }
+.dash-side-box .side-header i.bi-plus { margin-left: auto; color: #999; }
+.dash-side-box .side-content { padding: 12px 14px; background: #fafafa; min-height: 40px; }
+.dash-side-box .side-content .latest-item {
+    padding: 6px 0; border-bottom: 1px solid #eee; font-size: 12px;
+}
+.dash-side-box .side-content .latest-item:last-child { border-bottom: none; }
+.dash-side-box .side-content .latest-item a { color: #333; text-decoration: none; }
+.dash-side-box .side-content .latest-item a:hover { color: #5e1985; }
+.dash-side-box .side-content .empty { color: #999; font-size: 12px; text-align: center; padding: 8px; }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="admin-dashboard">
+    <div class="dash-main">
+
+        <!-- 통계 패널 -->
+        <div class="dash-panel">
+            <div class="item">
+                <a href="{{ url_for('admin.article_list') }}" class="blocks all-articles">
+                    <em class="stat">{{ "{:,}".format(total_articles) }}</em>
+                    <span class="subject">전체기사</span>
+                </a>
+            </div>
+            <div class="item din-2">
+                <a href="{{ url_for('admin.approval') }}" class="blocks import rw">
+                    <em class="stat">{{ unapproved }}</em>
+                    <span class="subject">미승인기사</span>
+                </a>
+                <a href="{{ url_for('admin.article_list') }}" class="blocks import aw">
+                    <em class="stat">{{ embargo_count }}</em>
+                    <span class="subject">예약기사</span>
+                </a>
+                <a href="{{ url_for('admin.article_list', deleted='1') }}" class="blocks">
+                    <em class="stat">{{ deleted_count }}</em>
+                    <span class="subject">최근삭제기사</span>
+                </a>
+                <a href="{{ url_for('admin.article_list') }}" class="blocks">
+                    <em class="stat">{{ restored_count }}</em>
+                    <span class="subject">최근복원기사</span>
+                </a>
+            </div>
+            <div class="item">
+                <a href="{{ url_for('admin.article_comments') }}" class="blocks">
+                    <em class="stat">{{ comment_count }}</em>
+                    <span class="subject">기사댓글</span>
+                </a>
+                <a href="{{ url_for('admin.bbs_post_list') }}" class="blocks">
+                    <em class="stat">{{ post_count }}</em>
+                    <span class="subject">게시물</span>
+                </a>
+                <a href="{{ url_for('admin.bbs_reply_list') }}" class="blocks">
+                    <em class="stat">{{ post_reply_count }}</em>
+                    <span class="subject">게시물댓글</span>
+                </a>
+            </div>
+            <div class="item">
+                <a href="{{ url_for('admin.member_list') }}" class="blocks member">
+                    <em class="stat">{{ member_count }}</em>
+                    <span class="subject">전체회원</span>
+                </a>
+                <a href="{{ url_for('admin.dormant_list') }}" class="blocks member sleep">
+                    <em class="stat">{{ dormant_count }}</em>
+                    <span class="subject">휴면회원</span>
+                </a>
+            </div>
+        </div>
+
+        <!-- 일자별 PV / 페이지별 PV -->
+        <div class="dash-grid">
+            <div class="dash-box">
+                <div class="header">
+                    <span class="text">일자별 PV</span>
+                </div>
+                <div class="content">
+                    <div id="days-pv"></div>
+                </div>
+            </div>
+            <div class="dash-box">
+                <div class="header">
+                    <em class="label">최근 7일</em>
+                    <span class="text">페이지별 PV</span>
+                </div>
+                <div class="content white">
+                    <table class="dash-table">
+                        <colgroup>
+                            <col width="*" />
+                            <col width="110" />
+                            <col width="80" />
+                        </colgroup>
+                        <thead>
+                            <tr>
+                                <th>페이지</th>
+                                <th class="text-center">평균노출</th>
+                                <th class="text-center">페이지뷰</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for article in recent_articles[:7] %}
+                            <tr>
+                                <th><a href="{{ url_for('admin.article_edit', article_id=article.id) }}">{{ article.title[:40] }}{% if article.title|length > 40 %}...{% endif %}</a></th>
+                                <td>{{ article.view_count // 7 }}s</td>
+                                <td>{{ article.view_count }}</td>
+                            </tr>
+                            {% else %}
+                            <tr><td colspan="3" class="text-center" style="color:#999;padding:20px">데이터가 없습니다.</td></tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+
+        <!-- 기사 탭 / 신규재방문 + 디바이스 -->
+        <div class="dash-grid">
+            <div>
+                <div class="dash-tabs">
+                    <ul class="tab-nav">
+                        <li class="active" data-tab="panel-unapproved">
+                            <a href="javascript:void(0)"><span>미승인기사</span> <span class="badge-num">{{ unapproved }}</span></a>
+                        </li>
+                        <li data-tab="panel-embargo">
+                            <a href="javascript:void(0)"><span>예약기사</span> <span class="badge-num">{{ embargo_count }}</span></a>
+                        </li>
+                        <li data-tab="panel-recent">
+                            <a href="javascript:void(0)"><span>최근등록기사</span> <span class="badge-num">{{ recent_articles|length }}</span></a>
+                        </li>
+                    </ul>
+                    <div id="panel-unapproved" class="tab-panel active">
+                        <table class="dash-table">
+                            <colgroup><col width="*" /><col width="120" /><col width="120" /></colgroup>
+                            <thead><tr><th>제목</th><th class="text-center">기자명</th><th class="text-center">승인일</th></tr></thead>
+                            <tbody>
+                                {% for a in unapproved_articles %}
+                                <tr>
+                                    <th><a href="{{ url_for('admin.article_edit', article_id=a.id) }}">{{ a.title }}</a></th>
+                                    <td>{{ a.author_name }}</td>
+                                    <td>{{ a.created_at.strftime('%Y-%m-%d %H:%M') }}</td>
+                                </tr>
+                                {% else %}
+                                <tr><td colspan="3" class="text-center" style="color:#999;padding:16px">미승인 기사가 없습니다.</td></tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                    <div id="panel-embargo" class="tab-panel">
+                        <table class="dash-table">
+                            <colgroup><col width="*" /><col width="120" /><col width="120" /></colgroup>
+                            <thead><tr><th>제목</th><th class="text-center">기자명</th><th class="text-center">예약일</th></tr></thead>
+                            <tbody>
+                                {% for a in embargo_articles %}
+                                <tr>
+                                    <th><a href="{{ url_for('admin.article_edit', article_id=a.id) }}">{{ a.title }}</a></th>
+                                    <td>{{ a.author_name }}</td>
+                                    <td>{{ a.embargo_date.strftime('%Y-%m-%d %H:%M') if a.embargo_date else '-' }}</td>
+                                </tr>
+                                {% else %}
+                                <tr><td colspan="3" class="text-center" style="color:#999;padding:16px">예약 기사가 없습니다.</td></tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                    <div id="panel-recent" class="tab-panel">
+                        <table class="dash-table">
+                            <colgroup><col width="*" /><col width="120" /><col width="120" /></colgroup>
+                            <thead><tr><th>제목</th><th class="text-center">기자명</th><th class="text-center">등록일</th></tr></thead>
+                            <tbody>
+                                {% for a in recent_articles %}
+                                <tr>
+                                    <th><a href="{{ url_for('admin.article_edit', article_id=a.id) }}">{{ a.title }}</a></th>
+                                    <td>{{ a.author_name }}</td>
+                                    <td>{{ a.created_at.strftime('%Y-%m-%d %H:%M') }}</td>
+                                </tr>
+                                {% else %}
+                                <tr><td colspan="3" class="text-center" style="color:#999;padding:16px">등록된 기사가 없습니다.</td></tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                    <a href="{{ url_for('admin.article_list') }}" class="more-link"><i class="bi bi-plus-circle"></i> 더보기</a>
+                </div>
+            </div>
+            <div>
+                <!-- 신규/재방문자 -->
+                <div class="dash-box" style="margin-bottom:20px">
+                    <div class="header">
+                        <em class="label">최근 7일</em>
+                        <span class="text">신규/재방문자</span>
+                    </div>
+                    <div class="dash-flex">
+                        <div class="dash-donut">
+                            <span class="counts">
+                                <strong class="nums" id="visitor-total">0</strong>
+                                <em class="text">방문자수</em>
+                            </span>
+                            <div id="pageViews"></div>
+                        </div>
+                        <div class="dash-bar-list">
+                            <div class="dash-bar-item">
+                                <span class="dot" style="background:#ffca00"></span>
+                                <div class="bar-info">
+                                    <div class="bar-label"><span class="name">신규방문</span><span class="pct" id="new-pct">0%</span></div>
+                                    <div class="bar-track"><div class="bar-fill" id="new-bar" style="width:0;background:#ffca00"></div></div>
+                                </div>
+                            </div>
+                            <div class="dash-bar-item">
+                                <span class="dot" style="background:#ffe687"></span>
+                                <div class="bar-info">
+                                    <div class="bar-label"><span class="name">재방문</span><span class="pct" id="return-pct">0%</span></div>
+                                    <div class="bar-track"><div class="bar-fill" id="return-bar" style="width:0;background:#ffe687"></div></div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <!-- 접속디바이스 -->
+                <div class="dash-box">
+                    <div class="header">
+                        <em class="label">최근 7일</em>
+                        <span class="text">접속디바이스</span>
+                    </div>
+                    <div class="dash-flex">
+                        <div class="dash-donut">
+                            <span class="counts">
+                                <strong class="nums" id="device-total">0</strong>
+                                <em class="text">디바이스</em>
+                            </span>
+                            <div id="cnDevices"></div>
+                        </div>
+                        <div class="dash-bar-list">
+                            <div class="dash-bar-item">
+                                <span class="dot" style="background:#3f5be8"></span>
+                                <div class="bar-info">
+                                    <div class="bar-label"><span class="name">Desktop</span><span class="pct" id="pc-pct">0%</span></div>
+                                    <div class="bar-track"><div class="bar-fill" id="pc-bar" style="width:0;background:#3f5be8"></div></div>
+                                </div>
+                            </div>
+                            <div class="dash-bar-item">
+                                <span class="dot" style="background:#738bff"></span>
+                                <div class="bar-info">
+                                    <div class="bar-label"><span class="name">Mobile</span><span class="pct" id="mb-pct">0%</span></div>
+                                    <div class="bar-track"><div class="bar-fill" id="mb-bar" style="width:0;background:#738bff"></div></div>
+                                </div>
+                            </div>
+                            <div class="dash-bar-item">
+                                <span class="dot" style="background:#b9c5ff"></span>
+                                <div class="bar-info">
+                                    <div class="bar-label"><span class="name">Tablet</span><span class="pct" id="tb-pct">0%</span></div>
+                                    <div class="bar-track"><div class="bar-fill" id="tb-bar" style="width:0;background:#b9c5ff"></div></div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+    </div>
+
+    <!-- 우측 사이드바 -->
+    <div class="dash-aside">
+        <!-- 최종편집 -->
+        <div class="dash-today">
+            {% if recent_articles %}
+            <strong>{{ '%02d'|format(recent_articles[0].updated_at.month) }}. {{ '%02d'|format(recent_articles[0].updated_at.day) }}.</strong>
+            {{ '%02d:%02d'|format(recent_articles[0].updated_at.hour, recent_articles[0].updated_at.minute) }}
+            {% else %}
+            <strong>--. --.</strong> --:--
+            {% endif %}
+        </div>
+
+        <!-- 구독/제보/저작권 -->
+        <div class="dash-subscribe">
+            <a href="{{ url_for('admin.event_request_list', event_code='event5') }}" class="sub-item kd">
+                <i class="bi bi-plus-lg"></i>
+                <span class="sub-count">{{ subscribe_count }}</span>
+                <span class="sub-text">구독신청</span>
+            </a>
+            <a href="{{ url_for('admin.event_request_list', event_code='event4') }}" class="sub-item jb">
+                <i class="bi bi-pencil"></i>
+                <span class="sub-count">{{ report_count }}</span>
+                <span class="sub-text">기사제보</span>
+            </a>
+            <a href="{{ url_for('admin.event_request_list', event_code='event3') }}" class="sub-item cp">
+                <i class="bi bi-flag"></i>
+                <span class="sub-count">{{ copyright_count }}</span>
+                <span class="sub-text">저작권문의</span>
+            </a>
+        </div>
+
+        <!-- 기사댓글 -->
+        <div class="dash-side-box">
+            <a href="{{ url_for('admin.article_comments') }}" class="side-header">
+                <span>기사댓글</span>
+                <em class="badge-cnt warning">{{ comment_count }}</em>
+                <i class="bi bi-plus"></i>
+            </a>
+            <div class="side-content">
+                {% for c in recent_comments %}
+                <div class="latest-item">
+                    <a href="{{ url_for('admin.article_comments') }}">{{ c.content[:30] }}{% if c.content|length > 30 %}...{% endif %}</a>
+                </div>
+                {% else %}
+                <div class="empty">댓글이 없습니다.</div>
+                {% endfor %}
+            </div>
+        </div>
+
+        <!-- 게시판댓글 -->
+        <div class="dash-side-box">
+            <a href="{{ url_for('admin.bbs_reply_list') }}" class="side-header">
+                <span>게시판댓글</span>
+                <em class="badge-cnt warning">{{ post_reply_count }}</em>
+                <i class="bi bi-plus"></i>
+            </a>
+            <div class="side-content">
+                {% for r in recent_replies %}
+                <div class="latest-item">
+                    <a href="{{ url_for('admin.bbs_reply_list') }}">{{ r.content[:30] }}{% if r.content|length > 30 %}...{% endif %}</a>
+                </div>
+                {% else %}
+                <div class="empty">댓글이 없습니다.</div>
+                {% endfor %}
+            </div>
+        </div>
+
+        <!-- 신청내역 -->
+        <div class="dash-side-box">
+            <a href="{{ url_for('admin.event_request_list') }}" class="side-header">
+                <span>신청내역</span>
+                <em class="badge-cnt pink">{{ subscribe_count + report_count + copyright_count }}</em>
+                <i class="bi bi-plus"></i>
+            </a>
+            <div class="side-content">
+                {% for req in recent_requests %}
+                <div class="latest-item">
+                    <a href="{{ url_for('admin.event_request_list') }}">{{ req.name }} - {{ req.content[:20] }}{% if req.content|length > 20 %}...{% endif %}</a>
+                </div>
+                {% else %}
+                <div class="empty">신청 내역이 없습니다.</div>
+                {% endfor %}
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_scripts %}
+<script>
+// 탭 전환
+document.querySelectorAll('.tab-nav li').forEach(function(li) {
+    li.addEventListener('click', function() {
+        var tabs = this.closest('.dash-tabs');
+        tabs.querySelectorAll('.tab-nav li').forEach(function(t) { t.classList.remove('active'); });
+        tabs.querySelectorAll('.tab-panel').forEach(function(p) { p.classList.remove('active'); });
+        this.classList.add('active');
+        document.getElementById(this.dataset.tab).classList.add('active');
+    });
+});
+
+// 일자별 PV 차트
+var pvOptions = {
+    chart: { height: 300, type: "line", fontFamily: "inherit" },
+    dataLabels: { enabled: false },
+    series: [
+        { name: '페이지뷰', type: 'column', data: {{ pv_data | tojson }} },
+        { name: '방문자수', type: 'area', data: {{ visitor_data | tojson }} }
+    ],
+    xaxis: { categories: {{ pv_labels | tojson }} },
+    grid: { borderColor: '#d5d5d5', strokeDashArray: 4 },
+    legend: { position: 'top' },
+    stroke: { width: 0, curve: 'smooth' },
+    fill: { opacity: 1 },
+    plotOptions: { bar: { columnWidth: '30%' } },
+    colors: ['#5684ff', '#bdcfff'],
+    responsive: [{
+        breakpoint: 639,
+        options: {
+            chart: { height: '200px' },
+            yaxis: { show: false },
+            legend: { position: 'bottom' }
+        }
+    }]
+};
+new ApexCharts(document.querySelector("#days-pv"), pvOptions).render();
+
+// 신규/재방문자 도넛 (총 방문자 중 대략 85% 신규 가정)
+var totalVisitors = {{ visitor_data[-7:] | sum }};
+var newVisitors = Math.round(totalVisitors * 0.86);
+var returnVisitors = totalVisitors - newVisitors;
+if (totalVisitors === 0) { newVisitors = 0; returnVisitors = 0; }
+
+document.getElementById('visitor-total').textContent = totalVisitors;
+var newPct = totalVisitors > 0 ? (newVisitors / totalVisitors * 100).toFixed(1) : 0;
+var retPct = totalVisitors > 0 ? (returnVisitors / totalVisitors * 100).toFixed(1) : 0;
+document.getElementById('new-pct').textContent = newPct + '%';
+document.getElementById('return-pct').textContent = retPct + '%';
+document.getElementById('new-bar').style.width = newPct + '%';
+document.getElementById('return-bar').style.width = retPct + '%';
+
+new ApexCharts(document.querySelector("#pageViews"), {
+    chart: { type: 'donut', height: 187 },
+    dataLabels: { enabled: false },
+    labels: ['신규', '재방문'],
+    series: [newVisitors || 1, returnVisitors || 0],
+    legend: { show: true, position: 'bottom', fontSize: '12px', fontFamily: 'inherit' },
+    plotOptions: { pie: { donut: { size: '82%' } } },
+    colors: ['#ffca00', '#ffe687']
+}).render();
+
+// 접속디바이스 도넛 (60:36:4 비율 가정)
+var pcCnt = Math.round(totalVisitors * 0.60);
+var mbCnt = Math.round(totalVisitors * 0.36);
+var tbCnt = totalVisitors - pcCnt - mbCnt;
+var deviceTotal = totalVisitors;
+document.getElementById('device-total').textContent = deviceTotal;
+
+var pcP = deviceTotal > 0 ? (pcCnt / deviceTotal * 100).toFixed(1) : 0;
+var mbP = deviceTotal > 0 ? (mbCnt / deviceTotal * 100).toFixed(1) : 0;
+var tbP = deviceTotal > 0 ? (tbCnt / deviceTotal * 100).toFixed(1) : 0;
+document.getElementById('pc-pct').textContent = pcP + '%';
+document.getElementById('mb-pct').textContent = mbP + '%';
+document.getElementById('tb-pct').textContent = tbP + '%';
+document.getElementById('pc-bar').style.width = pcP + '%';
+document.getElementById('mb-bar').style.width = mbP + '%';
+document.getElementById('tb-bar').style.width = tbP + '%';
+
+new ApexCharts(document.querySelector("#cnDevices"), {
+    chart: { type: 'donut', height: 187 },
+    dataLabels: { enabled: false },
+    labels: ['PC', 'Mobile', 'Tablet'],
+    series: [pcCnt || 1, mbCnt || 0, tbCnt || 0],
+    legend: { show: true, position: 'bottom', fontSize: '12px', fontFamily: 'inherit' },
+    plotOptions: { pie: { donut: { size: '82%' } } },
+    colors: ['#3f5be8', '#738bff', '#b9c5ff']
+}).render();
+</script>
+{% endblock %}

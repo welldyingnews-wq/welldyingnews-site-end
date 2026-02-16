@@ -1,0 +1,41 @@
+{% extends "admin/base.html" %}
+{% block nav_title %}{{ '배너수정' if banner and banner.id else '배너등록' }}{% endblock %}
+{% block content %}
+<div class="row justify-content-center">
+    <div class="col-lg-6">
+        <div class="card">
+            <div class="card-header"><strong>{{ '배너수정' if banner and banner.id else '배너등록' }}</strong></div>
+            <div class="card-body">
+                <form method="post" enctype="multipart/form-data" action="{{ url_for('admin.banner_edit', banner_id=banner.id) if banner and banner.id else url_for('admin.banner_new') }}">
+                    <div class="mb-3">
+                        <label class="form-label fw-bold">배너명</label>
+                        <input type="text" name="name" class="form-control" value="{{ banner.name if banner else '' }}" required>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label fw-bold">링크 URL</label>
+                        <input type="url" name="link_url" class="form-control" value="{{ banner.link_url if banner else '' }}">
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label fw-bold">위치</label>
+                        <select name="position" class="form-select">
+                            <option value="">선택</option>
+                            {% for pos in ['header', 'sidebar', 'footer', 'article_top', 'article_bottom'] %}
+                            <option value="{{ pos }}" {% if banner and banner.position == pos %}selected{% endif %}>{{ pos }}</option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label fw-bold">이미지</label>
+                        {% if banner and banner.image_path %}<div class="mb-2"><img src="{{ url_for('static', filename=banner.image_path) }}" class="img-fluid rounded" style="max-height:150px"></div>{% endif %}
+                        <input type="file" name="image" class="form-control" accept="image/*">
+                    </div>
+                    <div class="mb-3">
+                        <div class="form-check"><input class="form-check-input" type="checkbox" name="is_active" value="1" id="isActive" {% if not banner or banner.is_active %}checked{% endif %}><label class="form-check-label" for="isActive">활성</label></div>
+                    </div>
+                    <div class="d-grid"><button type="submit" class="btn btn-primary"><i class="bi bi-save"></i> 저장</button></div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

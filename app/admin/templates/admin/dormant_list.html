@@ -1,0 +1,27 @@
+{% extends "admin/base.html" %}
+{% block nav_title %}휴면회원목록{% endblock %}
+{% block content %}
+<h4 class="mb-3">휴면회원 목록</h4>
+<div class="table-responsive">
+    <table class="table table-hover">
+        <thead class="table-light">
+            <tr><th>번호</th><th>아이디</th><th>이름</th><th>이메일</th><th>부서</th><th>등록일</th><th>관리</th></tr>
+        </thead>
+        <tbody>
+            {% for m in members %}
+            <tr>
+                <td>{{ m.id }}</td><td>{{ m.user_id }}</td><td>{{ m.name }}</td><td>{{ m.email or '-' }}</td><td>{{ m.department or '-' }}</td>
+                <td>{{ m.created_at.strftime('%Y-%m-%d') }}</td>
+                <td>
+                    <form method="post" action="{{ url_for('admin.member_toggle_dormant', member_id=m.id) }}" class="d-inline">
+                        <button class="btn btn-sm btn-outline-success">휴면해제</button>
+                    </form>
+                </td>
+            </tr>
+            {% else %}
+            <tr><td colspan="7" class="text-center text-muted py-4">휴면회원이 없습니다.</td></tr>
+            {% endfor %}
+        </tbody>
+    </table>
+</div>
+{% endblock %}

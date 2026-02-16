@@ -1,0 +1,48 @@
+{% extends "admin/base.html" %}
+{% block nav_title %}기사댓글{% endblock %}
+{% block content %}
+<div class="d-flex justify-content-between align-items-center mb-3">
+    <h4>기사댓글 관리</h4>
+    <form class="d-flex gap-2" method="get">
+        <input type="text" name="q" class="form-control form-control-sm" placeholder="댓글 내용 검색" value="{{ q }}" style="width:200px">
+        <button class="btn btn-sm btn-primary">검색</button>
+    </form>
+</div>
+<div class="table-responsive">
+    <table class="table table-hover">
+        <thead class="table-light">
+            <tr><th style="width:50px">번호</th><th style="width:200px">기사</th><th>댓글내용</th><th style="width:80px">작성자</th><th style="width:80px">IP</th><th style="width:130px">등록일</th><th style="width:130px">관리</th></tr>
+        </thead>
+        <tbody>
+            {% for c in comments %}
+            <tr class="{% if c.is_hidden %}table-secondary{% endif %}">
+                <td>{{ c.id }}</td>
+                <td><a href="{{ url_for('admin.article_edit', article_id=c.article_id) }}">{{ c.article.title|truncate(30) if c.article else '-' }}</a></td>
+                <td>{{ c.content|truncate(80) }}</td>
+                <td>{{ c.author_name }}</td>
+                <td><small>{{ c.ip_address }}</small></td>
+                <td>{{ c.created_at.strftime('%Y-%m-%d %H:%M') }}</td>
+                <td>
+                    <form method="post" action="{{ url_for('admin.article_comment_toggle', comment_id=c.id) }}" class="d-inline">
+                        <button class="btn btn-sm {% if c.is_hidden %}btn-outline-success{% else %}btn-outline-warning{% endif %}">{{ '공개' if c.is_hidden else '숨김' }}</button>
+                    </form>
+                    <form method="post" action="{{ url_for('admin.article_comment_delete', comment_id=c.id) }}" class="d-inline" onsubmit="return confirm('삭제하시겠습니까?')">
+                        <button class="btn btn-sm btn-outline-danger"><i class="bi bi-trash"></i></button>
+                    </form>
+                </td>
+            </tr>
+            {% else %}
+            <tr><td colspan="7" class="text-center text-muted py-4">댓글이 없습니다.</td></tr>
+            {% endfor %}
+        </tbody>
+    </table>
+</div>
+{% if pagination.pages > 1 %}
+<nav class="d-flex justify-content-center"><ul class="pagination">
+{% for p in pagination.iter_pages(left_edge=1, right_edge=1, left_current=2, right_current=2) %}
+{% if p %}<li class="page-item {% if p == pagination.page %}active{% endif %}"><a class="page-link" href="{{ url_for('admin.article_comments', page=p, q=q) }}">{{ p }}</a></li>
+{% else %}<li class="page-item disabled"><span class="page-link">...</span></li>{% endif %}
+{% endfor %}
+</ul></nav>
+{% endif %}
+{% endblock %}

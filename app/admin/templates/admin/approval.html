@@ -1,0 +1,286 @@
+{% extends "admin/base.html" %}
+{% block nav_title %}승인관리{% endblock %}
+
+{% block content %}
+<!-- 탭 -->
+<ul class="nav nav-tabs mb-3">
+    <li class="nav-item">
+        <a class="nav-link {% if tab == 'all' %}active{% endif %}" href="{{ url_for('admin.approval', tab='all') }}">전체기사</a>
+    </li>
+    <li class="nav-item">
+        <a class="nav-link {% if tab == 'unapproved' %}active{% endif %}" href="{{ url_for('admin.approval', tab='unapproved') }}">미승인기사</a>
+    </li>
+    <li class="nav-item">
+        <a class="nav-link {% if tab == 'embargo' %}active{% endif %}" href="{{ url_for('admin.approval', tab='embargo') }}">예약기사</a>
+    </li>
+</ul>
+
+<!-- 검색 필터 -->
+<div class="card mb-3">
+    <div class="card-body py-2">
+        <form method="get" id="approvalSearchForm">
+            <input type="hidden" name="tab" value="{{ tab }}">
+            <div class="row g-2 align-items-end">
+                <div class="col-md-2">
+                    <label class="form-label small mb-1">1차섹션</label>
+                    <select name="sc_section_code" class="form-select form-select-sm" id="approval_section">
+                        <option value="">전체</option>
+                        {% for sec in sections %}
+                        <option value="{{ sec.id }}" {% if sc_section_code == sec.id|string %}selected{% endif %}>{{ sec.name }}</option>
+                        {% endfor %}
+                    </select>
+                </div>
+                <div class="col-md-1">
+                    <label class="form-label small mb-1">목록</label>
+                    <select name="sc_list_per_page" class="form-select form-select-sm">
+                        <option value="20" {% if per_page == 20 %}selected{% endif %}>20</option>
+                        <option value="50" {% if per_page == 50 %}selected{% endif %}>50</option>
+                        <option value="100" {% if per_page == 100 %}selected{% endif %}>100</option>
+                    </select>
+                </div>
+                <div class="col-md-2">
+                    <label class="form-label small mb-1">검색영역</label>
+                    <select name="sc_area" class="form-select form-select-sm">
+                        <option value="A" {% if sc_area == 'A' %}selected{% endif %}>전체영역</option>
+                        <option value="T" {% if sc_area == 'T' %}selected{% endif %}>제목+부제목</option>
+                        <option value="B" {% if sc_area == 'B' %}selected{% endif %}>본문</option>
+                        <option value="W" {% if sc_area == 'W' %}selected{% endif %}>기자이름</option>
+                    </select>
+                </div>
+                <div class="col-md-1">
+                    <label class="form-label small mb-1">등급</label>
+                    <select name="sc_level" class="form-select form-select-sm">
+                        <option value="">전체</option>
+                        <option value="B" {% if sc_level == 'B' %}selected{% endif %}>일반</option>
+                        <option value="I" {% if sc_level == 'I' %}selected{% endif %}>중요</option>
+                        <option value="T" {% if sc_level == 'T' %}selected{% endif %}>헤드라인</option>
+                    </select>
+                </div>
+                <div class="col-md-1">
+                    <label class="form-label small mb-1">형태</label>
+                    <select name="sc_article_type" class="form-select form-select-sm">
+                        <option value="">전체</option>
+                        <option value="B" {% if sc_article_type == 'B' %}selected{% endif %}>일반</option>
+                        <option value="P" {% if sc_article_type == 'P' %}selected{% endif %}>카드뉴스</option>
+                        <option value="G" {% if sc_article_type == 'G' %}selected{% endif %}>갤러리</option>
+                    </select>
+                </div>
+                <div class="col-md-2">
+                    <label class="form-label small mb-1">기간</label>
+                    <select name="sc_date" class="form-select form-select-sm" id="datePreset">
+                        <option value="">전체기간</option>
+                        <option value="1" {% if sc_date == '1' %}selected{% endif %}>오늘</option>
+                        <option value="-1" {% if sc_date == '-1' %}selected{% endif %}>어제</option>
+                        <option value="7" {% if sc_date == '7' %}selected{% endif %}>7일</option>
+                        <option value="14" {% if sc_date == '14' %}selected{% endif %}>14일</option>
+                        <option value="30" {% if sc_date == '30' %}selected{% endif %}>30일</option>
+                        <option value="S" {% if sc_date == 'S' %}selected{% endif %}>직접입력</option>
+                    </select>
+                </div>
+                <div class="col-md-3" id="dateRange" style="{% if sc_date != 'S' %}display:none{% endif %}">
+                    <div class="input-group input-group-sm">
+                        <input type="date" name="sc_sdate" class="form-control form-control-sm" value="{{ sc_sdate }}">
+                        <span class="input-group-text">~</span>
+                        <input type="date" name="sc_edate" class="form-control form-control-sm" value="{{ sc_edate }}">
+                    </div>
+                </div>
+            </div>
+            <div class="row g-2 mt-1">
+                <div class="col-md-4">
+                    <div class="input-group input-group-sm">
+                        <input type="text" name="sc_word" class="form-control" placeholder="검색어 입력" value="{{ sc_word }}">
+                        <button type="submit" class="btn btn-primary"><i class="bi bi-search"></i> 검색</button>
+                    </div>
+                </div>
+            </div>
+        </form>
+    </div>
+</div>
+
+<!-- 기사 목록 -->
+<form method="post" action="{{ url_for('admin.batch_approve') }}" id="articleListForm">
+    <div class="card">
+        <div class="card-header d-flex justify-content-between align-items-center py-2">
+            <span>총 <strong>{{ pagination.total }}</strong>건</span>
+            <div>
+                <span class="text-muted small me-2" id="checkedCount">0건 선택</span>
+                <button type="button" class="btn btn-sm btn-success" data-bs-toggle="modal" data-bs-target="#batchModal">
+                    <i class="bi bi-check-all"></i> 선택승인
+                </button>
+            </div>
+        </div>
+        <div class="table-responsive">
+            <table class="table table-hover table-sm mb-0 align-middle">
+                <thead class="table-light">
+                    <tr>
+                        <th width="35"><input type="checkbox" id="selectAll" class="form-check-input"></th>
+                        <th>제목</th>
+                        <th width="80">섹션</th>
+                        <th width="70">기자</th>
+                        <th width="100">일자</th>
+                        <th width="140">등급</th>
+                        <th width="80">승인</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for article in articles %}
+                    <tr>
+                        <td><input type="checkbox" name="chkbox[]" value="{{ article.id }}" class="form-check-input chk-item"></td>
+                        <td>
+                            <a href="{{ url_for('admin.article_edit', article_id=article.id) }}" class="text-decoration-none">
+                                {{ article.title|truncate(50) }}
+                            </a>
+                            {% if article.comments.count() > 0 %}
+                            <span class="badge bg-warning text-dark ms-1">{{ article.comments.count() }}</span>
+                            {% endif %}
+                            {% if article.article_type == 'P' %}<i class="bi bi-images text-info ms-1" title="카드뉴스"></i>{% endif %}
+                            {% if article.article_type == 'G' %}<i class="bi bi-camera text-success ms-1" title="갤러리"></i>{% endif %}
+                        </td>
+                        <td class="small">{% if article.subsection %}{{ article.subsection.name }}{% elif article.section %}{{ article.section.name }}{% endif %}</td>
+                        <td class="small">{{ article.author_name }}</td>
+                        <td class="small">{{ article.created_at.strftime('%m-%d %H:%M') }}</td>
+                        <td>
+                            <div class="btn-group btn-group-sm">
+                                <button type="button" class="btn {% if article.level == 'B' %}btn-secondary{% else %}btn-outline-secondary{% endif %} level-btn"
+                                        data-id="{{ article.id }}" data-level="B" title="일반">일</button>
+                                <button type="button" class="btn {% if article.level == 'I' %}btn-primary{% else %}btn-outline-secondary{% endif %} level-btn"
+                                        data-id="{{ article.id }}" data-level="I" title="중요">중</button>
+                                <button type="button" class="btn {% if article.level == 'T' %}btn-danger{% else %}btn-outline-secondary{% endif %} level-btn"
+                                        data-id="{{ article.id }}" data-level="T" title="헤드라인">헤</button>
+                            </div>
+                        </td>
+                        <td>
+                            {% if article.recognition == 'E' %}
+                            <button type="button" class="btn btn-sm btn-outline-danger recog-btn"
+                                    data-id="{{ article.id }}" data-action="C">승인취소</button>
+                            {% else %}
+                            <button type="button" class="btn btn-sm btn-success recog-btn"
+                                    data-id="{{ article.id }}" data-action="E">승인</button>
+                            {% endif %}
+                        </td>
+                    </tr>
+                    {% else %}
+                    <tr><td colspan="7" class="text-center text-muted py-4">기사가 없습니다.</td></tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+        {% if pagination.pages > 1 %}
+        <div class="card-footer py-2">
+            <nav>
+                <ul class="pagination pagination-sm justify-content-center mb-0">
+                    {% for p in pagination.iter_pages(left_edge=1, right_edge=1, left_current=2, right_current=2) %}
+                    {% if p %}
+                    <li class="page-item {% if p == pagination.page %}active{% endif %}">
+                        <a class="page-link" href="{{ url_for('admin.approval', page=p, tab=tab, sc_section_code=sc_section_code, sc_level=sc_level, sc_word=sc_word) }}">{{ p }}</a>
+                    </li>
+                    {% else %}
+                    <li class="page-item disabled"><span class="page-link">...</span></li>
+                    {% endif %}
+                    {% endfor %}
+                </ul>
+            </nav>
+        </div>
+        {% endif %}
+    </div>
+
+    <!-- 일괄 승인 모달 -->
+    <div class="modal fade" id="batchModal" tabindex="-1">
+        <div class="modal-dialog modal-sm">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h6 class="modal-title">일괄 승인</h6>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body">
+                    <input type="hidden" name="action" value="E">
+                    <div class="mb-3">
+                        <label class="form-label small fw-bold">등급 설정</label>
+                        <div class="d-flex gap-2">
+                            <div class="form-check">
+                                <input class="form-check-input" type="radio" name="level" value="RE" id="lvRE" checked>
+                                <label class="form-check-label" for="lvRE">등급유지</label>
+                            </div>
+                            <div class="form-check">
+                                <input class="form-check-input" type="radio" name="level" value="B" id="lvB">
+                                <label class="form-check-label" for="lvB">일반</label>
+                            </div>
+                            <div class="form-check">
+                                <input class="form-check-input" type="radio" name="level" value="I" id="lvI">
+                                <label class="form-check-label" for="lvI">중요</label>
+                            </div>
+                            <div class="form-check">
+                                <input class="form-check-input" type="radio" name="level" value="T" id="lvT">
+                                <label class="form-check-label" for="lvT">헤드</label>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-sm btn-secondary" data-bs-dismiss="modal">취소</button>
+                    <button type="submit" class="btn btn-sm btn-success">승인 처리</button>
+                </div>
+            </div>
+        </div>
+    </div>
+</form>
+{% endblock %}
+
+{% block extra_scripts %}
+<script>
+// 전체 선택
+document.getElementById('selectAll').addEventListener('change', function() {
+    document.querySelectorAll('.chk-item').forEach(c => c.checked = this.checked);
+    updateCount();
+});
+document.querySelectorAll('.chk-item').forEach(c => c.addEventListener('change', updateCount));
+function updateCount() {
+    const cnt = document.querySelectorAll('.chk-item:checked').length;
+    document.getElementById('checkedCount').textContent = cnt + '건 선택';
+}
+
+// 날짜 프리셋
+document.getElementById('datePreset').addEventListener('change', function() {
+    document.getElementById('dateRange').style.display = this.value === 'S' ? '' : 'none';
+});
+
+// 등급 변경 (AJAX)
+document.querySelectorAll('.level-btn').forEach(btn => {
+    btn.addEventListener('click', function() {
+        const id = this.dataset.id, level = this.dataset.level;
+        fetch('{{ url_for("admin.article_set_level", article_id=0) }}'.replace('0', id), {
+            method: 'POST',
+            headers: {'Content-Type': 'application/x-www-form-urlencoded'},
+            body: 'level=' + level
+        }).then(r => r.json()).then(data => {
+            if (data.ok) {
+                const group = this.closest('.btn-group');
+                group.querySelectorAll('.level-btn').forEach(b => {
+                    b.className = b.className.replace(/btn-(secondary|primary|danger)/g, 'btn-outline-secondary');
+                });
+                const cls = level === 'T' ? 'btn-danger' : (level === 'I' ? 'btn-primary' : 'btn-secondary');
+                this.className = this.className.replace('btn-outline-secondary', cls);
+            }
+        });
+    });
+});
+
+// 승인/취소 (AJAX-like form submit)
+document.querySelectorAll('.recog-btn').forEach(btn => {
+    btn.addEventListener('click', function() {
+        const id = this.dataset.id, action = this.dataset.action;
+        const label = action === 'E' ? '승인' : '승인취소';
+        if (confirm('해당 기사를 ' + label + '하시겠습니까?')) {
+            const form = document.createElement('form');
+            form.method = 'POST';
+            form.action = '{{ url_for("admin.article_approve", article_id=0) }}'.replace('0', id);
+            const input = document.createElement('input');
+            input.type = 'hidden'; input.name = 'action'; input.value = action;
+            form.appendChild(input);
+            document.body.appendChild(form);
+            form.submit();
+        }
+    });
+});
+</script>
+{% endblock %}

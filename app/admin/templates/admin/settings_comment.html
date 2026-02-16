@@ -1,0 +1,70 @@
+{% extends "admin/base.html" %}
+{% block nav_title %}댓글설정{% endblock %}
+
+{% macro setting_val(key) %}{{ settings[key].value if key in settings else '' }}{% endmacro %}
+
+{% block content %}
+<div class="row justify-content-center">
+    <div class="col-lg-8">
+        <div class="card">
+            <div class="card-header"><strong>댓글 설정</strong></div>
+            <div class="card-body">
+                <form method="post">
+                    <div class="mb-3">
+                        <label class="form-label fw-bold">댓글 사용</label>
+                        <div>
+                            <div class="form-check form-check-inline">
+                                <input class="form-check-input" type="radio" name="comment_use" id="comment_use_y" value="Y" {% if setting_val('comment_use') != 'N' %}checked{% endif %}>
+                                <label class="form-check-label" for="comment_use_y">사용</label>
+                            </div>
+                            <div class="form-check form-check-inline">
+                                <input class="form-check-input" type="radio" name="comment_use" id="comment_use_n" value="N" {% if setting_val('comment_use') == 'N' %}checked{% endif %}>
+                                <label class="form-check-label" for="comment_use_n">사용안함</label>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label fw-bold">로그인 필수</label>
+                        <div>
+                            <div class="form-check form-check-inline">
+                                <input class="form-check-input" type="radio" name="comment_login_required" id="login_y" value="Y" {% if setting_val('comment_login_required') == 'Y' %}checked{% endif %}>
+                                <label class="form-check-label" for="login_y">필수</label>
+                            </div>
+                            <div class="form-check form-check-inline">
+                                <input class="form-check-input" type="radio" name="comment_login_required" id="login_n" value="N" {% if setting_val('comment_login_required') != 'Y' %}checked{% endif %}>
+                                <label class="form-check-label" for="login_n">비필수</label>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label fw-bold">승인 후 노출</label>
+                        <div>
+                            <div class="form-check form-check-inline">
+                                <input class="form-check-input" type="radio" name="comment_approval_required" id="approval_y" value="Y" {% if setting_val('comment_approval_required') == 'Y' %}checked{% endif %}>
+                                <label class="form-check-label" for="approval_y">사용</label>
+                            </div>
+                            <div class="form-check form-check-inline">
+                                <input class="form-check-input" type="radio" name="comment_approval_required" id="approval_n" value="N" {% if setting_val('comment_approval_required') != 'Y' %}checked{% endif %}>
+                                <label class="form-check-label" for="approval_n">사용안함</label>
+                            </div>
+                        </div>
+                        <small class="text-muted">사용 시 관리자가 승인한 댓글만 서비스에 노출됩니다.</small>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label fw-bold">댓글 최대 글자 수</label>
+                        <input type="number" name="comment_max_length" class="form-control" style="width:200px" value="{{ setting_val('comment_max_length') or '500' }}">
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label fw-bold">금칙어</label>
+                        <textarea name="comment_block_words" class="form-control" rows="3" placeholder="쉼표로 구분하여 입력">{{ setting_val('comment_block_words') }}</textarea>
+                        <small class="text-muted">금칙어가 포함된 댓글은 등록이 차단됩니다. (쉼표 구분)</small>
+                    </div>
+                    <div class="d-grid">
+                        <button type="submit" class="btn btn-primary"><i class="bi bi-save"></i> 설정 저장</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

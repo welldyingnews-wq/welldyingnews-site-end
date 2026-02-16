@@ -1,0 +1,35 @@
+{% extends "admin/base.html" %}
+{% block nav_title %}배너관리{% endblock %}
+{% block content %}
+<div class="d-flex justify-content-between align-items-center mb-3">
+    <h4>배너 관리</h4>
+    <a href="{{ url_for('admin.banner_new') }}" class="btn btn-primary btn-sm"><i class="bi bi-plus-lg"></i> 배너등록</a>
+</div>
+<div class="table-responsive">
+    <table class="table table-hover">
+        <thead class="table-light">
+            <tr><th style="width:50px">번호</th><th style="width:80px">이미지</th><th>이름</th><th>위치</th><th>링크</th><th>클릭</th><th>상태</th><th>관리</th></tr>
+        </thead>
+        <tbody>
+            {% for b in banners %}
+            <tr>
+                <td>{{ b.id }}</td>
+                <td>{% if b.image_path %}<img src="{{ url_for('static', filename=b.image_path) }}" style="width:60px;height:40px;object-fit:cover" class="rounded">{% else %}-{% endif %}</td>
+                <td>{{ b.name }}</td><td>{{ b.position or '-' }}</td>
+                <td><small>{{ b.link_url|truncate(40) }}</small></td>
+                <td>{{ b.click_count }}</td>
+                <td><span class="badge {% if b.is_active %}bg-success{% else %}bg-danger{% endif %}">{{ '활성' if b.is_active else '비활성' }}</span></td>
+                <td>
+                    <a href="{{ url_for('admin.banner_edit', banner_id=b.id) }}" class="btn btn-sm btn-outline-primary"><i class="bi bi-pencil"></i></a>
+                    <form method="post" action="{{ url_for('admin.banner_delete', banner_id=b.id) }}" class="d-inline" onsubmit="return confirm('삭제?')">
+                        <button class="btn btn-sm btn-outline-danger"><i class="bi bi-trash"></i></button>
+                    </form>
+                </td>
+            </tr>
+            {% else %}
+            <tr><td colspan="8" class="text-center text-muted py-4">배너가 없습니다.</td></tr>
+            {% endfor %}
+        </tbody>
+    </table>
+</div>
+{% endblock %}

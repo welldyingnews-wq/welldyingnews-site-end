@@ -1,0 +1,76 @@
+{% extends "public/base.html" %}
+{% block title %}{{ article.title }} < {% if article.subsection %}{{ article.subsection.name }} < {% endif %}{% if article.section %}{{ article.section.name }} < {% endif %}기사본문 - 웰다잉뉴스{% endblock %}
+
+{% block meta %}
+<meta property="og:type" content="article">
+<meta property="og:title" content="{{ article.title }}">
+<meta property="og:description" content="{{ article.summary_text|truncate(200) }}">
+{% if article.thumbnail_path %}
+<meta property="og:image" content="{{ url_for('static', filename=article.thumbnail_path, _external=True) }}">
+{% endif %}
+{% endblock %}
+
+{% block content %}
+<div class="article-view">
+    <!-- 브레드크럼 -->
+    <nav class="breadcrumbs">
+        <a href="{{ url_for('public.index') }}">홈</a>
+        {% if article.section %}
+        <span>&gt;</span> <a href="{{ url_for('public.article_list', sc_section_code=article.section.code) }}">{{ article.section.name }}</a>
+        {% endif %}
+        {% if article.subsection %}
+        <span>&gt;</span> <a href="{{ url_for('public.article_list', sc_sub_section_code=article.subsection.code) }}">{{ article.subsection.name }}</a>
+        {% endif %}
+    </nav>
+
+    <!-- 기사 헤더 -->
+    <header class="article-header">
+        <h1 class="article-title">{{ article.title }}</h1>
+        {% if article.subtitle %}
+        <p class="article-subtitle">{{ article.subtitle }}</p>
+        {% endif %}
+        <div class="article-info">
+            <span class="author">{{ article.author_name }}</span>
+            <span class="date">입력 {{ article.created_at.strftime('%Y.%m.%d %H:%M') }}</span>
+            {% if article.updated_at and article.updated_at != article.created_at %}
+            <span class="date">수정 {{ article.updated_at.strftime('%Y.%m.%d %H:%M') }}</span>
+            {% endif %}
+        </div>
+        <div class="article-share">
+            <button onclick="navigator.clipboard.writeText(window.location.href).then(()=>alert('URL이 복사되었습니다.'))" class="share-btn" title="URL 복사">🔗 URL복사</button>
+        </div>
+    </header>
+
+    <!-- 기사 본문 -->
+    <div class="article-body">
+        {{ article.content|safe }}
+    </div>
+
+    <!-- 키워드 -->
+    {% if article.keyword %}
+    <div class="article-keywords">
+        {% for kw in article.keyword.split(',') %}
+        <span class="keyword-tag">#{{ kw.strip() }}</span>
+        {% endfor %}
+    </div>
+    {% endif %}
+
+    <!-- 기자 정보 -->
+    <div class="article-reporter">
+        <strong>{{ article.author_name }}</strong>
+        {% if article.author_email %}<a href="mailto:{{ article.author_email }}">{{ article.author_email }}</a>{% endif %}
+    </div>
+
+    <!-- 관련 기사 -->
+    {% if related_articles %}
+    <section class="related-articles">
+        <h3>관련기사</h3>
+        <ul>
+            {% for rel in related_articles %}
+            <li><a href="{{ url_for('public.article_view', idxno=rel.id) }}">{{ rel.title }}</a></li>
+            {% endfor %}
+        </ul>
+    </section>
+    {% endif %}
+</div>
+{% endblock %}

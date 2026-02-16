@@ -1,0 +1,50 @@
+{% extends "admin/base.html" %}
+{% block nav_title %}{{ '회원수정' if member and member.id else '회원등록' }}{% endblock %}
+
+{% block content %}
+<div class="row justify-content-center">
+    <div class="col-lg-6">
+        <div class="card">
+            <div class="card-header"><strong>{{ '회원수정' if member and member.id else '회원등록' }}</strong></div>
+            <div class="card-body">
+                <form method="post" action="{{ url_for('admin.member_edit', member_id=member.id) if member and member.id else url_for('admin.member_new') }}">
+                    <div class="mb-3">
+                        <label class="form-label fw-bold">아이디 <span class="text-danger">*</span></label>
+                        <input type="text" name="user_id" class="form-control" value="{{ member.user_id if member else '' }}" {% if member and member.id %}readonly{% endif %} required>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label fw-bold">비밀번호 {% if not member or not member.id %}<span class="text-danger">*</span>{% endif %}</label>
+                        <input type="password" name="password" class="form-control" {% if not member or not member.id %}required{% endif %}>
+                        {% if member and member.id %}
+                        <small class="text-muted">변경할 경우에만 입력하세요.</small>
+                        {% endif %}
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label fw-bold">이름 <span class="text-danger">*</span></label>
+                        <input type="text" name="name" class="form-control" value="{{ member.name if member else '' }}" required>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label fw-bold">이메일</label>
+                        <input type="email" name="email" class="form-control" value="{{ member.email if member else '' }}">
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label fw-bold">부서</label>
+                        <input type="text" name="department" class="form-control" value="{{ member.department if member else '' }}">
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label fw-bold">관리등급</label>
+                        <select name="level" class="form-select">
+                            <option value="admin" {% if member and member.level == 'admin' %}selected{% endif %}>관리자</option>
+                            <option value="editor" {% if member and member.level == 'editor' %}selected{% endif %}>편집기자</option>
+                            <option value="reporter" {% if (not member) or (member and member.level == 'reporter') %}selected{% endif %}>기자</option>
+                        </select>
+                    </div>
+                    <div class="d-grid">
+                        <button type="submit" class="btn btn-primary"><i class="bi bi-save"></i> 저장</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

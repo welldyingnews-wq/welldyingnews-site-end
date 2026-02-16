@@ -1,0 +1,246 @@
+<!doctype html>
+<html class="no-js" lang="ko" dir="ltr">
+<head>
+<meta charset="utf-8">
+<meta http-equiv="x-ua-compatible" content="ie=edge">
+<meta name="viewport" content="width=1240">
+<meta name="description" content="삶과 죽음의 존엄성을 전하는 웰다잉뉴스"/>
+<meta property="og:title" content="웰다잉뉴스"/>
+<meta property="og:site_name" content="웰다잉뉴스"/>
+<meta property="og:description" content="삶과 죽음의 존엄성을 전하는 웰다잉뉴스"/>
+{% block meta %}{% endblock %}
+<title>{% block title %}웰다잉뉴스{% endblock %}</title>
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/slick-carousel@1.8.1/slick/slick.css">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@300;400;500;700&family=Roboto:wght@300;400;500;700&display=swap">
+<link rel="stylesheet" href="{{ url_for('static', filename='css/orig/foundation.min.css') }}">
+<link rel="stylesheet" href="{{ url_for('static', filename='css/orig/custom.foundation.min.css') }}">
+<link rel="stylesheet" href="{{ url_for('static', filename='css/orig/webfonts.min.css') }}">
+<link rel="stylesheet" href="{{ url_for('static', filename='css/orig/font.style.css') }}">
+<link rel="stylesheet" href="{{ url_for('static', filename='css/orig/media.min.css') }}">
+<link rel="stylesheet" href="{{ url_for('static', filename='css/orig/autobox.style.min.css') }}">
+<link rel="stylesheet" href="{{ url_for('static', filename='css/orig/templates.style.min.css') }}">
+<link rel="stylesheet" href="{{ url_for('static', filename='css/orig/plugin.style.min.css') }}">
+<link rel="stylesheet" href="{{ url_for('static', filename='css/orig/style.min.css') }}">
+<link rel="stylesheet" href="{{ url_for('static', filename='css/orig/design.style.css') }}">
+<link rel="stylesheet" href="{{ url_for('static', filename='css/orig/menubar.css') }}">
+<script src="https://cdn.jsdelivr.net/npm/jquery@3.7.1/dist/jquery.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/slick-carousel@1.8.1/slick/slick.min.js"></script>
+<style type="text/css">
+/* 사이트 기본 색 */
+.user-point,a.user-point,
+.poll-columns .poll-state.going
+{color:#5e1985 !important}
+.user-bg,.user-bg:hover,.user-bg:active,.user-bg:focus,li[id*="slick-"].slick-active button[data-role],.tabs .is-active a
+{background-color:#5e1985 !important}
+.user-border{border-color:#5e1985 !important}
+.user-border-top {border-top-color:#5e1985 !important}
+.user-border-bottom {border-bottom-color:#5e1985 !important}
+.user-border-left {border-left-color:#5e1985 !important}
+.user-border-right {border-right-color:#5e1985 !important}
+
+/* site size */
+.width-1240 {width:1240px}
+.max-width-1240 {max-width:1240px}
+.min-width-1240 {min-width:1240px}
+
+#header-wrapper .mode-inner {width:1240px}
+#header-wrapper.full #user-nav, #header-wrapper.basic #user-nav .mode-inner {border-bottom-color:#5e1985}
+#user-nav .user-menu .secline > a.a-hover {color:#5e1985}
+#user-nav .user-menu .secline .sub > a.a-sub-hover, #user-nav .user-menu .secline .sub > a:hover {color:#5e1985}
+#user-menu .letter a > i {background-color:#5e1985}
+
+/* footer type-31 */
+#user-footer.type-31 {padding:0 0 5rem;background-color:#fff;border-top:2px solid #333}
+#user-footer.type-31 .user-nav {display:block;margin-bottom:1.875rem;font-size:0;border-bottom:1px solid rgba(0,0,0,.2);white-space:nowrap;text-align:left}
+#user-footer.type-31 .user-nav::after {content:'';display:table;clear:both}
+#user-footer.type-31 .user-nav > .item {display:inline-block;margin-left:2.5rem;font-size:.9375rem;color:rgba(0,0,0,.7);line-height:66px;vertical-align:middle}
+#user-footer.type-31 .user-nav > .item.etc {color:#000}
+#user-footer.type-31 .user-nav > .item:first-of-type {margin-left:0}
+#user-footer.type-31 .user-nav .for-top {overflow:hidden;float:right;width:60px;height:66px;padding-top:.625rem;background-color:#feac1e;text-transform:uppercase;text-align:center;text-decoration:none;transition:padding .25s ease-in}
+#user-footer.type-31 .user-nav .for-top:hover {padding-top:.375rem}
+#user-footer.type-31 .user-nav .for-top > i[class^="icon-"], #user-footer.type-31 .user-nav .for-top > .text {display:block;color:#fff;line-height:1}
+#user-footer.type-31 .user-nav .for-top > i[class^="icon-"] {font-size:1.5rem}
+#user-footer.type-31 .user-nav .for-top > .text {font-size:.9375rem}
+#user-footer.type-31 .user-logo {width:150px;margin-right:1.875rem}
+#user-footer.type-31 .user-address {float:right;width:calc(100% - 180px);font-size:.813rem;font-weight:lighter;text-align:left}
+#user-footer.type-31 .user-address ul li {color:rgba(0,0,0,.6)}
+#user-footer.type-31 .user-address ul li.bars::before {color:rgba(0,0,0,.25)}
+#user-footer.type-31 .user-address ul li.copy {margin-top:1.375rem;font-size:.813rem;color:rgba(0,0,0,.4)}
+#user-footer.type-31 .user-address ul li a {color:inherit;text-decoration:none}
+</style>
+{% block extra_head %}{% endblock %}
+</head>
+<body>
+<div class="off-canvas-wrapper">
+<div class="off-canvas-wrapper-inner" data-off-canvas-wrapper>
+<div class="off-canvas-content" data-off-canvas-content>
+
+<!-- wrap -->
+<div id="user-wrap" class="min-width-1240">
+<div id="user-wrapper">
+
+<!-- header -->
+<header id="user-header" class="posi-re float-center">
+<div id="header-wrapper" class="vertical full left">
+
+    <!-- 로고영역 -->
+    <header id="nav-header">
+        <div class="mode-inner">
+            <div class="user-banner text-left text">
+                <div id="roll-text">
+                    <div class="item dis-none line-3x2">잘 보낸 하루가 편안한 잠을 주듯이 <br>잘 쓰인 일생은 평안한 죽음을 준다.</div>
+                    <div class="item dis-none line-3x2">사람은 어떻게 죽느냐가 문제가 아니라<br> 어떻게 사느냐가 문제다.</div>
+                    <div class="item dis-none line-3x2">항상 죽을 각오를 하고 있는<br> 사람만이 참으로 자유로운 인간이다.</div>
+                    <div class="item dis-none line-3x2">죽음은 마지막 성장의 기회다.</div>
+                    <div class="item dis-none line-3x2">인생은 입구에서 볼 때만 멀고 아늑하다. <br>인생은 출구에서 볼 때는 오히려 너무 짧다.</div>
+                    <div class="item dis-none line-3x2">삶을 깊이 이해하면 할수록<br> 죽음으로 인한 슬픔은 그만큼 줄어들 것입니다.</div>
+                    <div class="item dis-none line-3x2">죽음을 알려고 하지 말고<br> 내가 어디에서 왔는지를 알아야 한다.</div>
+                </div>
+            </div>
+
+            <h1 class="user-logo text-center">
+                <a href="{{ url_for('public.index') }}">
+                    <img src="{{ url_for('static', filename='images/logo.png') }}" alt="웰다잉뉴스">
+                </a>
+            </h1>
+
+            <div class="user-banner text-right">
+                <ul id="userLogin" class="user-logbox">
+                    <li><a href="{{ url_for('admin.login') }}" class="user-point">로그인</a></li>
+                </ul>
+                <div class="user-intro">UPDATED. {{ updated_time }}</div>
+            </div>
+        </div>
+    </header>
+
+    <!-- 메뉴바 -->
+    <nav id="user-nav">
+        <div class="mode-inner">
+            <ul id="user-menu" class="user-menu">
+                {% for sec in nav_sections %}
+                <li class="secline{% if sec.code == 'S1N6' %} letter{% endif %}">
+                    {% if sec.code == 'S1N6' %}
+                    <a href="{{ url_for('public.article_list', sc_section_code=sec.code) }}" class="user-point"><i class="icon-mail-o"></i> {{ sec.name }}</a>
+                    {% else %}
+                    <a href="{{ url_for('public.article_list', sc_section_code=sec.code) }}" data-code="{{ sec.code }}">{{ sec.name }}</a>
+                    {% endif %}
+                    {% if sec.subsections.count() > 0 %}
+                    <ul>
+                        {% for sub in sec.subsections %}
+                        <li class="sub">
+                            <a href="{{ url_for('public.article_list', sc_sub_section_code=sub.code) }}" data-code="{{ sub.code }}">{{ sub.name }}</a>
+                        </li>
+                        {% endfor %}
+                    </ul>
+                    {% endif %}
+                </li>
+                {% endfor %}
+            </ul>
+
+            <div id="userSearch" class="user-search">
+                <button type="button" class="sch-btns"><i class="icon-search-thin"><span class="show-for-sr">검색</span></i></button>
+                <fieldset class="user-search-form">
+                    <form name="head-search" method="get" class="clearfix" action="{{ url_for('public.article_list') }}">
+                        <input type="hidden" name="sc_area" value="A">
+                        <label class="show-for-sr" for="search">기사검색</label>
+                        <input type="text" name="sc_word" id="search" placeholder="검색어를 입력해주세요" title="기사검색">
+                        <button type="submit" title="기사검색"><i class="icon-search-thin"></i><span class="show-for-sr">검색</span></button>
+                    </form>
+                </fieldset>
+            </div>
+
+            <button type="button" class="user-allbtn" title="전체메뉴">
+                <i class="icon-bars"><span class="show-for-sr">전체메뉴 버튼</span></i>
+            </button>
+        </div>
+    </nav>
+
+</div>
+</header>
+
+<!-- 본문 -->
+<section id="user-container" class="posi-re text-left">
+{% block content %}{% endblock %}
+</section>
+
+<!-- footer -->
+<footer id="user-footer" class="type-31">
+    <div class="float-center width-1240">
+        <nav class="user-nav">
+            <a href="#" class="item">매체소개</a>
+            <a href="#" class="item">기사제보</a>
+            <a href="#" class="item">광고문의</a>
+            <a href="#" class="item">이용약관</a>
+            <a href="#" class="item etc"><strong>개인정보처리방침</strong></a>
+            <a href="#" class="item">청소년보호정책</a>
+            <a href="#" class="item">저작권보호정책</a>
+            <a href="#" class="item">이메일무단수집거부</a>
+            <a href="#top" class="for-top">
+                <i class="icon-angle-up-thin"></i>
+                <span class="text">Top</span>
+            </a>
+        </nav>
+
+        <div class="posi-re clearfix">
+            <div class="user-logo"><img src="{{ url_for('static', filename='images/footer-logo.png') }}" alt="웰다잉뉴스" /></div>
+            <address class="user-address">
+                <ul class="no-bullet">
+                    <li class="bars">서울특별시 송파구 송파대로 345</li>
+                    <li class="bars">법인명 : 웰다잉미디어</li>
+                    <li class="bars">제호 : 웰다잉뉴스</li>
+                    <li>등록번호 : 서울 아 04366</li>
+                    <li class="bars clear">등록일 : 2017-02-13</li>
+                    <li class="bars">발행일 : 2016-12-01</li>
+                    <li class="bars">발행·편집인 : 김동하</li>
+                    <li>청소년보호책임자 : 김동하</li>
+                    <li class="clear copy">Copyright &copy; 2026 웰다잉뉴스. All rights reserved. mail to <a href="mailto:welldyingnews@naver.com">welldyingnews@naver.com</a></li>
+                </ul>
+            </address>
+        </div>
+    </div>
+</footer>
+
+</div>
+</div>
+
+</div>
+</div>
+</div>
+
+<button type="button" id="back-to-top" class="back-to-top" title="위로"><i class="icon-arrow-top"><span class="show-for-sr">위로</span></i></button>
+
+<script>
+$(document).ready(function(){
+    // 명언 롤링
+    $('#roll-text').slick({
+        arrows: false,
+        dots: false,
+        vertical: true,
+        verticalSwiping: true,
+        infinite: true,
+        autoplay: true,
+        speed: 600,
+    });
+
+    // 검색 버튼 토글
+    $('.sch-btns').on('click', function(){
+        $(this).next('.user-search-form').toggleClass('on');
+    });
+
+    // 메뉴 hover
+    $('#user-menu .secline').hover(
+        function(){ $(this).find('> a').addClass('a-hover'); $(this).find('> ul').stop().slideDown(200); },
+        function(){ $(this).find('> a').removeClass('a-hover'); $(this).find('> ul').stop().slideUp(150); }
+    );
+
+    // Back to top
+    $(window).scroll(function(){
+        if($(this).scrollTop() > 300) $('#back-to-top').fadeIn();
+        else $('#back-to-top').fadeOut();
+    });
+    $('#back-to-top').click(function(){ $('html, body').animate({scrollTop:0}, 400); });
+});
+</script>
+{% block extra_scripts %}{% endblock %}
+</body>
+</html>

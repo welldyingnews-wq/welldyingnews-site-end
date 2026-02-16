@@ -1,0 +1,56 @@
+/**********************************************
+note : design custom style page
+**********************************************/
+
+/* SEO 설정 @seo-modify (추후 admin.style.css에 추가분) */
+.seo-guide {display:block;font-size:.875rem;line-height:1.5;color:#000}
+.seo-guide:not(:only-child) {margin-top:.5rem}
+.seo-guide-title {display:block;margin-bottom:.5em;color:#f44e5c}
+.seo-guide-list {font-size:.9em}
+.seo-guide-list small {font-weight:light;font-weight:var(--wgt300, 300);color:#777}
+.seo-guide-point {font-weight:bold;font-weight:var(--wgt500, 500);color:#5684ff;text-decoration:underline}
+.seo-guide-more {margin:.5em 0 0;font-size:.8em;font-weight:light;font-weight:var(--wgt300, 300);color:#777}
+.seo-guide-link {color:#222 !important;text-decoration:underline}
+
+/**********************************************
+note : 메인
+name : 강혜리
+**********************************************/
+#INC_TAB_J-custom_1_container .tabs-header {font-size:1.25rem}
+
+/* 기사박스 */
+.box-skin.play .header  i[class^="icon-"] {display:inline-block;margin-right:5px;width:30px;height:30px;font-size:1.25rem;line-height:30px;color:#fff;text-align:center;background-color:#de0010;border-radius:50% 50%}
+
+.box-skin.design-7.point .header {border-top-color:#5e1985}
+
+.box-skin.gray {background-color:#f2f4f7}
+.box-skin.black-box {padding:20px;background-color:#232730}
+.box-skin.gray.m-margin {margin-left:-20px;margin-right:-20px}
+
+#idx46 .box-skin.black {padding:30px 20px;background-color:#232730}
+
+/* 이승현 / 1368922 / 20240425 */
+@media screen and (max-width: 63.9375em) {
+.row #article-view .info-group {display:-ms-flexbox;display:flex;-ms-flex-wrap:wrap;flex-wrap:wrap;-ms-align-items:center;align-items:center}
+.row #article-view .info-group > .item {margin:0 !important}
+.row #article-view .info-group > :first-child:nth-last-child(2) {-ms-flex-preferred-size:0;flex-basis:0;-ms-flex-positive:1;flex-grow:1;max-width:100%;min-width:0;text-align:left}
+.row #article-view .info-group > :last-child:nth-child(2) {-ms-flex:0 0 auto;flex:0 0 auto;width:auto;max-width:100%}
+.row #article-view .social-box {display:-ms-flexbox;display:flex;-ms-flex-wrap:wrap;flex-wrap:wrap}
+.row #article-view .social-box .sns {-ms-flex:0 0 32px;flex:0 0 32px;display:block;max-width:32px;height:32px;font-size:1.25rem;line-height:1.3}
+.row #article-view .social-box .icon-band::before {content:'';width:12px;height:15px;background:url('/image/icon-naver-band.svg') no-repeat 50% 50%;background-size:contain}
+.row #article-view .quick-tool > .tool {border:none}
+
+.row #article-view .infomation {margin-bottom:1.5625rem; text-align: center;}
+.row #article-view .infomation > li::after {font-size:inherit}
+}
+
+
+/* 이승현 / 1442712 / 20250205 */
+.article-veiw-body.view-page p {font-weight:400;}
+
+/* 배진희 / 1492093 / 20250724 */
+#article-view h1{margin:1rem 0;font-size:34px;font-weight:bold}
+#article-view h1 strong{font-weight:bold}
+
+/* 배진희 / 1510629 / 20250925 */
+#section-list .type1>:nth-child(5n+1){margin-top:.875rem;padding-top:0;border-top:0}

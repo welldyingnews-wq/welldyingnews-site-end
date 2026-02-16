@@ -1,0 +1,185 @@
+{% extends "admin/base.html" %}
+{% block nav_title %}기사설정{% endblock %}
+
+{% block content %}
+<!-- 탭 -->
+<ul class="nav nav-tabs mb-4">
+    <li class="nav-item"><a class="nav-link active" href="{{ url_for('admin.settings_sections') }}">섹션설정</a></li>
+    <li class="nav-item"><a class="nav-link" href="{{ url_for('admin.settings_authority') }}">권한설정</a></li>
+</ul>
+
+<!-- 사이드 네비게이션 + 콘텐츠 -->
+<div class="row">
+    <!-- 좌측: 드릴다운 메뉴 -->
+    <div class="col-lg-3 mb-3">
+        <div class="card">
+            <div class="card-header py-2"><strong>섹션 구조</strong></div>
+            <div class="list-group list-group-flush">
+                <a href="{{ url_for('admin.settings_sections') }}" class="list-group-item list-group-item-action {% if not request.args.get('view') %}active{% endif %}">
+                    <i class="bi bi-folder"></i> 1차섹션
+                </a>
+                {% for sec in sections %}
+                <a href="{{ url_for('admin.settings_sections', view='sub', parent_id=sec.id) }}"
+                   class="list-group-item list-group-item-action ps-4 {% if request.args.get('view') == 'sub' and request.args.get('parent_id') == sec.id|string %}active{% endif %}">
+                    <i class="bi bi-folder2-open"></i> {{ sec.name }} <span class="badge bg-secondary float-end">{{ sec.subsections.count() }}</span>
+                </a>
+                {% endfor %}
+            </div>
+        </div>
+    </div>
+
+    <!-- 우측: 내용 -->
+    <div class="col-lg-9">
+        {% if request.args.get('view') == 'sub' and request.args.get('parent_id') %}
+        {# 2차 섹션 보기 #}
+        {% set parent = sections|selectattr('id', 'equalto', request.args.get('parent_id')|int)|first %}
+        {% if parent %}
+        <div class="card mb-3">
+            <div class="card-header d-flex justify-content-between align-items-center py-2">
+                <strong>{{ parent.name }} > 2차섹션</strong>
+            </div>
+            <div class="table-responsive">
+                <table class="table table-hover table-sm mb-0">
+                    <thead class="table-light">
+                        <tr>
+                            <th>섹션명</th>
+                            <th width="100">코드</th>
+                            <th width="140">명령</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for sub in parent.subsections %}
+                        <tr>
+                            <td>{{ sub.name }}</td>
+                            <td><code>{{ sub.code }}</code></td>
+                            <td>
+                                <button class="btn btn-sm btn-outline-primary" data-bs-toggle="modal" data-bs-target="#editSub{{ sub.id }}"><i class="bi bi-pencil"></i> 수정</button>
+                                <form method="post" action="{{ url_for('admin.subsection_delete', sub_id=sub.id) }}" class="d-inline" onsubmit="return confirm('삭제하시겠습니까?')">
+                                    <button type="submit" class="btn btn-sm btn-outline-danger"><i class="bi bi-trash"></i> 삭제</button>
+                                </form>
+                                <!-- 수정 모달 -->
+                                <div class="modal fade" id="editSub{{ sub.id }}" tabindex="-1">
+                                    <div class="modal-dialog modal-sm">
+                                        <div class="modal-content">
+                                            <form method="post" action="{{ url_for('admin.subsection_edit', sub_id=sub.id) }}">
+                                                <div class="modal-header"><h6 class="modal-title">2차 섹션 수정</h6></div>
+                                                <div class="modal-body">
+                                                    <input type="text" name="name" class="form-control" value="{{ sub.name }}" required>
+                                                </div>
+                                                <div class="modal-footer">
+                                                    <button type="button" class="btn btn-sm btn-secondary" data-bs-dismiss="modal">취소</button>
+                                                    <button type="submit" class="btn btn-sm btn-primary">저장</button>
+                                                </div>
+                                            </form>
+                                        </div>
+                                    </div>
+                                </div>
+                            </td>
+                        </tr>
+                        {% else %}
+                        <tr><td colspan="3" class="text-center text-muted py-3">2차 섹션이 없습니다.</td></tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+
+        <!-- 2차 섹션 추가 -->
+        <div class="card">
+            <div class="card-header py-2"><strong>2차 섹션 추가</strong></div>
+            <div class="card-body">
+                <form method="post" action="{{ url_for('admin.subsection_add') }}" class="row g-2">
+                    <input type="hidden" name="section_id" value="{{ parent.id }}">
+                    <div class="col-md-4">
+                        <input type="text" name="code" class="form-control form-control-sm" placeholder="코드 (예: S2N24)" required>
+                    </div>
+                    <div class="col-md-5">
+                        <input type="text" name="name" class="form-control form-control-sm" placeholder="이름" required>
+                    </div>
+                    <div class="col-md-3">
+                        <button type="submit" class="btn btn-primary btn-sm w-100"><i class="bi bi-plus-lg"></i> 등록</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+        {% endif %}
+
+        {% else %}
+        {# 1차 섹션 보기 (기본) #}
+        <div class="card mb-3">
+            <div class="card-header d-flex justify-content-between align-items-center py-2">
+                <strong>1차 섹션 목록</strong>
+                <span class="badge bg-primary">{{ sections|length }}개</span>
+            </div>
+            <div class="table-responsive">
+                <table class="table table-hover table-sm mb-0">
+                    <thead class="table-light">
+                        <tr>
+                            <th>섹션명 (코드)</th>
+                            <th width="60" class="text-center">하위</th>
+                            <th width="140">명령</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for sec in sections %}
+                        <tr>
+                            <td>
+                                <strong>{{ sec.name }}</strong>
+                                <code class="ms-2">{{ sec.code }}</code>
+                            </td>
+                            <td class="text-center">
+                                <a href="{{ url_for('admin.settings_sections', view='sub', parent_id=sec.id) }}" class="badge bg-secondary text-decoration-none">
+                                    {{ sec.subsections.count() }}
+                                </a>
+                            </td>
+                            <td>
+                                <button class="btn btn-sm btn-outline-primary" data-bs-toggle="modal" data-bs-target="#editSection{{ sec.id }}"><i class="bi bi-pencil"></i> 수정</button>
+                                <form method="post" action="{{ url_for('admin.section_delete', section_id=sec.id) }}" class="d-inline" onsubmit="return confirm('하위 2차 섹션도 모두 삭제됩니다. 계속하시겠습니까?')">
+                                    <button type="submit" class="btn btn-sm btn-outline-danger"><i class="bi bi-trash"></i> 삭제</button>
+                                </form>
+                                <!-- 수정 모달 -->
+                                <div class="modal fade" id="editSection{{ sec.id }}" tabindex="-1">
+                                    <div class="modal-dialog modal-sm">
+                                        <div class="modal-content">
+                                            <form method="post" action="{{ url_for('admin.section_edit', section_id=sec.id) }}">
+                                                <div class="modal-header"><h6 class="modal-title">섹션 수정</h6></div>
+                                                <div class="modal-body">
+                                                    <input type="text" name="name" class="form-control" value="{{ sec.name }}" required>
+                                                </div>
+                                                <div class="modal-footer">
+                                                    <button type="button" class="btn btn-sm btn-secondary" data-bs-dismiss="modal">취소</button>
+                                                    <button type="submit" class="btn btn-sm btn-primary">저장</button>
+                                                </div>
+                                            </form>
+                                        </div>
+                                    </div>
+                                </div>
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+
+        <!-- 1차 섹션 추가 -->
+        <div class="card">
+            <div class="card-header py-2"><strong>1차 섹션 추가</strong></div>
+            <div class="card-body">
+                <form method="post" action="{{ url_for('admin.section_add') }}" class="row g-2">
+                    <div class="col-md-4">
+                        <input type="text" name="code" class="form-control form-control-sm" placeholder="코드 (예: S1N7)" required>
+                    </div>
+                    <div class="col-md-5">
+                        <input type="text" name="name" class="form-control form-control-sm" placeholder="이름" required>
+                    </div>
+                    <div class="col-md-3">
+                        <button type="submit" class="btn btn-primary btn-sm w-100"><i class="bi bi-plus-lg"></i> 등록</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+        {% endif %}
+    </div>
+</div>
+{% endblock %}

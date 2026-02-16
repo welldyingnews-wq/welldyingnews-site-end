@@ -1,0 +1,259 @@
+{% extends "admin/base.html" %}
+{% block nav_title %}{{ '기사수정' if article and article.id else '기사등록' }}{% endblock %}
+
+{% block extra_head %}
+<style>
+.ck-editor__editable { min-height: 400px; }
+</style>
+{% endblock %}
+
+{% block content %}
+<form method="post" enctype="multipart/form-data"
+      action="{{ url_for('admin.article_edit', article_id=article.id) if article and article.id else url_for('admin.article_new') }}">
+
+    <div class="row">
+        <div class="col-lg-9">
+            <!-- 섹션 -->
+            <div class="card mb-3">
+                <div class="card-body">
+                    <div class="row g-3">
+                        <div class="col-md-4">
+                            <label class="form-label fw-bold">섹션</label>
+                            <select name="section_id" id="sectionSelect" class="form-select">
+                                <option value="">1차 섹션 선택</option>
+                                {% for sec in sections %}
+                                <option value="{{ sec.id }}" {% if article and article.section_id == sec.id %}selected{% endif %}>{{ sec.name }}</option>
+                                {% endfor %}
+                            </select>
+                        </div>
+                        <div class="col-md-4">
+                            <label class="form-label fw-bold">2차 섹션</label>
+                            <select name="subsection_id" id="subsectionSelect" class="form-select">
+                                <option value="">2차 섹션 선택</option>
+                                {% if article and article.section_id %}
+                                {% for sub in article.section.subsections %}
+                                <option value="{{ sub.id }}" {% if article.subsection_id == sub.id %}selected{% endif %}>{{ sub.name }}</option>
+                                {% endfor %}
+                                {% endif %}
+                            </select>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- 기자 -->
+            <div class="card mb-3">
+                <div class="card-body">
+                    <div class="row g-3">
+                        <div class="col-md-4">
+                            <label class="form-label fw-bold">기자</label>
+                            <input type="text" name="author_name" class="form-control" value="{{ article.author_name if article else '웰다잉뉴스' }}" placeholder="이름">
+                        </div>
+                        <div class="col-md-8">
+                            <label class="form-label fw-bold">이메일</label>
+                            <input type="email" name="author_email" class="form-control" value="{{ article.author_email if article else 'welldyingnews@naver.com' }}" placeholder="이메일">
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- 제목 -->
+            <div class="card mb-3">
+                <div class="card-body">
+                    <label class="form-label fw-bold">제목</label>
+                    <input type="text" name="title" class="form-control form-control-lg" value="{{ article.title if article else '' }}" placeholder="제목을 입력하세요" required>
+                </div>
+            </div>
+
+            <!-- 부제목 -->
+            <div class="card mb-3">
+                <div class="card-body">
+                    <label class="form-label fw-bold">부제목</label>
+                    <textarea name="subtitle" class="form-control" rows="2" placeholder="부제목을 입력하세요">{{ article.subtitle if article else '' }}</textarea>
+                </div>
+            </div>
+
+            <!-- 본문 -->
+            <div class="card mb-3">
+                <div class="card-body">
+                    <label class="form-label fw-bold">본문</label>
+                    <textarea name="content" id="editor">{{ article.content if article else '' }}</textarea>
+                </div>
+            </div>
+
+            <!-- 키워드 -->
+            <div class="card mb-3">
+                <div class="card-body">
+                    <label class="form-label fw-bold">키워드</label>
+                    <input type="text" name="keyword" class="form-control" value="{{ article.keyword if article else '' }}" placeholder="쉼표로 구분하여 입력">
+                </div>
+            </div>
+
+            <!-- 저장 -->
+            <div class="d-grid mb-4">
+                <button type="submit" class="btn btn-primary btn-lg"><i class="bi bi-save"></i> 저장</button>
+            </div>
+        </div>
+
+        <!-- 사이드바 옵션 -->
+        <div class="col-lg-3">
+            <!-- 기사유형/중요도/승인 -->
+            <div class="card mb-3">
+                <div class="card-header"><strong>기사 옵션</strong></div>
+                <div class="card-body">
+                    <div class="mb-3">
+                        <label class="form-label fw-bold small">중요도</label>
+                        <div>
+                            <div class="form-check form-check-inline">
+                                <input class="form-check-input" type="radio" name="level" id="levelB" value="B" {{ 'checked' if not article or article.level == 'B' }}>
+                                <label class="form-check-label" for="levelB">일반</label>
+                            </div>
+                            <div class="form-check form-check-inline">
+                                <input class="form-check-input" type="radio" name="level" id="levelI" value="I" {{ 'checked' if article and article.level == 'I' }}>
+                                <label class="form-check-label" for="levelI">중요</label>
+                            </div>
+                            <div class="form-check form-check-inline">
+                                <input class="form-check-input" type="radio" name="level" id="levelT" value="T" {{ 'checked' if article and article.level == 'T' }}>
+                                <label class="form-check-label" for="levelT">헤드라인</label>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label fw-bold small">승인상태</label>
+                        <div>
+                            <div class="form-check form-check-inline">
+                                <input class="form-check-input" type="radio" name="recognition" id="recogC" value="C" {{ 'checked' if article and article.recognition == 'C' }}>
+                                <label class="form-check-label" for="recogC">미승인</label>
+                            </div>
+                            <div class="form-check form-check-inline">
+                                <input class="form-check-input" type="radio" name="recognition" id="recogE" value="E" {{ 'checked' if not article or article.recognition == 'E' }}>
+                                <label class="form-check-label" for="recogE">승인</label>
+                            </div>
+                            <div class="form-check form-check-inline">
+                                <input class="form-check-input" type="radio" name="recognition" id="recogR" value="R" {{ 'checked' if article and article.recognition == 'R' }}>
+                                <label class="form-check-label" for="recogR">반려</label>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label fw-bold small">기사유형</label>
+                        <div>
+                            <div class="form-check form-check-inline">
+                                <input class="form-check-input" type="radio" name="article_type" id="typeB" value="B" {{ 'checked' if not article or article.article_type == 'B' }}>
+                                <label class="form-check-label" for="typeB">일반</label>
+                            </div>
+                            <div class="form-check form-check-inline">
+                                <input class="form-check-input" type="radio" name="article_type" id="typeP" value="P" {{ 'checked' if article and article.article_type == 'P' }}>
+                                <label class="form-check-label" for="typeP">카드뉴스</label>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- 노출시간 -->
+            <div class="card mb-3">
+                <div class="card-header"><strong>노출시간</strong></div>
+                <div class="card-body">
+                    <div class="mb-2">
+                        <input type="date" name="embargo_date" class="form-control" value="{{ article.embargo_date.strftime('%Y-%m-%d') if article and article.embargo_date else '' }}">
+                    </div>
+                    <input type="time" name="embargo_time" class="form-control" value="{{ article.embargo_date.strftime('%H:%M') if article and article.embargo_date else '' }}">
+                    <small class="text-muted mt-1 d-block">미래 시간 설정 시 예약기사로 등록됩니다.</small>
+                </div>
+            </div>
+
+            <!-- 썸네일 -->
+            <div class="card mb-3">
+                <div class="card-header"><strong>썸네일 이미지</strong></div>
+                <div class="card-body">
+                    {% if article and article.thumbnail_path %}
+                    <div class="mb-2">
+                        <img src="{{ url_for('static', filename=article.thumbnail_path) }}" class="img-fluid rounded" alt="썸네일">
+                    </div>
+                    {% endif %}
+                    <input type="file" name="thumbnail" class="form-control" accept="image/*">
+                </div>
+            </div>
+
+            {% if article and article.id %}
+            <div class="card mb-3 border-danger">
+                <div class="card-body">
+                    <button type="button" class="btn btn-outline-danger w-100" onclick="deleteArticle()"><i class="bi bi-trash"></i> 휴지통으로 이동</button>
+                </div>
+            </div>
+            {% endif %}
+        </div>
+    </div>
+</form>
+{% endblock %}
+
+{% block extra_scripts %}
+<script src="https://cdn.ckeditor.com/ckeditor5/41.4.2/classic/ckeditor.js"></script>
+<script>
+// Custom Upload Adapter (CDN Classic 빌드에 SimpleUploadAdapter 미포함 대응)
+class MyUploadAdapter {
+    constructor(loader) { this.loader = loader; }
+    upload() {
+        return this.loader.file.then(file => {
+            const data = new FormData();
+            data.append('upload', file);
+            return fetch('{{ url_for("admin.upload_image") }}', { method: 'POST', body: data })
+                .then(res => res.json())
+                .then(result => ({ default: result.url }));
+        });
+    }
+    abort() {}
+}
+function MyUploadAdapterPlugin(editor) {
+    editor.plugins.get('FileRepository').createUploadAdapter = (loader) => new MyUploadAdapter(loader);
+}
+
+// CKEditor 초기화
+let editorInstance;
+ClassicEditor.create(document.querySelector('#editor'), {
+    language: 'ko',
+    extraPlugins: [MyUploadAdapterPlugin],
+    toolbar: ['heading', '|', 'bold', 'italic', 'underline', 'strikethrough', '|',
+              'link', 'uploadImage', 'blockQuote', 'insertTable', '|',
+              'bulletedList', 'numberedList', '|', 'outdent', 'indent', '|',
+              'undo', 'redo']
+}).then(editor => {
+    editorInstance = editor;
+}).catch(error => console.error(error));
+
+// form submit 시 CKEditor 내용을 textarea로 동기화
+document.querySelector('form').addEventListener('submit', function() {
+    if (editorInstance) {
+        document.querySelector('#editor').value = editorInstance.getData();
+    }
+});
+
+{% if article and article.id %}
+// 삭제 처리 (nested form 방지)
+function deleteArticle() {
+    if (!confirm('정말 삭제하시겠습니까?')) return;
+    fetch('{{ url_for("admin.article_delete", article_id=article.id) }}', { method: 'POST' })
+        .then(() => { window.location.href = '{{ url_for("admin.article_list") }}'; });
+}
+{% endif %}
+
+// 섹션 동적 로딩
+document.getElementById('sectionSelect').addEventListener('change', function() {
+    var sectionId = this.value;
+    var subSelect = document.getElementById('subsectionSelect');
+    subSelect.innerHTML = '<option value="">2차 섹션 선택</option>';
+    if (!sectionId) return;
+    fetch('/admin/api/subsections/' + sectionId)
+        .then(r => r.json())
+        .then(data => {
+            data.forEach(function(sub) {
+                var opt = document.createElement('option');
+                opt.value = sub.id;
+                opt.textContent = sub.name;
+                subSelect.appendChild(opt);
+            });
+        });
+});
+</script>
+{% endblock %}

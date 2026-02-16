@@ -1,0 +1,37 @@
+{% extends "admin/base.html" %}
+{% block nav_title %}댓글관리{% endblock %}
+{% block content %}
+<h4 class="mb-3">게시판 댓글 관리</h4>
+<div class="table-responsive">
+    <table class="table table-hover">
+        <thead class="table-light">
+            <tr><th style="width:50px">번호</th><th>게시물</th><th>댓글내용</th><th>작성자</th><th>등록일</th><th>관리</th></tr>
+        </thead>
+        <tbody>
+            {% for r in replies %}
+            <tr class="{% if r.is_hidden %}table-secondary{% endif %}">
+                <td>{{ r.id }}</td>
+                <td>{{ r.post.title|truncate(30) if r.post else '-' }}</td>
+                <td>{{ r.content|truncate(80) }}</td><td>{{ r.author_name }}</td>
+                <td>{{ r.created_at.strftime('%Y-%m-%d %H:%M') }}</td>
+                <td>
+                    <form method="post" action="{{ url_for('admin.bbs_reply_delete', reply_id=r.id) }}" class="d-inline" onsubmit="return confirm('삭제?')">
+                        <button class="btn btn-sm btn-outline-danger"><i class="bi bi-trash"></i></button>
+                    </form>
+                </td>
+            </tr>
+            {% else %}
+            <tr><td colspan="6" class="text-center text-muted py-4">댓글이 없습니다.</td></tr>
+            {% endfor %}
+        </tbody>
+    </table>
+</div>
+{% if pagination.pages > 1 %}
+<nav class="d-flex justify-content-center"><ul class="pagination">
+{% for p in pagination.iter_pages(left_edge=1, right_edge=1, left_current=2, right_current=2) %}
+{% if p %}<li class="page-item {% if p == pagination.page %}active{% endif %}"><a class="page-link" href="{{ url_for('admin.bbs_reply_list', page=p) }}">{{ p }}</a></li>
+{% else %}<li class="page-item disabled"><span class="page-link">...</span></li>{% endif %}
+{% endfor %}
+</ul></nav>
+{% endif %}
+{% endblock %}

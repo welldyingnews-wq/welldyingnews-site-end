@@ -1,0 +1,31 @@
+@charset "UTF-8";
+/**********************************************
+* ## note : fonts set
+* ## 주의사항 : 웹폰트 이용시 Google cdn을 기본을 사용합니다. 
+* # google fonts cdn이 변경됨. https://fonts.google.com/에 방문하여 폰트를 담아오면 됩니다.
+* # 예) @import url('https://fonts.googleapis.com/css?family=Nanum+Gothic:400,700,800&subset=korean');
+*
+* ## Google Fonts에 해당폰트가 없는 경우에만 local fonts(※ 트래픽비용은 고객 부담)를 이용합니다.
+* 
+* # local fonts 
+* # @import url('/css/webFonts/gmarketSans.css');		# font-family:'Gmarket Sans';
+* # @import url('/css/webFonts/nanumBarun.css');		# font-family:'Nanum Barun Gothic';
+* # @import url('/css/webFonts/nanumGothic.css');		# font-family:'Nanum Gothic';
+* # @import url('/css/webFonts/nanumMyeongjo.css');		# font-family:'Nanum Myeongjo';
+* # @import url('/css/webFonts/nanumSquare.css');		# font-family:'Nanum Square';
+* # @import url('/css/webFonts/nanumSquareRound.css');  # font-family:'Nanum Square Round';
+* # @import url('/css/webFonts/notoSans.css');			# font-family:'Noto Sans KR';
+* # @import url('https://fonts.googleapis.com/css2?family=Noto+Serif+KR:wght@400;700&display=swap');		# font-family:'Noto Serif KR';
+*
+* #'Apple SD Gothic Neo','Helvetica Neue'는 apple기기 서체
+*
+* # admin page 
+* # .admin-body,.admin-body th,.admin-body td,.admin-body input,.admin-body select,.admin-body textarea,.admin-body button,.admin-body h1,.admin-body h2,.admin-body h3,.admin-body h4,.admin-body h5,.admin-body h6 {font-family:'Apple SD Gothic Neo','Helvetica Neue','Malgun Gothic','돋움','dotum',Arial,sans-serif}
+*
+* # user page 
+* # body,th,td,input,select,textarea,button,h1,h2,h3,h4,h5,h6,.user-webfont, .user-webfont th,.user-webfont td,.user-webfont input,.user-webfont select,.user-webfont textarea,.user-webfont button,.user-webfont h1,.user-webfont h2,.user-webfont h3,.user-webfont h4,.user-webfont h5,.user-webfont h6 {font-family:'Apple SD Gothic Neo','Helvetica Neue','Roboto','Noto Sans KR','Malgun Gothic','dotum',Arial,sans-serif}
+*
+**********************************************/
+
+/* All page */
+body,th,td,input,select,textarea,button,h1,h2,h3,h4,h5,h6 {font-family:'Apple SD Gothic Neo','Helvetica Neue','Roboto','Noto Sans KR','Malgun Gothic','dotum','Arial',sans-serif}

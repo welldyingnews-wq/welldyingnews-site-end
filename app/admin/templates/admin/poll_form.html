@@ -1,0 +1,58 @@
+{% extends "admin/base.html" %}
+{% block nav_title %}{{ '설문수정' if poll and poll.id else '설문등록' }}{% endblock %}
+{% block content %}
+<div class="row justify-content-center">
+    <div class="col-lg-6">
+        <div class="card">
+            <div class="card-header"><strong>{{ '설문수정' if poll and poll.id else '설문등록' }}</strong></div>
+            <div class="card-body">
+                <form method="post" action="{{ url_for('admin.poll_edit', poll_id=poll.id) if poll and poll.id else url_for('admin.poll_new') }}">
+                    <div class="mb-3">
+                        <label class="form-label fw-bold">설문 제목</label>
+                        <input type="text" name="title" class="form-control" value="{{ poll.title if poll else '' }}" required>
+                    </div>
+                    <div class="mb-3">
+                        <div class="form-check"><input class="form-check-input" type="checkbox" name="is_active" value="1" id="isActive" {% if not poll or poll.is_active %}checked{% endif %}><label class="form-check-label" for="isActive">진행중</label></div>
+                        <div class="form-check"><input class="form-check-input" type="checkbox" name="is_multiple" value="1" id="isMultiple" {% if poll and poll.is_multiple %}checked{% endif %}><label class="form-check-label" for="isMultiple">복수응답 허용</label></div>
+                    </div>
+                    {% if poll and poll.id %}
+                    <div class="mb-3">
+                        <label class="form-label fw-bold">선택지 현황</label>
+                        <ul class="list-group">
+                            {% for opt in poll.options %}
+                            <li class="list-group-item d-flex justify-content-between">
+                                <span>{{ opt.text }}</span>
+                                <span class="badge bg-primary">{{ opt.vote_count }}표</span>
+                            </li>
+                            {% endfor %}
+                        </ul>
+                    </div>
+                    {% else %}
+                    <div class="mb-3" id="optionsArea">
+                        <label class="form-label fw-bold">선택지</label>
+                        <div class="mb-2"><input type="text" name="options" class="form-control form-control-sm" placeholder="선택지 1"></div>
+                        <div class="mb-2"><input type="text" name="options" class="form-control form-control-sm" placeholder="선택지 2"></div>
+                        <div class="mb-2"><input type="text" name="options" class="form-control form-control-sm" placeholder="선택지 3"></div>
+                        <div class="mb-2"><input type="text" name="options" class="form-control form-control-sm" placeholder="선택지 4"></div>
+                        <button type="button" class="btn btn-sm btn-outline-secondary" onclick="addOption()"><i class="bi bi-plus"></i> 선택지 추가</button>
+                    </div>
+                    {% endif %}
+                    <div class="d-grid"><button type="submit" class="btn btn-primary"><i class="bi bi-save"></i> 저장</button></div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+{% block extra_scripts %}
+<script>
+function addOption() {
+    var area = document.getElementById('optionsArea');
+    var count = area.querySelectorAll('input[name="options"]').length + 1;
+    var div = document.createElement('div');
+    div.className = 'mb-2';
+    div.innerHTML = '<input type="text" name="options" class="form-control form-control-sm" placeholder="선택지 ' + count + '">';
+    area.insertBefore(div, area.querySelector('button'));
+}
+</script>
+{% endblock %}

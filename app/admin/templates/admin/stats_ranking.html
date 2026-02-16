@@ -1,0 +1,85 @@
+{% extends "admin/base.html" %}
+{% block nav_title %}기사랭킹{% endblock %}
+
+{% block content %}
+<div class="card mb-3">
+    <div class="card-header py-2"><strong>기사 랭킹</strong></div>
+    <div class="card-body py-2">
+        <form method="get" id="form_statistics_search">
+            <div class="d-flex align-items-center gap-2 flex-wrap">
+                <select name="opt_section" class="form-select form-select-sm" style="width:140px" onchange="this.form.submit()">
+                    <option value="">전체섹션</option>
+                    {% for sec in sections %}
+                    <option value="{{ sec.id }}" {% if opt_section == sec.id|string %}selected{% endif %}>{{ sec.name }}</option>
+                    {% endfor %}
+                </select>
+
+                <select name="opt_limit" class="form-select form-select-sm" style="width:120px" onchange="this.form.submit()">
+                    {% for n in [10, 20, 50, 100, 200, 500, 1000] %}
+                    <option value="{{ n }}" {% if opt_limit == n %}selected{% endif %}>상위 {{ n }}개</option>
+                    {% endfor %}
+                </select>
+
+                <select name="sc_date" class="form-select form-select-sm" style="width:100px" id="dateSel">
+                    <option value="1" {% if sc_date == '1' %}selected{% endif %}>오늘</option>
+                    <option value="-1" {% if sc_date == '-1' %}selected{% endif %}>어제</option>
+                    <option value="7" {% if sc_date == '7' %}selected{% endif %}>7일</option>
+                    <option value="14" {% if sc_date == '14' %}selected{% endif %}>14일</option>
+                    <option value="30" {% if sc_date == '30' %}selected{% endif %}>30일</option>
+                </select>
+
+                <input type="date" name="start_date" class="form-control form-control-sm" style="width:150px" value="{{ start_date }}">
+                <span>~</span>
+                <input type="date" name="end_date" class="form-control form-control-sm" style="width:150px" value="{{ end_date }}">
+                <button type="submit" class="btn btn-sm btn-primary"><i class="bi bi-search"></i> 검색</button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<div class="card">
+    <div class="table-responsive">
+        <table class="table table-hover table-sm mb-0 align-middle">
+            <thead class="table-light">
+                <tr>
+                    <th width="55" class="text-center">순위</th>
+                    <th>기사제목</th>
+                    <th width="90" class="text-center">기자명</th>
+                    <th width="110" class="text-center">기사노출일</th>
+                    <th width="90" class="text-center">조회수</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for article in articles %}
+                <tr>
+                    <td class="text-center fw-bold">{{ loop.index }}</td>
+                    <td>
+                        <a href="{{ url_for('admin.article_edit', article_id=article.id) }}" class="text-decoration-none">
+                            {{ article.title|truncate(60) }}
+                        </a>
+                    </td>
+                    <td class="text-center small">{{ article.author_name }}</td>
+                    <td class="text-center small">{{ article.created_at.strftime('%Y-%m-%d') }}</td>
+                    <td class="text-center"><span class="badge bg-info text-dark">{{ '{:,}'.format(article.view_count) }}</span></td>
+                </tr>
+                {% else %}
+                <tr><td colspan="5" class="text-center text-muted py-4">데이터가 없습니다.</td></tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+    <div class="card-footer d-flex justify-content-end gap-2 py-2">
+        <button type="button" class="btn btn-sm btn-outline-secondary" onclick="window.print()">
+            <i class="bi bi-printer"></i> 인쇄
+        </button>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_scripts %}
+<script>
+document.getElementById('dateSel').addEventListener('change', function() {
+    document.getElementById('form_statistics_search').submit();
+});
+</script>
+{% endblock %}

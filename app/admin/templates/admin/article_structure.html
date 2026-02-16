@@ -1,0 +1,27 @@
+{% extends "admin/base.html" %}
+{% block nav_title %}기사구조{% endblock %}
+{% block content %}
+<h4 class="mb-3">기사구조 (섹션별 기사 현황)</h4>
+<div class="row">
+{% for sec in structure %}
+<div class="col-lg-4 mb-3">
+    <div class="card">
+        <div class="card-header d-flex justify-content-between">
+            <strong>{{ sec.name }}</strong>
+            <span class="badge bg-primary">{{ sec.count }}건</span>
+        </div>
+        {% if sec.subs %}
+        <ul class="list-group list-group-flush">
+            {% for sub in sec.subs %}
+            <li class="list-group-item d-flex justify-content-between align-items-center">
+                <span>{{ sub.name }} <small class="text-muted">{{ sub.code }}</small></span>
+                <span class="badge bg-secondary">{{ sub.count }}</span>
+            </li>
+            {% endfor %}
+        </ul>
+        {% endif %}
+    </div>
+</div>
+{% endfor %}
+</div>
+{% endblock %}

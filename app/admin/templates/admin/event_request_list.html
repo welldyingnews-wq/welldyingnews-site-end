@@ -1,0 +1,47 @@
+{% extends "admin/base.html" %}
+{% block nav_title %}신청글목록{% endblock %}
+{% block content %}
+<div class="d-flex justify-content-between align-items-center mb-3">
+    <h4>신청글 목록</h4>
+    <div class="btn-group">
+        <a href="{{ url_for('admin.event_request_list') }}" class="btn btn-sm {% if not event_code %}btn-primary{% else %}btn-outline-secondary{% endif %}">전체</a>
+        <a href="{{ url_for('admin.event_request_list', event_code='event5') }}" class="btn btn-sm {% if event_code == 'event5' %}btn-primary{% else %}btn-outline-secondary{% endif %}">구독신청</a>
+        <a href="{{ url_for('admin.event_request_list', event_code='event4') }}" class="btn btn-sm {% if event_code == 'event4' %}btn-primary{% else %}btn-outline-secondary{% endif %}">기사제보</a>
+        <a href="{{ url_for('admin.event_request_list', event_code='event3') }}" class="btn btn-sm {% if event_code == 'event3' %}btn-primary{% else %}btn-outline-secondary{% endif %}">저작권문의</a>
+    </div>
+</div>
+<div class="table-responsive">
+    <table class="table table-hover">
+        <thead class="table-light">
+            <tr><th style="width:50px">번호</th><th>유형</th><th>이름</th><th>이메일</th><th>내용</th><th>등록일</th><th>상태</th><th>관리</th></tr>
+        </thead>
+        <tbody>
+            {% for r in requests %}
+            <tr>
+                <td>{{ r.id }}</td>
+                <td>{% if r.event_code == 'event5' %}<span class="badge bg-info text-dark">구독</span>{% elif r.event_code == 'event4' %}<span class="badge bg-warning text-dark">제보</span>{% else %}<span class="badge bg-secondary">문의</span>{% endif %}</td>
+                <td>{{ r.name }}</td><td>{{ r.email }}</td>
+                <td>{{ r.content|truncate(50) }}</td>
+                <td>{{ r.created_at.strftime('%Y-%m-%d') }}</td>
+                <td>{% if r.is_processed %}<span class="badge bg-success">처리완료</span>{% else %}<span class="badge bg-danger">미처리</span>{% endif %}</td>
+                <td>
+                    <form method="post" action="{{ url_for('admin.event_request_toggle', req_id=r.id) }}" class="d-inline">
+                        <button class="btn btn-sm {% if r.is_processed %}btn-outline-secondary{% else %}btn-outline-success{% endif %}">{{ '미처리' if r.is_processed else '처리' }}</button>
+                    </form>
+                </td>
+            </tr>
+            {% else %}
+            <tr><td colspan="8" class="text-center text-muted py-4">신청글이 없습니다.</td></tr>
+            {% endfor %}
+        </tbody>
+    </table>
+</div>
+{% if pagination.pages > 1 %}
+<nav class="d-flex justify-content-center"><ul class="pagination">
+{% for p in pagination.iter_pages(left_edge=1, right_edge=1, left_current=2, right_current=2) %}
+{% if p %}<li class="page-item {% if p == pagination.page %}active{% endif %}"><a class="page-link" href="{{ url_for('admin.event_request_list', page=p, event_code=event_code) }}">{{ p }}</a></li>
+{% else %}<li class="page-item disabled"><span class="page-link">...</span></li>{% endif %}
+{% endfor %}
+</ul></nav>
+{% endif %}
+{% endblock %}

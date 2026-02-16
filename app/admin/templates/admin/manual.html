@@ -1,0 +1,81 @@
+{% extends "admin/base.html" %}
+{% block nav_title %}메뉴얼{% endblock %}
+{% block content %}
+<div class="row justify-content-center">
+    <div class="col-lg-10">
+        <div class="card">
+            <div class="card-header"><strong>관리자 메뉴얼</strong></div>
+            <div class="card-body">
+                <div class="accordion" id="manualAccordion">
+                    <div class="accordion-item">
+                        <h2 class="accordion-header">
+                            <button class="accordion-button" type="button" data-bs-toggle="collapse" data-bs-target="#manual1">
+                                <i class="bi bi-newspaper me-2"></i> 기사 관리
+                            </button>
+                        </h2>
+                        <div id="manual1" class="accordion-collapse collapse show" data-bs-parent="#manualAccordion">
+                            <div class="accordion-body">
+                                <h6>기사등록</h6>
+                                <p>기사 메뉴 > 기사등록에서 새 기사를 작성합니다. 제목, 부제, 본문을 입력하고 섹션을 선택한 후 저장합니다.</p>
+                                <h6>승인관리</h6>
+                                <p>미승인 상태(C)의 기사를 승인(E) 또는 반려(R) 처리합니다. 승인된 기사만 서비스 사이트에 노출됩니다.</p>
+                                <h6>기사검색</h6>
+                                <p>등록된 기사를 제목, 섹션, 승인상태 등으로 검색합니다.</p>
+                                <h6>휴지통</h6>
+                                <p>삭제된 기사 목록입니다. 복원하거나 완전 삭제할 수 있습니다.</p>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="accordion-item">
+                        <h2 class="accordion-header">
+                            <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#manual2">
+                                <i class="bi bi-layout-text-window me-2"></i> 편집
+                            </button>
+                        </h2>
+                        <div id="manual2" class="accordion-collapse collapse" data-bs-parent="#manualAccordion">
+                            <div class="accordion-body">
+                                <p>메인, 모바일메인, 기사뷰, 기사리스트, 뉴스레터의 레이아웃을 편집합니다.</p>
+                                <p>각 편집 페이지에서 섹션별 기사 배치와 디자인을 설정할 수 있습니다.</p>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="accordion-item">
+                        <h2 class="accordion-header">
+                            <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#manual3">
+                                <i class="bi bi-people me-2"></i> 회원 관리
+                            </button>
+                        </h2>
+                        <div id="manual3" class="accordion-collapse collapse" data-bs-parent="#manualAccordion">
+                            <div class="accordion-body">
+                                <h6>회원목록</h6>
+                                <p>등록된 관리자/기자 회원 목록을 확인하고 관리합니다.</p>
+                                <h6>휴면회원</h6>
+                                <p>장기 미접속 등으로 휴면 처리된 회원을 관리합니다.</p>
+                                <h6>기타등급/필자표시/부서</h6>
+                                <p>회원의 등급, 필자 표시 방식, 소속 부서를 관리합니다.</p>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="accordion-item">
+                        <h2 class="accordion-header">
+                            <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#manual4">
+                                <i class="bi bi-gear me-2"></i> 환경설정
+                            </button>
+                        </h2>
+                        <div id="manual4" class="accordion-collapse collapse" data-bs-parent="#manualAccordion">
+                            <div class="accordion-body">
+                                <h6>일반설정</h6>
+                                <p>사이트명, 발행인, 주소, 연락처 등 기본 정보를 설정합니다.</p>
+                                <h6>기사설정</h6>
+                                <p>1차 섹션, 2차 섹션(카테고리)의 추가/수정/삭제를 관리합니다.</p>
+                                <h6>댓글설정</h6>
+                                <p>댓글 사용 여부, 로그인 필수, 승인 후 노출, 금칙어 등을 설정합니다.</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

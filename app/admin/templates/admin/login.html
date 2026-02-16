@@ -1,0 +1,54 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>웰다잉뉴스 - 관리자 로그인</title>
+    <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@300;400;500;700&display=swap" rel="stylesheet">
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
+    <style>
+        body { background: #f5f5f5; font-family: 'Noto Sans KR', sans-serif; }
+        .login-wrapper { max-width: 420px; margin: 100px auto; }
+        .login-card { background: #fff; border-radius: 12px; padding: 40px; box-shadow: 0 2px 20px rgba(0,0,0,0.08); }
+        .login-logo { text-align: center; margin-bottom: 30px; }
+        .login-logo h1 { color: #5e1985; font-size: 24px; font-weight: 700; margin: 0; }
+        .login-logo p { color: #888; font-size: 14px; margin-top: 5px; }
+        .btn-login { background: #5e1985; border: none; font-size: 16px; padding: 12px; font-weight: 500; }
+        .btn-login:hover { background: #4a1369; }
+        .alert-guide { background: #fff8e1; border: 1px solid #ffe082; border-radius: 8px; padding: 15px; margin-top: 20px; font-size: 13px; color: #666; }
+        .alert-guide strong { color: #e65100; }
+    </style>
+</head>
+<body>
+<div class="login-wrapper">
+    <div class="login-card">
+        <div class="login-logo">
+            <h1>웰다잉뉴스</h1>
+            <p>관리자 로그인</p>
+        </div>
+
+        {% with messages = get_flashed_messages(with_categories=true) %}
+        {% if messages %}
+        {% for category, message in messages %}
+        <div class="alert alert-danger mb-3" role="alert">{{ message }}</div>
+        {% endfor %}
+        {% endif %}
+        {% endwith %}
+
+        <form method="post" action="{{ url_for('admin.login') }}">
+            <div class="mb-3">
+                <input type="text" name="user_id" class="form-control form-control-lg" placeholder="아이디" required autofocus>
+            </div>
+            <div class="mb-3">
+                <input type="password" name="user_pw" class="form-control form-control-lg" placeholder="비밀번호" required>
+            </div>
+            <button type="submit" class="btn btn-login btn-primary w-100">로그인</button>
+        </form>
+    </div>
+    <div class="alert-guide">
+        <i class="bi bi-exclamation-triangle"></i>&nbsp;<strong>비밀번호는 주기적으로 바꿔주세요!</strong><br>
+        비밀번호는 개인정보보호를 위해 매우 중요합니다. 보다 안전한 사용을 위해서는 주기적으로 비밀번호를 바꿔주세요.
+    </div>
+</div>
+</body>
+</html>

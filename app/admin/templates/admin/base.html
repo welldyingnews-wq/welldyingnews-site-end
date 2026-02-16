@@ -1,0 +1,170 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>웰다잉뉴스 - admin</title>
+    <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@300;400;500;700&display=swap" rel="stylesheet">
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css" rel="stylesheet">
+    <link href="{{ url_for('static', filename='css/admin.css') }}" rel="stylesheet">
+    {% block extra_head %}{% endblock %}
+</head>
+<body>
+<!-- 헤더 -->
+<header class="admin-header">
+    <div class="d-flex align-items-center w-100">
+        <a href="{{ url_for('admin.dashboard') }}" class="admin-logo">
+            <span class="logo-text">웰다잉뉴스</span>
+            <span class="logo-badge">Admin</span>
+        </a>
+        <div class="admin-nav-title ms-3">{% block nav_title %}대시보드{% endblock %}</div>
+        <div class="ms-auto d-flex align-items-center gap-3">
+            <a href="{{ url_for('public.index') }}" target="_blank" class="btn btn-sm btn-outline-light">
+                <i class="bi bi-display"></i> 미리보기
+            </a>
+            <div class="dropdown">
+                <button class="btn btn-sm btn-outline-light dropdown-toggle" data-bs-toggle="dropdown">
+                    <i class="bi bi-person-circle"></i> {{ current_user.name }}
+                </button>
+                <ul class="dropdown-menu dropdown-menu-end">
+                    <li><a class="dropdown-item" href="{{ url_for('admin.logout') }}"><i class="bi bi-power"></i> 로그아웃</a></li>
+                </ul>
+            </div>
+        </div>
+    </div>
+</header>
+
+<div class="admin-layout">
+    <!-- 사이드바 -->
+    <aside class="admin-sidebar">
+        <nav>
+            {% set ep = request.endpoint or '' %}
+            <ul class="sidebar-nav">
+                <!-- 대시보드 -->
+                <li class="{% if ep == 'admin.dashboard' %}active{% endif %}">
+                    <a href="{{ url_for('admin.dashboard') }}"><i class="bi bi-speedometer2"></i> 대시보드</a>
+                </li>
+
+                <!-- 기사 -->
+                <li class="nav-group {% if 'article' in ep or ep == 'admin.approval' or ep == 'admin.article_comments' or ep == 'admin.article_structure' %}open{% endif %}">
+                    <a href="#" class="nav-group-toggle"><i class="bi bi-newspaper"></i> 기사 <i class="bi bi-chevron-down ms-auto"></i></a>
+                    <ul class="nav-sub">
+                        <li class="{% if ep == 'admin.article_new' %}active{% endif %}"><a href="{{ url_for('admin.article_new') }}">기사등록</a></li>
+                        <li class="{% if ep == 'admin.approval' %}active{% endif %}"><a href="{{ url_for('admin.approval') }}">승인관리</a></li>
+                        <li class="{% if ep == 'admin.article_list' and not show_deleted %}active{% endif %}"><a href="{{ url_for('admin.article_list') }}">기사검색</a></li>
+                        <li class="{% if ep == 'admin.article_comments' %}active{% endif %}"><a href="{{ url_for('admin.article_comments') }}">기사댓글</a></li>
+                        <li class="{% if ep == 'admin.article_list' and show_deleted %}active{% endif %}"><a href="{{ url_for('admin.article_list', deleted='1') }}">휴지통</a></li>
+                        <li class="{% if ep == 'admin.article_structure' %}active{% endif %}"><a href="{{ url_for('admin.article_structure') }}">기사구조</a></li>
+                    </ul>
+                </li>
+
+                <!-- 편집 -->
+                <li class="nav-group {% if 'edit_layout' in ep %}open{% endif %}">
+                    <a href="#" class="nav-group-toggle"><i class="bi bi-layout-text-window"></i> 편집 <i class="bi bi-chevron-down ms-auto"></i></a>
+                    <ul class="nav-sub">
+                        <li class="{% if ep == 'admin.edit_layout_main' %}active{% endif %}"><a href="{{ url_for('admin.edit_layout_main') }}">메인</a></li>
+                        <li class="{% if ep == 'admin.edit_layout_mobile' %}active{% endif %}"><a href="{{ url_for('admin.edit_layout_mobile') }}">모바일메인</a></li>
+                        <li class="{% if ep == 'admin.edit_layout_article_view' %}active{% endif %}"><a href="{{ url_for('admin.edit_layout_article_view') }}">기사뷰</a></li>
+                        <li class="{% if ep == 'admin.edit_layout_article_list' %}active{% endif %}"><a href="{{ url_for('admin.edit_layout_article_list') }}">기사리스트</a></li>
+                        <li class="{% if ep == 'admin.edit_layout_newsletter' %}active{% endif %}"><a href="{{ url_for('admin.edit_layout_newsletter') }}">뉴스레터</a></li>
+                    </ul>
+                </li>
+
+                <!-- 회원 -->
+                <li class="nav-group {% if 'member' in ep or 'dormant' in ep or 'etc_level' in ep or 'division' in ep or 'department' in ep %}open{% endif %}">
+                    <a href="#" class="nav-group-toggle"><i class="bi bi-people"></i> 회원 <i class="bi bi-chevron-down ms-auto"></i></a>
+                    <ul class="nav-sub">
+                        <li class="{% if ep == 'admin.member_list' %}active{% endif %}"><a href="{{ url_for('admin.member_list') }}">회원목록</a></li>
+                        <li class="{% if ep == 'admin.dormant_list' %}active{% endif %}"><a href="{{ url_for('admin.dormant_list') }}">휴면회원목록</a></li>
+                        <li class="{% if ep == 'admin.etc_level_list' %}active{% endif %}"><a href="{{ url_for('admin.etc_level_list') }}">기타등급관리</a></li>
+                        <li class="{% if ep == 'admin.division_list' %}active{% endif %}"><a href="{{ url_for('admin.division_list') }}">필자표시관리</a></li>
+                        <li class="{% if ep == 'admin.department_list' %}active{% endif %}"><a href="{{ url_for('admin.department_list') }}">부서관리</a></li>
+                    </ul>
+                </li>
+
+                <!-- 게시판 -->
+                <li class="nav-group {% if 'board' in ep or 'bbs' in ep or 'event_request' in ep %}open{% endif %}">
+                    <a href="#" class="nav-group-toggle"><i class="bi bi-clipboard-data"></i> 게시판 <i class="bi bi-chevron-down ms-auto"></i></a>
+                    <ul class="nav-sub">
+                        <li class="{% if ep == 'admin.board_list' %}active{% endif %}"><a href="{{ url_for('admin.board_list') }}">게시판관리</a></li>
+                        <li class="{% if ep == 'admin.bbs_post_list' %}active{% endif %}"><a href="{{ url_for('admin.bbs_post_list') }}">게시물관리</a></li>
+                        <li class="{% if ep == 'admin.bbs_reply_list' %}active{% endif %}"><a href="{{ url_for('admin.bbs_reply_list') }}">댓글관리</a></li>
+                        <li class="{% if ep == 'admin.event_request_list' %}active{% endif %}"><a href="{{ url_for('admin.event_request_list') }}">신청글목록</a></li>
+                    </ul>
+                </li>
+
+                <!-- 광고 -->
+                <li class="nav-group {% if 'banner' in ep or 'popup' in ep %}open{% endif %}">
+                    <a href="#" class="nav-group-toggle"><i class="bi bi-megaphone"></i> 광고 <i class="bi bi-chevron-down ms-auto"></i></a>
+                    <ul class="nav-sub">
+                        <li class="{% if ep == 'admin.banner_list' %}active{% endif %}"><a href="{{ url_for('admin.banner_list') }}">배너</a></li>
+                        <li class="{% if ep == 'admin.popup_list' %}active{% endif %}"><a href="{{ url_for('admin.popup_list') }}">팝업</a></li>
+                    </ul>
+                </li>
+
+                <!-- 플러그인 -->
+                <li class="nav-group {% if 'poll' in ep %}open{% endif %}">
+                    <a href="#" class="nav-group-toggle"><i class="bi bi-puzzle"></i> 플러그인 <i class="bi bi-chevron-down ms-auto"></i></a>
+                    <ul class="nav-sub">
+                        <li class="{% if ep == 'admin.poll_list' %}active{% endif %}"><a href="{{ url_for('admin.poll_list') }}">설문조사</a></li>
+                    </ul>
+                </li>
+
+                <!-- 통계 -->
+                <li class="nav-group {% if 'stats' in ep %}open{% endif %}">
+                    <a href="#" class="nav-group-toggle"><i class="bi bi-bar-chart"></i> 통계 <i class="bi bi-chevron-down ms-auto"></i></a>
+                    <ul class="nav-sub">
+                        <li class="{% if ep == 'admin.stats_authors' %}active{% endif %}"><a href="{{ url_for('admin.stats_authors') }}">기자별통계</a></li>
+                        <li class="{% if ep == 'admin.stats_ranking' %}active{% endif %}"><a href="{{ url_for('admin.stats_ranking') }}">기사랭킹</a></li>
+                    </ul>
+                </li>
+
+                <!-- 환경설정 -->
+                <li class="nav-group {% if 'settings' in ep or 'section' in ep or 'comment_config' in ep %}open{% endif %}">
+                    <a href="#" class="nav-group-toggle"><i class="bi bi-gear"></i> 환경설정 <i class="bi bi-chevron-down ms-auto"></i></a>
+                    <ul class="nav-sub">
+                        <li class="{% if ep == 'admin.settings_general' %}active{% endif %}"><a href="{{ url_for('admin.settings_general') }}">일반설정</a></li>
+                        <li class="{% if ep == 'admin.settings_sections' %}active{% endif %}"><a href="{{ url_for('admin.settings_sections') }}">기사설정</a></li>
+                        <li class="{% if ep == 'admin.settings_comment' %}active{% endif %}"><a href="{{ url_for('admin.settings_comment') }}">댓글설정</a></li>
+                    </ul>
+                </li>
+
+                <!-- 메뉴얼 -->
+                <li class="{% if ep == 'admin.manual' %}active{% endif %}">
+                    <a href="{{ url_for('admin.manual') }}"><i class="bi bi-book"></i> 메뉴얼</a>
+                </li>
+            </ul>
+        </nav>
+    </aside>
+
+    <!-- 메인 콘텐츠 -->
+    <main class="admin-content">
+        {% with messages = get_flashed_messages(with_categories=true) %}
+        {% if messages %}
+        {% for category, message in messages %}
+        <div class="alert alert-{{ 'success' if category == 'success' else 'danger' }} alert-dismissible fade show" role="alert">
+            {{ message }}
+            <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+        </div>
+        {% endfor %}
+        {% endif %}
+        {% endwith %}
+
+        {% block content %}{% endblock %}
+    </main>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+<script>
+// 사이드바 토글
+document.querySelectorAll('.nav-group-toggle').forEach(function(el) {
+    el.addEventListener('click', function(e) {
+        e.preventDefault();
+        this.closest('.nav-group').classList.toggle('open');
+    });
+});
+</script>
+{% block extra_scripts %}{% endblock %}
+</body>
+</html>

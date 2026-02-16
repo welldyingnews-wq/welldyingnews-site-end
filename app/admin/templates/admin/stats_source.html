@@ -1,0 +1,23 @@
+{% extends "admin/base.html" %}
+{% block nav_title %}기사출처통계{% endblock %}
+{% block content %}
+<h4 class="mb-3">기사출처 통계</h4>
+<div class="table-responsive">
+    <table class="table table-hover">
+        <thead class="table-light">
+            <tr><th style="width:50px">순위</th><th>출처</th><th style="width:120px">기사 수</th></tr>
+        </thead>
+        <tbody>
+            {% for row in stats %}
+            <tr>
+                <td>{{ loop.index }}</td>
+                <td>{{ row.source }}</td>
+                <td><span class="badge bg-primary">{{ row.article_count }}</span></td>
+            </tr>
+            {% else %}
+            <tr><td colspan="3" class="text-center text-muted py-4">출처 데이터가 없습니다.</td></tr>
+            {% endfor %}
+        </tbody>
+    </table>
+</div>
+{% endblock %}

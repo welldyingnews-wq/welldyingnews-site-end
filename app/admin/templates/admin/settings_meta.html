@@ -1,0 +1,40 @@
+{% extends "admin/base.html" %}
+{% block nav_title %}메타태그설정{% endblock %}
+
+{% macro sv(key) %}{{ settings[key].value if key in settings else '' }}{% endmacro %}
+
+{% block content %}
+<!-- 탭 -->
+<ul class="nav nav-tabs mb-4">
+    <li class="nav-item"><a class="nav-link" href="{{ url_for('admin.settings_general') }}">기본설정</a></li>
+    <li class="nav-item"><a class="nav-link active" href="{{ url_for('admin.settings_meta') }}">메타태그설정</a></li>
+</ul>
+
+<div class="card">
+    <div class="card-header"><strong>메타태그 설정</strong></div>
+    <div class="card-body">
+        <form method="post">
+            <div class="mb-3">
+                <label class="form-label fw-bold">메타 타이틀</label>
+                <input type="text" name="meta_title" class="form-control" value="{{ sv('meta_title') }}">
+                <small class="text-muted">&lt;title&gt; 태그에 사용됩니다.</small>
+            </div>
+            <div class="mb-3">
+                <label class="form-label fw-bold">메타 설명 (Description)</label>
+                <textarea name="meta_description" class="form-control" rows="3">{{ sv('meta_description') }}</textarea>
+            </div>
+            <div class="mb-3">
+                <label class="form-label fw-bold">메타 키워드 (Keywords)</label>
+                <input type="text" name="meta_keywords" class="form-control" value="{{ sv('meta_keywords') }}">
+                <small class="text-muted">쉼표로 구분</small>
+            </div>
+            <div class="mb-3">
+                <label class="form-label fw-bold">OG 이미지 URL</label>
+                <input type="text" name="meta_og_image" class="form-control" value="{{ sv('meta_og_image') }}">
+                <small class="text-muted">공유 시 표시될 대표 이미지</small>
+            </div>
+            <div class="d-grid"><button type="submit" class="btn btn-primary"><i class="bi bi-save"></i> 설정 저장</button></div>
+        </form>
+    </div>
+</div>
+{% endblock %}
