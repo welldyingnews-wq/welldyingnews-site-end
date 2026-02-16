@@ -89,6 +89,28 @@
                 </div>
             </div>
 
+            <!-- 관련기사 -->
+            <div class="card mb-3">
+                <div class="card-header"><strong>관련기사</strong></div>
+                <div class="card-body">
+                    <div class="mb-2">
+                        <button type="button" class="btn btn-secondary w-100" onclick="openRelatedPopup()"><i class="bi bi-plus-circle"></i> 관련기사추가</button>
+                    </div>
+                    <ul id="relatedList" class="list-group">
+                        {% if related_articles %}
+                        {% for rel in related_articles %}
+                        <li class="list-group-item d-flex justify-content-between align-items-center py-2" data-id="{{ rel.related_article.id }}">
+                            <span class="text-truncate me-2" style="font-size:13px">{{ rel.related_article.title }}</span>
+                            <input type="hidden" name="related_ids[]" value="{{ rel.related_article.id }}">
+                            <button type="button" class="btn btn-sm btn-outline-danger flex-shrink-0 remove-related" title="삭제">&times;</button>
+                        </li>
+                        {% endfor %}
+                        {% endif %}
+                    </ul>
+                    <small class="text-muted mt-1 d-block" id="relatedCount">{{ related_articles|length if related_articles else 0 }}개 선택됨</small>
+                </div>
+            </div>
+
             <!-- 저장 -->
             <div class="d-grid mb-4">
                 <button type="submit" class="btn btn-primary btn-lg"><i class="bi bi-save"></i> 저장</button>
@@ -237,6 +259,38 @@ function deleteArticle() {
         .then(() => { window.location.href = '{{ url_for("admin.article_list") }}'; });
 }
 {% endif %}
+
+// 관련기사 팝업
+function openRelatedPopup() {
+    var articleId = {{ article.id if article and article.id else 0 }};
+    var url = '/admin/find-related?article_id=' + articleId;
+    window.open(url, 'findRelated', 'width=980,height=800,scrollbars=yes,resizable=yes');
+}
+
+// 팝업에서 호출하는 콜백: 선택된 기사 목록 반영
+function applyRelatedArticles(articles) {
+    var list = document.getElementById('relatedList');
+    list.innerHTML = '';
+    articles.forEach(function(art) {
+        var li = document.createElement('li');
+        li.className = 'list-group-item d-flex justify-content-between align-items-center py-2';
+        li.dataset.id = art.id;
+        li.innerHTML = '<span class="text-truncate me-2" style="font-size:13px">' + art.title + '</span>' +
+            '<input type="hidden" name="related_ids[]" value="' + art.id + '">' +
+            '<button type="button" class="btn btn-sm btn-outline-danger flex-shrink-0 remove-related" title="삭제">&times;</button>';
+        list.appendChild(li);
+    });
+    document.getElementById('relatedCount').textContent = articles.length + '개 선택됨';
+}
+
+// 관련기사 삭제 버튼
+document.getElementById('relatedList').addEventListener('click', function(e) {
+    if (e.target.classList.contains('remove-related')) {
+        e.target.closest('li').remove();
+        var count = document.getElementById('relatedList').querySelectorAll('li').length;
+        document.getElementById('relatedCount').textContent = count + '개 선택됨';
+    }
+});
 
 // 섹션 동적 로딩
 document.getElementById('sectionSelect').addEventListener('change', function() {

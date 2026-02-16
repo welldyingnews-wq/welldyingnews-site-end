@@ -2,7 +2,7 @@ from datetime import datetime, timedelta
 
 from flask import render_template, request, abort
 
-from app.models import db, Section, SubSection, Article, SiteSetting
+from app.models import db, Section, SubSection, Article, ArticleRelation, SiteSetting
 from app.public import public_bp
 
 
@@ -160,13 +160,19 @@ def article_view():
     article.view_count += 1
     db.session.commit()
 
-    # 관련 기사 (같은 2차섹션)
-    related = []
-    if article.subsection_id:
-        related = _get_published_query().filter(
-            Article.subsection_id == article.subsection_id,
-            Article.id != article.id
-        ).order_by(Article.created_at.desc()).limit(5).all()
+    # 관련 기사: 수동 설정 우선, 없으면 같은 2차섹션 자동
+    relations = ArticleRelation.query.filter_by(
+        article_id=article.id
+    ).order_by(ArticleRelation.sort_order).all()
+    if relations:
+        related = [r.related_article for r in relations if r.related_article and not r.related_article.is_deleted]
+    else:
+        related = []
+        if article.subsection_id:
+            related = _get_published_query().filter(
+                Article.subsection_id == article.subsection_id,
+                Article.id != article.id
+            ).order_by(Article.created_at.desc()).limit(5).all()
 
     # 이전/다음 기사
     prev_article = _get_published_query().filter(

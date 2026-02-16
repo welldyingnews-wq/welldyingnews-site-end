@@ -10,9 +10,9 @@ from werkzeug.security import check_password_hash, generate_password_hash
 from werkzeug.utils import secure_filename
 
 from app.admin import admin_bp
-from app.models import (db, AdminUser, Section, SubSection, Article, SiteSetting,
-                        ArticleComment, Board, BoardPost, BoardReply, EventRequest,
-                        Banner, Popup, Poll, PollOption, SerialCode,
+from app.models import (db, AdminUser, Section, SubSection, Article, ArticleRelation,
+                        SiteSetting, ArticleComment, Board, BoardPost, BoardReply,
+                        EventRequest, Banner, Popup, Poll, PollOption, SerialCode,
                         Department, MemberDivision, EtcLevel)
 
 
@@ -171,7 +171,11 @@ def article_edit(article_id):
         return _save_article(article)
 
     sections = Section.query.order_by(Section.sort_order).all()
-    return render_template('admin/article_form.html', article=article, sections=sections)
+    related_articles = ArticleRelation.query.filter_by(
+        article_id=article.id
+    ).order_by(ArticleRelation.sort_order).all()
+    return render_template('admin/article_form.html', article=article,
+                           sections=sections, related_articles=related_articles)
 
 
 def _save_article(article):
@@ -223,6 +227,23 @@ def _save_article(article):
     if is_new:
         article.created_at = datetime.now()
         db.session.add(article)
+
+    db.session.flush()  # article.id 확보
+
+    # 관련기사 저장
+    ArticleRelation.query.filter_by(article_id=article.id).delete()
+    related_ids = request.form.getlist('related_ids[]')
+    for i, rid in enumerate(related_ids):
+        try:
+            rid = int(rid)
+        except (ValueError, TypeError):
+            continue
+        if rid != article.id:
+            db.session.add(ArticleRelation(
+                article_id=article.id,
+                related_article_id=rid,
+                sort_order=i
+            ))
 
     db.session.commit()
     flash('기사가 저장되었습니다.', 'success')
@@ -370,6 +391,68 @@ def article_restore(article_id):
 def api_subsections(section_id):
     subs = SubSection.query.filter_by(section_id=section_id).order_by(SubSection.sort_order).all()
     return jsonify([{'id': s.id, 'code': s.code, 'name': s.name} for s in subs])
+
+
+@admin_bp.route('/api/search-articles')
+@admin_required
+def api_search_articles():
+    """관련기사 검색 API"""
+    q = request.args.get('q', '').strip()
+    exclude = request.args.get('exclude', 0, type=int)
+    if not q or len(q) < 1:
+        return jsonify([])
+    query = Article.query.filter(
+        Article.is_deleted == False,  # noqa: E712
+        Article.title.contains(q)
+    )
+    if exclude:
+        query = query.filter(Article.id != exclude)
+    articles = query.order_by(Article.created_at.desc()).limit(10).all()
+    return jsonify([{
+        'id': a.id,
+        'title': a.title,
+        'created_at': a.created_at.strftime('%Y.%m.%d')
+    } for a in articles])
+
+
+@admin_bp.route('/find-related')
+@admin_required
+def find_related():
+    """관련기사 검색 팝업"""
+    article_id = request.args.get('article_id', 0, type=int)
+    page = request.args.get('page', 1, type=int)
+    sc_section_code = request.args.get('sc_section_code', '')
+    sc_word = request.args.get('sc_word', '').strip()
+
+    query = Article.query.filter_by(is_deleted=False)
+    if article_id:
+        query = query.filter(Article.id != article_id)
+    if sc_section_code:
+        query = query.filter_by(section_id=int(sc_section_code))
+    if sc_word:
+        query = query.filter(Article.title.contains(sc_word))
+
+    pagination = query.order_by(Article.created_at.desc()).paginate(
+        page=page, per_page=20, error_out=False
+    )
+    sections = Section.query.order_by(Section.sort_order).all()
+
+    # 기존 관련기사 (initial load)
+    initial_related = []
+    selected_ids = set()
+    if article_id:
+        initial_related = ArticleRelation.query.filter_by(
+            article_id=article_id
+        ).order_by(ArticleRelation.sort_order).all()
+        selected_ids = {r.related_article_id for r in initial_related}
+
+    return render_template('admin/find_related.html',
+                           article_id=article_id,
+                           articles=pagination.items,
+                           pagination=pagination,
+                           sections=sections,
+                           selected_ids=selected_ids,
+                           initial_related=initial_related)
 
 
 @admin_bp.route('/api/upload-image', methods=['POST'])

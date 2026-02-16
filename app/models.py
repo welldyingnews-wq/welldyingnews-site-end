@@ -97,6 +97,8 @@ class Article(db.Model):
 
     section = db.relationship('Section', backref='articles')
     subsection = db.relationship('SubSection', backref='articles')
+    article_relations = db.relationship('ArticleRelation', foreign_keys='ArticleRelation.article_id',
+                                        backref='article', lazy='dynamic', cascade='all, delete-orphan')
 
     @property
     def summary_text(self):
@@ -105,6 +107,18 @@ class Article(db.Model):
         import re
         text = re.sub(r'<[^>]+>', '', self.content or '')
         return text[:200]
+
+
+class ArticleRelation(db.Model):
+    """관련기사 매핑"""
+    __tablename__ = 'article_relation'
+    id = db.Column(db.Integer, primary_key=True)
+    article_id = db.Column(db.Integer, db.ForeignKey('article.id'), nullable=False)
+    related_article_id = db.Column(db.Integer, db.ForeignKey('article.id'), nullable=False)
+    sort_order = db.Column(db.Integer, default=0)
+    created_at = db.Column(db.DateTime, default=datetime.now)
+
+    related_article = db.relationship('Article', foreign_keys=[related_article_id])
 
 
 class ArticleComment(db.Model):
