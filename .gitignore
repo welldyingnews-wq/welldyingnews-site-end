@@ -1,3 +1,11 @@
-.claude
-__pycache__
-.venv
+app/static/uploads/
+.venv/
+__pycache__/
+*.pyc
+*.pyo
+.DS_Store
+*.egg-info/
+dist/
+build/
+.idea/
+.claude/

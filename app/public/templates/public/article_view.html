@@ -10,67 +10,279 @@
 {% endif %}
 {% endblock %}
 
+{% block extra_head %}
+<style type="text/css">
+#article-view .article-view-content {display:table;width:100%;table-layout:fixed}
+#article-view .article-view-content > .grid {display:table-cell;width:100%;vertical-align:top}
+#article-view .article-view-content > .grid.body {padding-right:40px}
+#article-view .article-view-content > .grid.side {width:341px;padding-left:40px;border-left:1px solid rgba(0,0,0,.1)}
+#article-view .grid.side .sticky {width:100%}
+#article-view .grid.side .sticky::after {content:'';display:table;clear:both}
+#article-view .sticky-article {display:block}
+#article-view .sticky-article::after {content:'';display:table;clear:both}
+#article-view .article-veiw-body {margin-bottom:5rem}
+#article-view .social-group {display:inline-block;vertical-align:middle;margin-right:10px}
+#article-view .social-group .sns {height:32px}
+#article-view .quick-tool {display:inline-block}
+@media screen and (max-width: 63.9375em) {
+    .row #article-view .article-view-content, .row #article-view .article-view-content > .grid {display:block;width:auto}
+    .row #article-view .article-view-content {table-layout:inherit}
+    .row #article-view .article-view-content > .grid {vertical-align:inherit}
+    .row #article-view .article-view-content > .grid.side {padding-left:0}
+}
+/* 기사 본문 스타일 */
+#article-view-content-div {font-size:16px;line-height:1.85;color:#333;word-break:keep-all}
+#article-view-content-div p {margin-bottom:1.2em}
+#article-view-content-div img {max-width:100%;height:auto}
+#article-view-content-div figure {margin:1.5em 0;text-align:center}
+#article-view-content-div figcaption {margin-top:8px;font-size:13px;color:#999;line-height:1.4}
+/* 관련기사 */
+.relation {margin:30px 0;padding:20px;background-color:#f8f8f8;border:1px solid #eee}
+.relation .list {list-style:none;margin:0;padding:0}
+.relation .list li {padding:5px 0;font-size:14px;line-height:1.6}
+.relation .list li::before {content:'▶';margin-right:6px;color:#5e1985;font-size:10px}
+.relation .list li a {color:#333}
+.relation .list li a:hover {color:#5e1985}
+/* 기자 정보 */
+.writer {border-top:1px solid #eee;border-bottom:1px solid #eee;padding:20px 0;margin:20px 0;overflow:hidden}
+.writer .item {display:table-cell;vertical-align:middle}
+.writer .item:last-child {text-align:right}
+.writer .account {display:flex;align-items:center}
+.writer .account .image {display:inline-block;width:50px;height:50px;border-radius:50%;background-size:cover;background-position:center;background-color:#e0d5ea;margin-right:12px;flex-shrink:0}
+.writer .account .name {display:block;font-size:15px;font-weight:700;color:#222}
+.writer .account .email {display:block;font-size:13px;color:#999;margin-top:2px}
+.article-more {display:inline-block;padding:6px 16px;border:1px solid #ddd;border-radius:3px;font-size:13px;color:#666}
+.article-more:hover {border-color:#5e1985;color:#5e1985}
+/* 저작권 */
+.article-copy {margin:20px 0;padding:15px;text-align:center;font-size:13px;color:#999;background-color:#fafafa;border:1px solid #eee}
+/* 이전/다음 기사 */
+.article-navigate {border-top:2px solid #333;margin-top:30px}
+.article-navigate .item {display:block;padding:12px 0;border-bottom:1px solid #eee;overflow:hidden}
+.article-navigate .item .label {display:inline-block;width:70px;font-size:13px;font-weight:700;color:#5e1985}
+.article-navigate .item a {font-size:14px;color:#333}
+.article-navigate .item a:hover {color:#5e1985}
+</style>
+{% endblock %}
+
 {% block content %}
-<div class="article-view">
+<div id="article-view">
+<div class="wrapper" style="max-width:1240px">
+<div class="clearfix"></div>
+
+<!-- 기사 헤더 -->
+<header class="article-view-header">
     <!-- 브레드크럼 -->
-    <nav class="breadcrumbs">
-        <a href="{{ url_for('public.index') }}">홈</a>
-        {% if article.section %}
-        <span>&gt;</span> <a href="{{ url_for('public.article_list', sc_section_code=article.section.code) }}">{{ article.section.name }}</a>
-        {% endif %}
-        {% if article.subsection %}
-        <span>&gt;</span> <a href="{{ url_for('public.article_list', sc_sub_section_code=article.subsection.code) }}">{{ article.subsection.name }}</a>
-        {% endif %}
+    <nav role="navigation">
+        <ul class="breadcrumbs">
+            <li><a href="{{ url_for('public.index') }}"><i class="icon-home"></i>&nbsp;홈</a></li>
+            {% if article.section %}
+            <li><a href="{{ url_for('public.article_list', sc_section_code=article.section.code, view_type='sm') }}">{{ article.section.name }}</a></li>
+            {% endif %}
+            {% if article.subsection %}
+            <li><a href="{{ url_for('public.article_list', sc_sub_section_code=article.subsection.code, view_type='sm') }}">{{ article.subsection.name }}</a></li>
+            {% endif %}
+        </ul>
     </nav>
 
-    <!-- 기사 헤더 -->
-    <header class="article-header">
-        <h1 class="article-title">{{ article.title }}</h1>
-        {% if article.subtitle %}
-        <p class="article-subtitle">{{ article.subtitle }}</p>
-        {% endif %}
-        <div class="article-info">
-            <span class="author">{{ article.author_name }}</span>
-            <span class="date">입력 {{ article.created_at.strftime('%Y.%m.%d %H:%M') }}</span>
-            {% if article.updated_at and article.updated_at != article.created_at %}
-            <span class="date">수정 {{ article.updated_at.strftime('%Y.%m.%d %H:%M') }}</span>
+    <!-- 제목 -->
+    <H1 class="heading">{{ article.title }}</H1>
+
+    <!-- 정보 그룹 -->
+    <div class="info-group">
+        <article class="item">
+            <ul class="infomation">
+                <li>
+                    <i class="icon-user-o"><span class="show-for-sr">기자명</span></i>
+                    {{ article.author_name }}
+                </li>
+                <li><i class="icon-clock-o"></i> 입력 {{ article.created_at.strftime('%Y.%m.%d %H:%M') }}</li>
+                {% if article.updated_at and article.updated_at != article.created_at %}
+                <li><i class="icon-check-circle-o"></i> 수정 {{ article.updated_at.strftime('%Y.%m.%d %H:%M') }}</li>
+                {% endif %}
+            </ul>
+        </article>
+
+        <article class="item">
+            <!-- 소셜 공유 -->
+            <div class="social-group">
+                <button type="button" class="sns link sns_clipboard" title="URL복사" onclick="navigator.clipboard.writeText(window.location.href).then(function(){alert('URL이 복사되었습니다.')})">
+                    <i class="icon-link"><span class="show-for-sr">URL복사</span></i>
+                </button>
+                <button type="button" class="sns mail right" title="이메일" onclick="location.href='mailto:?subject={{ article.title }}&body='+encodeURIComponent(window.location.href)">
+                    <i class="icon-mail"><span class="show-for-sr">이메일 보내기</span></i>
+                </button>
+            </div>
+
+            <!-- 도구 -->
+            <div class="quick-tool">
+                <button type="button" class="tool" onclick="window.print()" title="인쇄" data-tooltip>
+                    <i class="icon-print"><span class="show-for-sr">인쇄</span></i>
+                </button>
+                <button type="button" class="tool sns_clipboard" title="URL주소" data-tooltip onclick="navigator.clipboard.writeText(window.location.href).then(function(){alert('URL이 복사되었습니다.')})">
+                    <i class="icon-link"><span class="show-for-sr">복사하기</span></i>
+                </button>
+                <button type="button" class="tool fontsise-btn" value="down" title="본문글씨 줄이기" data-tooltip>
+                    <i class="font-size down"><span class="show-for-sr">본문 글씨 줄이기</span></i>
+                </button>
+                <button type="button" class="tool fontsise-btn" value="up" title="본문글씨 키우기" data-tooltip>
+                    <i class="font-size up"><span class="show-for-sr">본문 글씨 키우기</span></i>
+                </button>
+            </div>
+        </article>
+    </div>
+</header>
+
+<!-- 기사 본문 영역 (테이블 레이아웃: body + side) -->
+<section id="articleViewCon" class="article-view-content">
+
+    <!-- 본문 -->
+    <article class="grid body">
+        <div class="clearfix"></div>
+
+        <div id="snsAnchor" class="sticky-article">
+            <div class="article-body">
+                <!-- 부제 -->
+                {% if article.subtitle %}
+                <H2 class="subheading">{{ article.subtitle }}</H2>
+                {% endif %}
+
+                <!-- 기사 본문 -->
+                <article id="article-view-content-div" class="article-veiw-body view-page">
+                    {{ article.content|safe }}
+                </article>
+
+                <div class="clearfix"></div>
+
+                <!-- 관련기사 -->
+                {% if related_articles %}
+                <article class="relation">
+                    <ul class="list">
+                        {% for rel in related_articles %}
+                        <li><a href="{{ url_for('public.article_view', idxno=rel.id) }}">{{ rel.title }}</a></li>
+                        {% endfor %}
+                    </ul>
+                </article>
+                {% endif %}
+
+                <!-- 기자 정보 -->
+                <article class="writer">
+                    <div class="item">
+                        <div class="account">
+                            <em class="image" style="background-color:#e0d5ea"></em>
+                            <div>
+                                <strong class="name">{{ article.author_name }}</strong>
+                                {% if article.author_email %}
+                                <a href="mailto:{{ article.author_email }}" class="email">{{ article.author_email }}</a>
+                                {% endif %}
+                            </div>
+                        </div>
+                    </div>
+                    <div class="item text-right">
+                        <a href="{{ url_for('public.article_list', sc_word=article.author_name, view_type='sm') }}" class="article-more">다른기사 보기</a>
+                    </div>
+                </article>
+
+                <!-- 저작권 -->
+                <article class="article-copy">저작권자 &copy; 웰다잉뉴스 무단전재 및 재배포 금지</article>
+
+                <!-- 키워드 -->
+                {% if article.keyword %}
+                <div style="margin:15px 0;padding:10px 0;border-top:1px solid #eee">
+                    {% for kw in article.keyword.split(',') %}
+                    <a href="{{ url_for('public.article_list', sc_word=kw.strip()) }}" style="display:inline-block;margin:3px;padding:4px 12px;border:1px solid #ddd;border-radius:15px;font-size:13px;color:#666">#{{ kw.strip() }}</a>
+                    {% endfor %}
+                </div>
+                {% endif %}
+            </div>
+        </div>
+
+        <div class="clearfix"></div>
+
+        <!-- 이전/다음 기사 -->
+        <div class="article-navigate">
+            {% if prev_article %}
+            <div class="item">
+                <span class="label">이전기사</span>
+                <a href="{{ url_for('public.article_view', idxno=prev_article.id) }}">{{ prev_article.title }}</a>
+            </div>
+            {% endif %}
+            {% if next_article %}
+            <div class="item">
+                <span class="label">다음기사</span>
+                <a href="{{ url_for('public.article_view', idxno=next_article.id) }}">{{ next_article.title }}</a>
+            </div>
             {% endif %}
         </div>
-        <div class="article-share">
-            <button onclick="navigator.clipboard.writeText(window.location.href).then(()=>alert('URL이 복사되었습니다.'))" class="share-btn" title="URL 복사">🔗 URL복사</button>
+
+        <div class="clearfix"></div>
+    </article>
+
+    <!-- 사이드바 -->
+    <aside class="grid side">
+        <div class="sticky-container">
+            <div class="sticky">
+
+                <!-- 오피니언 -->
+                {% if sidebar_opinion %}
+                <article class="box-skin">
+                    <header class="header"><a href="{{ url_for('public.article_list', sc_section_code='S1N2', view_type='sm') }}">오피니언</a></header>
+                    <section class="content">
+                        <div id="skin-11" class="auto-article">
+                            {% for art in sidebar_opinion %}
+                            <div class="item{% if not loop.first %} martop-15{% endif %}">
+                                <a href="{{ url_for('public.article_view', idxno=art.id) }}" class="auto-valign">
+                                    <div class="frame for-middle">
+                                        <em class="auto-images radius ratio-11" style="{% if art.thumbnail_path %}background-image:url({{ url_for('static', filename=art.thumbnail_path) }}){% else %}background-color:#e0d5ea{% endif %}"></em>
+                                    </div>
+                                    <div class="content for-middle">
+                                        <H2 class="auto-titles size-15 line-3x2 auto-fontA onload">{{ art.title }}</H2>
+                                        <em class="auto-name martop-5 size-12 line-2x1 auto-fontK">{{ art.author_name }}</em>
+                                    </div>
+                                </a>
+                            </div>
+                            {% endfor %}
+                        </div>
+                    </section>
+                </article>
+                <div class="box-margins box-solid" style="margin-bottom:25px;margin-top:25px;"></div>
+                {% endif %}
+
+                <!-- 많이 본 뉴스 -->
+                {% if sidebar_popular %}
+                <div class="tabs-wrap type-E">
+                    <header class="tabs-header">많이 본 뉴스</header>
+                    <div class="tabs-panel active" style="padding-top:10px">
+                        <div id="skin-15" class="auto-article">
+                            {% for art in sidebar_popular %}
+                            <div class="item{% if not loop.first %} martop-8{% endif %}">
+                                <a href="{{ url_for('public.article_view', idxno=art.id) }}" style="display:flex;align-items:flex-start">
+                                    <strong class="number size-22 line-2x1 {% if loop.index <= 3 %}user-point{% else %}auto-fontA{% endif %}" style="flex-shrink:0;width:28px;margin-right:8px;font-size:18px;font-weight:700">{{ loop.index }}</strong>
+                                    <H2 class="auto-titles size-16 line-4x2 auto-fontA onload" style="font-size:14px;line-height:1.5;font-weight:400;color:#333">{{ art.title }}</H2>
+                                </a>
+                            </div>
+                            {% endfor %}
+                        </div>
+                    </div>
+                </div>
+                {% endif %}
+
+                <div class="box-margins height-50"></div>
+            </div>
         </div>
-    </header>
+    </aside>
+</section>
 
-    <!-- 기사 본문 -->
-    <div class="article-body">
-        {{ article.content|safe }}
-    </div>
-
-    <!-- 키워드 -->
-    {% if article.keyword %}
-    <div class="article-keywords">
-        {% for kw in article.keyword.split(',') %}
-        <span class="keyword-tag">#{{ kw.strip() }}</span>
-        {% endfor %}
-    </div>
-    {% endif %}
-
-    <!-- 기자 정보 -->
-    <div class="article-reporter">
-        <strong>{{ article.author_name }}</strong>
-        {% if article.author_email %}<a href="mailto:{{ article.author_email }}">{{ article.author_email }}</a>{% endif %}
-    </div>
-
-    <!-- 관련 기사 -->
-    {% if related_articles %}
-    <section class="related-articles">
-        <h3>관련기사</h3>
-        <ul>
-            {% for rel in related_articles %}
-            <li><a href="{{ url_for('public.article_view', idxno=rel.id) }}">{{ rel.title }}</a></li>
-            {% endfor %}
-        </ul>
-    </section>
-    {% endif %}
+<div class="clearfix"></div>
 </div>
+</div>
+
+<script>
+// 글씨 크기 조절
+$(document).on('click', '.fontsise-btn', function(){
+    var body = $('#article-view-content-div');
+    var size = parseInt(body.css('font-size'));
+    if($(this).val() === 'up' && size < 24) body.css('font-size', (size+1)+'px');
+    if($(this).val() === 'down' && size > 12) body.css('font-size', (size-1)+'px');
+});
+</script>
 {% endblock %}

@@ -86,12 +86,26 @@ def index():
                            opinion_articles=opinion_articles)
 
 
+def _get_sidebar_data():
+    """사이드바 공통 데이터: 오피니언 + 많이 본 뉴스"""
+    query = _get_published_query()
+    opinion_section = Section.query.filter_by(code='S1N2').first()
+    sidebar_opinion = []
+    if opinion_section:
+        sidebar_opinion = query.filter(
+            Article.section_id == opinion_section.id
+        ).order_by(Article.created_at.desc()).limit(4).all()
+    sidebar_popular = query.order_by(Article.view_count.desc()).limit(5).all()
+    return sidebar_opinion, sidebar_popular
+
+
 @public_bp.route('/news/articleList.html')
 def article_list():
     page = request.args.get('page', 1, type=int)
     sc_section_code = request.args.get('sc_section_code', '')
     sc_sub_section_code = request.args.get('sc_sub_section_code', '')
     sc_word = request.args.get('sc_word', '').strip()
+    view_type = request.args.get('view_type', '')
 
     query = _get_published_query()
 
@@ -117,6 +131,8 @@ def article_list():
         page=page, per_page=20, error_out=False
     )
 
+    sidebar_opinion, sidebar_popular = _get_sidebar_data()
+
     return render_template('public/article_list.html',
                            articles=pagination.items,
                            pagination=pagination,
@@ -124,7 +140,10 @@ def article_list():
                            subsection=subsection,
                            sc_section_code=sc_section_code,
                            sc_sub_section_code=sc_sub_section_code,
-                           sc_word=sc_word)
+                           sc_word=sc_word,
+                           view_type=view_type,
+                           sidebar_opinion=sidebar_opinion,
+                           sidebar_popular=sidebar_popular)
 
 
 @public_bp.route('/news/articleView.html')
@@ -157,8 +176,12 @@ def article_view():
         Article.id > article.id
     ).order_by(Article.id.asc()).first()
 
+    sidebar_opinion, sidebar_popular = _get_sidebar_data()
+
     return render_template('public/article_view.html',
                            article=article,
                            related_articles=related,
                            prev_article=prev_article,
-                           next_article=next_article)
+                           next_article=next_article,
+                           sidebar_opinion=sidebar_opinion,
+                           sidebar_popular=sidebar_popular)

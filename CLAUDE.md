@@ -62,5 +62,81 @@ app/
 - Flask 3.1, Flask-SQLAlchemy, Flask-Login
 - SQLite (welldying.db)
 - CKEditor 5 CDN (기사 본문 에디터)
-- Bootstrap 5 (관리자 UI), 커스텀 CSS (서비스)
+- Bootstrap 5 (관리자 UI)
+- Zurb Foundation 6 + ND Soft CMS 스킨 (서비스 사이트 — 원본과 동일한 CSS)
+- jQuery 3.7.1 + Slick Carousel 1.8.1 (서비스 사이트)
 - 브랜드 색상: `#5e1985`
+
+## 원본 사이트 복제 작업 (서비스 사이트)
+
+### 원본 사이트 접근
+
+- **서비스 URL**: https://www.welldyingnews.com/ (또는 https://cms.welldyingnews.com/)
+- **관리자 URL**: https://cms.welldyingnews.com/user/login.html
+- **CDN URL**: https://cdn.welldyingnews.com/ (이미지, CSS 등)
+- 원본 사이트는 ND Soft CMS 기반, Foundation 6 프레임워크 사용
+
+### 원본 CSS/폰트 다운로드 현황
+
+`app/static/css/orig/`에 원본 사이트의 CSS 12개 파일 다운로드 완료:
+- foundation.min.css, custom.foundation.min.css, style.min.css, media.min.css
+- plugin.style.min.css, webfonts.min.css, autobox.style.min.css, menubar.css
+- templates.style.min.css, design.style.css, font.style.css, slick.css
+
+`app/static/fonts/`에 fontello 아이콘 폰트 다운로드 완료:
+- fontello.woff2, fontello.woff
+- webfonts.min.css 내부 경로를 `/static/fonts/`로 수정됨
+
+`app/static/images/`에 로고 이미지 다운로드 완료:
+- logo.png (상단), footer-logo.png (하단), print-logo.png (인쇄용)
+
+### 서비스 사이트 템플릿 구현 현황
+
+| 페이지 | 파일 | 원본 복제 완료 |
+|--------|------|:---:|
+| 기본 레이아웃 | `public/base.html` | O |
+| 메인 (홈) | `public/index.html` | O |
+| 기사 목록 | `public/article_list.html` | O |
+| 기사 상세 | `public/article_view.html` | O |
+
+### 원본 사이트의 핵심 CSS 클래스/구조
+
+- **레이아웃**: `#user-wrap.min-width-1240 > #user-wrapper > #user-header + #user-container + #user-footer.type-31`
+- **헤더**: `#header-wrapper.vertical.full.left > #nav-header + #user-nav`
+- **메뉴**: `#user-menu.user-menu > li.secline` (서브메뉴 hover 드롭다운)
+- **메인 스킨**: skin-3(히어로), skin-11(오피니언), skin-12(그리드), skin-15(랭킹)
+- **기사목록**: `#user-section > .grid-wrap (table-layout) > .grid.body + .grid.side`
+- **기사상세**: `#article-view > .wrapper > .article-view-header + .article-view-content (table-layout)`
+- **공통 사이드바**: `aside.grid.side > .sticky` (오피니언 + 많이 본 뉴스)
+- **페이지네이션**: `ul.pagination > li.pagination-start/current.user-bg/pagination-end`
+- **footer**: `#user-footer.type-31 > .user-nav + .user-logo + .user-address`
+- 글자 크기: `.size-15`, `.size-22` 등 유틸리티 클래스 (autobox.style.min.css)
+- 줄 수 제한: `.line-3x2`, `.line-6x2` 등 (autobox.style.min.css)
+
+### 추가 작업 필요 항목
+
+원본 사이트에 있으나 아직 미구현인 항목:
+- 게시판 (자료실, 자유게시판) — 별도 Board/BoardPost 모델 필요
+- 댓글 기능 (기사 하단) — ArticleComment 모델은 존재하나 UI 미구현
+- 소셜 공유 (카카오, 페이스북, 트위터) — 외부 SDK 연동 필요
+- 탭형 많이 본 뉴스 (오늘/주간 전환) — 사이드바에서 단일 목록으로 표시 중
+- sticky 스크롤 헤더 (기사 상세 페이지 상단 플로팅 바)
+- 배너/광고 슬롯
+- 모바일 반응형 (원본은 1240px 고정폭)
+
+### 원본 사이트 구조 분석 방법
+
+원본 HTML을 가져와 분석할 때:
+```bash
+# 홈페이지
+curl -s https://cms.welldyingnews.com/ > /tmp/orig_homepage.html
+
+# 기사 목록 (요약형)
+curl -s "https://cms.welldyingnews.com/news/articleList.html?sc_section_code=S1N1&view_type=sm" > /tmp/orig_article_list.html
+
+# 기사 상세
+curl -s "https://cms.welldyingnews.com/news/articleView.html?idxno=1714" > /tmp/orig_article_view.html
+
+# CSS 다운로드 예시
+curl -s "https://cdn.welldyingnews.com/css/foundation.min.css" > app/static/css/orig/foundation.min.css
+```
