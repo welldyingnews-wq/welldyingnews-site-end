@@ -1,0 +1,97 @@
+{% extends "public/base.html" %}
+{% block title %}글쓰기 - {{ board.name }} - 웰다잉뉴스{% endblock %}
+
+{% block extra_head %}
+<style type="text/css">
+.bbs-user-page {margin-bottom:15px}
+.bbs-user-page .titles {font-size:1.5rem;font-weight:700;letter-spacing:-.025em}
+.bbs-write-wrap {max-width:{% if is_mobile %}728{% else %}1240{% endif %}px;margin:0 auto;padding:20px 0}
+.bbs-write-form {border-top:2px solid #333}
+{% if is_mobile %}
+.bbs-write-form .form-row {display:block;border-bottom:1px solid #eee;padding:8px 0}
+.bbs-write-form .form-row .label-cell {display:block;width:auto;padding:4px 10px;background:transparent;font-size:13px}
+.bbs-write-form .form-row .input-cell {display:block;padding:4px 10px}
+{% else %}
+.bbs-write-form .form-row {display:flex;border-bottom:1px solid #eee}
+.bbs-write-form .form-row .label-cell {flex-shrink:0;width:120px;padding:12px 15px;background:#f9f9f9;font-size:14px;font-weight:500;color:#333;display:flex;align-items:center}
+.bbs-write-form .form-row .input-cell {flex:1;padding:8px 15px}
+{% endif %}
+.bbs-write-form .form-row .input-cell input[type="text"],
+.bbs-write-form .form-row .input-cell input[type="password"] {width:100%;max-width:300px;height:38px;padding:0 10px;border:1px solid #ddd;border-radius:3px;font-size:14px}
+.bbs-write-form .form-row .input-cell input.full-width {max-width:100%}
+.bbs-write-form .form-row .input-cell textarea {width:100%;height:400px;padding:12px;border:1px solid #ddd;border-radius:3px;font-size:14px;line-height:1.6;resize:vertical}
+.bbs-write-actions {display:flex;justify-content:center;gap:8px;margin-top:20px}
+.bbs-write-actions .btn {display:inline-block;padding:10px 30px;font-size:14px;border:1px solid #ddd;border-radius:3px;color:#333;background:#fff;cursor:pointer;text-decoration:none}
+.bbs-write-actions .btn:hover {border-color:#999}
+.bbs-write-actions .btn-primary {background:#5e1985;color:#fff;border-color:#5e1985}
+.bbs-write-actions .btn-primary:hover {background:#4a1369;color:#fff}
+.flash-msg {padding:10px 15px;margin-bottom:10px;border-radius:3px;font-size:14px}
+.flash-msg.error {background:#fdf0f0;color:#e74c3c;border:1px solid #f5c6cb}
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="bbs-write-wrap">
+
+<header class="bbs-user-page">
+    <h3 class="titles">{{ board.name }} 글쓰기</h3>
+</header>
+
+{% with messages = get_flashed_messages(with_categories=true) %}
+{% if messages %}
+{% for category, message in messages %}
+<div class="flash-msg {{ category }}">{{ message }}</div>
+{% endfor %}
+{% endif %}
+{% endwith %}
+
+<form method="POST" action="{{ url_for('public.bbs_write') }}" onsubmit="return validateForm()">
+    <input type="hidden" name="table" value="{{ board.code }}" />
+
+    <div class="bbs-write-form">
+        <div class="form-row">
+            <div class="label-cell">닉네임</div>
+            <div class="input-cell">
+                <input type="text" name="author_name" placeholder="닉네임을 입력하세요" maxlength="50" />
+            </div>
+        </div>
+        <div class="form-row">
+            <div class="label-cell">비밀번호</div>
+            <div class="input-cell">
+                <input type="password" name="password" placeholder="글 삭제 시 필요합니다" maxlength="50" />
+            </div>
+        </div>
+        <div class="form-row">
+            <div class="label-cell">제목</div>
+            <div class="input-cell">
+                <input type="text" name="title" class="full-width" placeholder="제목을 입력하세요" maxlength="500" required />
+            </div>
+        </div>
+        <div class="form-row">
+            <div class="label-cell">내용</div>
+            <div class="input-cell">
+                <textarea name="content" placeholder="내용을 입력하세요" required></textarea>
+            </div>
+        </div>
+    </div>
+
+    <div class="bbs-write-actions">
+        <a href="{{ url_for('public.bbs_list', table=board.code) }}" class="btn">취소</a>
+        <button type="submit" class="btn btn-primary">등록</button>
+    </div>
+</form>
+
+</div>
+{% endblock %}
+
+{% block extra_scripts %}
+<script>
+function validateForm() {
+    var title = document.querySelector('input[name="title"]').value.trim();
+    var content = document.querySelector('textarea[name="content"]').value.trim();
+    if (!title) { alert('제목을 입력해주세요.'); return false; }
+    if (!content) { alert('내용을 입력해주세요.'); return false; }
+    return true;
+}
+</script>
+{% endblock %}

@@ -1,0 +1,192 @@
+{% extends "public/base.html" %}
+{% block title %}{{ post.title }} - {{ board.name }} - 웰다잉뉴스{% endblock %}
+
+{% block extra_head %}
+<style type="text/css">
+.bbs-user-page {margin-bottom:15px}
+.bbs-user-page .titles {font-size:1.5rem;font-weight:700;letter-spacing:-.025em}
+.bbs-view-wrap {max-width:{% if is_mobile %}728{% else %}1240{% endif %}px;margin:0 auto;padding:20px 0}
+.bbs-view-header {border-top:2px solid #333;padding:20px 15px;border-bottom:1px solid #eee}
+.bbs-view-header .title {font-size:22px;font-weight:700;color:#222;margin:0 0 10px;line-height:1.4}
+.bbs-view-header .meta {font-size:13px;color:#999}
+.bbs-view-header .meta span {margin-right:15px}
+.bbs-view-header .meta span::after {content:'|';margin-left:15px;color:#ddd}
+.bbs-view-header .meta span:last-child::after {display:none}
+.bbs-view-content {padding:30px 15px;min-height:200px;border-bottom:1px solid #eee;line-height:1.8;font-size:15px;color:#333}
+.bbs-view-content img {max-width:100%;height:auto}
+.bbs-view-nav {margin-top:15px;border-top:1px solid #eee}
+.bbs-view-nav .nav-item {display:flex;padding:10px 15px;border-bottom:1px solid #eee;font-size:14px}
+.bbs-view-nav .nav-item .label-text {flex-shrink:0;width:80px;color:#999;font-weight:500}
+.bbs-view-nav .nav-item a {color:#333}
+.bbs-view-nav .nav-item a:hover {color:#5e1985}
+.bbs-view-actions {display:flex;justify-content:space-between;align-items:center;margin-top:20px;padding:0 15px}
+.bbs-view-actions .btn-group {display:flex;gap:5px}
+.bbs-view-actions .btn {display:inline-block;padding:8px 18px;font-size:13px;border:1px solid #ddd;border-radius:3px;color:#333;background:#fff;cursor:pointer;text-decoration:none}
+.bbs-view-actions .btn:hover {border-color:#5e1985;color:#5e1985}
+.bbs-view-actions .btn-primary {background:#5e1985;color:#fff;border-color:#5e1985}
+.bbs-view-actions .btn-primary:hover {background:#4a1369;color:#fff}
+.bbs-view-actions .btn-danger {color:#e74c3c;border-color:#e74c3c}
+.bbs-view-actions .btn-danger:hover {background:#e74c3c;color:#fff}
+
+/* 댓글 */
+#replies {margin-top:30px;padding:0 15px}
+#replies .reply-header {font-size:16px;font-weight:700;margin-bottom:15px;padding-bottom:10px;border-bottom:2px solid #333}
+#replies .reply-header span {color:#5e1985}
+.reply-write {margin-bottom:20px;padding:15px;background:#f9f9f9;border:1px solid #eee;border-radius:4px}
+.reply-write .reply-inputs {display:flex;gap:8px;margin-bottom:8px}
+.reply-write .reply-inputs input {flex:1;height:36px;padding:0 10px;border:1px solid #ddd;border-radius:3px;font-size:13px}
+.reply-write textarea {width:100%;height:80px;padding:10px;border:1px solid #ddd;border-radius:3px;font-size:14px;resize:vertical}
+.reply-write .reply-submit {display:flex;justify-content:flex-end;margin-top:8px}
+.reply-write .reply-submit button {padding:8px 20px;font-size:13px;background:#5e1985;color:#fff;border:none;border-radius:3px;cursor:pointer}
+.reply-write .reply-submit button:hover {background:#4a1369}
+.reply-item {padding:12px 0;border-bottom:1px solid #f0f0f0}
+.reply-item:first-child {border-top:1px solid #f0f0f0}
+.reply-item .reply-meta {display:flex;justify-content:space-between;align-items:center;margin-bottom:5px}
+.reply-item .reply-meta .author {font-size:14px;font-weight:500;color:#333}
+.reply-item .reply-meta .date {font-size:12px;color:#999}
+.reply-item .reply-meta .btn-del {font-size:12px;color:#999;cursor:pointer;background:none;border:none;text-decoration:underline;margin-left:10px}
+.reply-item .reply-meta .btn-del:hover {color:#e74c3c}
+.reply-item .reply-text {font-size:14px;color:#555;line-height:1.6;white-space:pre-wrap}
+.reply-empty {padding:30px 0;text-align:center;color:#999;font-size:14px}
+.flash-msg {padding:10px 15px;margin-bottom:10px;border-radius:3px;font-size:14px}
+.flash-msg.error {background:#fdf0f0;color:#e74c3c;border:1px solid #f5c6cb}
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="bbs-view-wrap">
+
+<header class="bbs-user-page">
+    <h3 class="titles">{{ board.name }}</h3>
+</header>
+
+<!-- 플래시 메시지 -->
+{% with messages = get_flashed_messages(with_categories=true) %}
+{% if messages %}
+{% for category, message in messages %}
+<div class="flash-msg {{ category }}">{{ message }}</div>
+{% endfor %}
+{% endif %}
+{% endwith %}
+
+<!-- 글 헤더 -->
+<div class="bbs-view-header">
+    <h2 class="title">{{ post.title }}</h2>
+    <div class="meta">
+        <span>{{ post.author_name }}</span>
+        <span>{{ post.created_at.strftime('%Y-%m-%d %H:%M') }}</span>
+        <span>조회 {{ post.view_count }}</span>
+    </div>
+</div>
+
+<!-- 글 내용 -->
+<div class="bbs-view-content">
+    {{ post.content|safe }}
+</div>
+
+<!-- 이전/다음 글 -->
+<div class="bbs-view-nav">
+    <div class="nav-item">
+        <span class="label-text">다음글</span>
+        {% if next_post %}
+        <a href="{{ url_for('public.bbs_view', idxno=next_post.id) }}">{{ next_post.title }}</a>
+        {% else %}
+        <span style="color:#999">다음글이 없습니다.</span>
+        {% endif %}
+    </div>
+    <div class="nav-item">
+        <span class="label-text">이전글</span>
+        {% if prev_post %}
+        <a href="{{ url_for('public.bbs_view', idxno=prev_post.id) }}">{{ prev_post.title }}</a>
+        {% else %}
+        <span style="color:#999">이전글이 없습니다.</span>
+        {% endif %}
+    </div>
+</div>
+
+<!-- 액션 버튼 -->
+<div class="bbs-view-actions">
+    <div class="btn-group">
+        <a href="{{ url_for('public.bbs_list', table=board.code) }}" class="btn">목록</a>
+    </div>
+    <div class="btn-group">
+        {% if post.password %}
+        <button type="button" class="btn btn-danger" onclick="deletePost()">삭제</button>
+        {% endif %}
+        <a href="{{ url_for('public.bbs_write_form', table=board.code) }}" class="btn btn-primary">글쓰기</a>
+    </div>
+</div>
+
+<!-- 댓글 -->
+<section id="replies">
+    <div class="reply-header">댓글 <span>{{ replies|length }}</span>개</div>
+
+    <!-- 댓글 작성 -->
+    <div class="reply-write">
+        <form method="POST" action="{{ url_for('public.bbs_reply_write') }}">
+            <input type="hidden" name="post_id" value="{{ post.id }}" />
+            <div class="reply-inputs">
+                <input type="text" name="author_name" placeholder="닉네임" maxlength="50" />
+                <input type="password" name="password" placeholder="비밀번호" maxlength="50" />
+            </div>
+            <textarea name="content" placeholder="댓글을 입력하세요..." maxlength="500"></textarea>
+            <div class="reply-submit">
+                <button type="submit">등록</button>
+            </div>
+        </form>
+    </div>
+
+    <!-- 댓글 목록 -->
+    {% for reply in replies %}
+    <div class="reply-item">
+        <div class="reply-meta">
+            <div>
+                <span class="author">{{ reply.author_name }}</span>
+                <span class="date">{{ reply.created_at.strftime('%Y-%m-%d %H:%M') }}</span>
+            </div>
+            {% if reply.password %}
+            <button type="button" class="btn-del" onclick="deleteReply({{ reply.id }})">삭제</button>
+            {% endif %}
+        </div>
+        <div class="reply-text">{{ reply.content }}</div>
+    </div>
+    {% else %}
+    <div class="reply-empty">등록된 댓글이 없습니다.</div>
+    {% endfor %}
+</section>
+
+</div>
+
+<!-- 글 삭제 폼 -->
+<form id="deletePostForm" method="POST" action="{{ url_for('public.bbs_delete') }}" style="display:none">
+    <input type="hidden" name="post_id" value="{{ post.id }}" />
+    <input type="hidden" name="password" id="deletePostPw" />
+</form>
+
+<!-- 댓글 삭제 폼 -->
+<form id="deleteReplyForm" method="POST" action="{{ url_for('public.bbs_reply_delete') }}" style="display:none">
+    <input type="hidden" name="reply_id" id="deleteReplyId" />
+    <input type="hidden" name="password" id="deleteReplyPw" />
+    <input type="hidden" name="post_id" value="{{ post.id }}" />
+</form>
+{% endblock %}
+
+{% block extra_scripts %}
+<script>
+function deletePost() {
+    var pw = prompt('글 작성 시 입력한 비밀번호를 입력하세요.');
+    if (pw !== null && pw !== '') {
+        document.getElementById('deletePostPw').value = pw;
+        document.getElementById('deletePostForm').submit();
+    }
+}
+function deleteReply(replyId) {
+    var pw = prompt('댓글 작성 시 입력한 비밀번호를 입력하세요.');
+    if (pw !== null && pw !== '') {
+        document.getElementById('deleteReplyId').value = replyId;
+        document.getElementById('deleteReplyPw').value = pw;
+        document.getElementById('deleteReplyForm').submit();
+    }
+}
+</script>
+{% endblock %}

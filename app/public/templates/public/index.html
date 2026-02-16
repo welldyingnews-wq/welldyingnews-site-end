@@ -2,6 +2,38 @@
 {% block title %}웰다잉뉴스{% endblock %}
 
 {% block extra_head %}
+{% if is_mobile %}
+<style type="text/css">
+/* mobile index */
+#m-idx10 {max-width:728px;margin:0 auto;background-color:#fff}
+#user-wrap .row #m-idx10 {margin-top:-1.875rem}
+@media screen and (max-width: 39.9375em) {
+    #user-wrap .row #m-idx10 {max-width:none;margin-left:-1.25rem;margin-right:-1.25rem}
+}
+.m-hero .item {overflow:hidden;position:relative}
+.m-hero .auto-titles {font-weight:700}
+.m-hero .auto-pager {margin-top:.6875rem;font-size:0}
+.m-hero .auto-pager li[id*=slick-] button[data-role] {margin:0 4px;width:5px;height:5px;background:#b9b9b9}
+.m-hero .auto-pager li[id*=slick-].slick-active button[data-role] {background:#000 !important}
+.m-latest .item {margin-top:1rem;padding-top:1rem;border-top:1px solid #e5e5e5}
+.m-latest > :first-child {margin-top:0;padding-top:0;border-top:none}
+.m-latest > :last-child {padding-bottom:1rem;border-bottom:1px solid #e5e5e5}
+.m-latest .item > a {display:flex;flex-wrap:wrap}
+.m-latest .auto-titles {flex-basis:0;flex-grow:1;max-width:100%;min-width:0;margin-right:1.25rem}
+.m-latest .frame {flex:0 0 100px;width:100px}
+.m-cat .wrapper {display:flex;flex-wrap:wrap;margin-left:-.3125rem;margin-right:-.3125rem}
+.m-cat .item {flex:0 0 100%;max-width:100%;padding-left:.3125rem;padding-right:.3125rem}
+.m-cat .wrapper > :nth-child(-n+2) {flex:0 0 50%;max-width:50%;margin-bottom:.75rem}
+.m-cat .wrapper > :not(:nth-child(-n+2)) {padding-top:.625rem;padding-bottom:.625rem;border-bottom:1px solid #eee}
+.m-cat .frame + .auto-titles {padding-right:1rem}
+.m-rank .item:not(:first-child) {margin-top:16px;padding-top:16px;border-top:1px solid rgba(0,0,0,.08)}
+.m-rank .number, .m-rank .auto-titles {float:left}
+.m-rank .number {width:35px}
+.m-rank .auto-titles {width:calc(100% - 35px)}
+.box-skin.gray {background-color:#f2f4f7}
+.box-skin .header > a[class*="btm-"] {position:relative;background:none}
+</style>
+{% else %}
 <style type="text/css">
 /* edit skin css */
 #idx46 .index-columns.grid-1 {padding-right:20px;border-right:1px solid rgba(0,0,0,.1)}
@@ -57,9 +89,146 @@
 .cat-list .item a:hover {color:#5e1985}
 .cat-list .item .date {float:right;font-size:.8125rem;color:#999}
 </style>
+{% endif %}
 {% endblock %}
 
 {% block content %}
+{% if is_mobile %}
+{# ==================== MOBILE HOME ==================== #}
+<div id="m-idx10" class="index-wrap">
+<div class="clearfix">
+
+<!-- 명언 롤링 -->
+<div id="roll-text-m" style="margin-bottom:20px;padding:12px 25px;height:59px;overflow:hidden;background-color:#f2f4f7">
+    <div class="item dis-none line-3x2" style="text-align:center;height:35px;font-size:14px;color:#5e1985">잘 보낸 하루가 편안한 잠을 주듯이 <br>잘 쓰인 일생은 평안한 죽음을 준다.</div>
+    <div class="item dis-none line-3x2" style="text-align:center;height:35px;font-size:14px;color:#5e1985">사람은 어떻게 죽느냐가 문제가 아니라<br> 어떻게 사느냐가 문제다.</div>
+    <div class="item dis-none line-3x2" style="text-align:center;height:35px;font-size:14px;color:#5e1985">죽음은 마지막 성장의 기회다.</div>
+    <div class="item dis-none line-3x2" style="text-align:center;height:35px;font-size:14px;color:#5e1985">삶을 깊이 이해하면 할수록<br> 죽음으로 인한 슬픔은 그만큼 줄어들 것입니다.</div>
+</div>
+
+<!-- 헤드라인 슬라이더 -->
+{% if headline_articles %}
+<article class="box-skin padx-25">
+<section class="content">
+<div class="m-hero auto-article">
+    {% for art in headline_articles[:3] %}
+    <div class="item">
+        <a href="{{ url_for('public.article_view', idxno=art.id) }}">
+            <div class="frame marbtm-12"><H2 class="auto-titles auto-fontA size-23 line-3x2">{{ art.title }}</H2></div>
+            {% if art.thumb_url %}
+            <em class="auto-images" style="background-image:url({{ art.thumb_url }})"></em>
+            {% endif %}
+        </a>
+    </div>
+    {% endfor %}
+</div>
+</section>
+</article>
+{% endif %}
+
+<div style="margin-bottom:20px"></div>
+
+<!-- 최신기사 -->
+{% if latest_articles %}
+<article class="box-skin padx-25">
+<section class="content">
+<div class="m-latest auto-article">
+    {% for art in latest_articles[:5] %}
+    <div class="item">
+        <a href="{{ url_for('public.article_view', idxno=art.id) }}">
+            <H2 class="auto-titles auto-fontA size-16 line-4x2" style="font-weight:500">{{ art.title }}</H2>
+            {% if art.thumb_url %}
+            <span class="frame"><em class="auto-images" style="background-image:url({{ art.thumb_url }});padding-bottom:75%;display:block;background-size:cover;background-position:center"></em></span>
+            {% endif %}
+        </a>
+    </div>
+    {% endfor %}
+</div>
+</section>
+</article>
+{% endif %}
+
+<div style="margin-bottom:20px"></div>
+
+<!-- 오피니언 -->
+{% if opinion_articles %}
+<article class="box-skin gray pad-25">
+<header class="header"><a href="{{ url_for('public.article_list', sc_section_code='S1N2') }}" class="btm-Kor">오피니언</a></header>
+<section class="content">
+<div class="auto-article">
+    {% for art in opinion_articles[:3] %}
+    <div style="{% if not loop.first %}margin-top:5px;{% endif %}padding:12px 20px;background-color:#fff;border:1px solid #d8d8d8">
+        <a href="{{ url_for('public.article_view', idxno=art.id) }}" class="auto-valign" style="display:flex;align-items:center">
+            <div style="flex:1;min-width:0{% if art.thumb_url %};padding-right:15px{% endif %}">
+                {% if art.sub_section %}
+                <em style="display:inline-block;overflow:hidden;max-width:100%;padding:0 10px;margin-bottom:7px;line-height:20px;color:#5684ff;border:1px solid #5684ff;white-space:nowrap;text-overflow:ellipsis;font-size:12px;font-style:normal">{{ art.sub_section.name }}</em>
+                {% endif %}
+                <H2 class="auto-titles size-16 line-4x2 auto-fontA" style="font-weight:normal;letter-spacing:-.05em">{{ art.title }}</H2>
+            </div>
+            {% if art.thumb_url %}
+            <div style="flex:0 0 65px;width:65px">
+                <em class="auto-images radius ratio-11" style="display:block;width:65px;height:65px;border-radius:50%;background-size:cover;background-position:center;background-image:url({{ art.thumb_url }})"></em>
+            </div>
+            {% endif %}
+        </a>
+    </div>
+    {% endfor %}
+</div>
+</section>
+</article>
+{% endif %}
+
+<div style="margin-bottom:20px"></div>
+
+<!-- 카테고리별 기사 -->
+{% if section_articles %}
+{% for sub, articles in section_articles.items() %}
+<article class="box-skin padx-20">
+<header class="header"><a href="{{ url_for('public.article_list', sc_sub_section_code=sub.code) }}" class="">{{ sub.name }}</a></header>
+<section class="content">
+<div class="m-cat auto-article">
+<div class="wrapper">
+    {% for art in articles[:2] %}
+    <div class="item">
+        <a href="{{ url_for('public.article_view', idxno=art.id) }}">
+            {% if art.thumb_url %}
+            <span class="frame marbtm-10"><em class="auto-images" style="background-image:url({{ art.thumb_url }})"></em></span>
+            {% endif %}
+            <H2 class="auto-titles weight-500 auto-fontA size-16 line-4x2">{{ art.title }}</H2>
+        </a>
+    </div>
+    {% endfor %}
+</div>
+</div>
+</section>
+</article>
+<div style="margin-bottom:20px;margin-top:20px;border-top:1px solid rgba(0,0,0,.08)"></div>
+{% endfor %}
+{% endif %}
+
+<!-- 많이 본 뉴스 -->
+{% if popular_articles %}
+<div class="padx-20">
+<header style="font-size:1.25rem;font-weight:700;margin-bottom:15px">많이 본 뉴스</header>
+<div class="m-rank auto-article">
+    {% for art in popular_articles[:5] %}
+    <div class="item">
+        <a href="{{ url_for('public.article_view', idxno=art.id) }}">
+            <strong class="number size-22 line-2x1 {% if loop.index <= 3 %}user-point{% else %}auto-fontA{% endif %}">{{ loop.index }}</strong>
+            <H2 class="auto-titles size-16 line-4x2 auto-fontA">{{ art.title }}</H2>
+        </a>
+    </div>
+    {% endfor %}
+</div>
+<div style="margin-bottom:20px"></div>
+</div>
+{% endif %}
+
+</div>
+</div>
+
+{% else %}
+{# ==================== DESKTOP HOME ==================== #}
 <div id="idx46" class="index-wrap">
 <div class="float-center" style="width:1240px">
 
@@ -210,4 +379,24 @@
 
 </div><!-- /float-center -->
 </div><!-- /idx46 -->
+{% endif %}
+{% endblock %}
+
+{% block extra_scripts %}
+{% if is_mobile %}
+<script>
+$(document).ready(function(){
+    // 명언 롤링
+    $('#roll-text-m').slick({
+        arrows: false, dots: false, vertical: true, verticalSwiping: true,
+        infinite: true, autoplay: true, speed: 600,
+    });
+    // 헤드라인 슬라이더
+    $('.m-hero').slick({
+        arrows: false, dots: true, dotsClass: 'auto-pager',
+        infinite: true, autoplay: true, autoplaySpeed: 4000, speed: 600, draggable: true,
+    });
+});
+</script>
+{% endif %}
 {% endblock %}

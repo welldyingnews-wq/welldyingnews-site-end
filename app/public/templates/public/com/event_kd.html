@@ -1,0 +1,124 @@
+<!-- 구독신청 폼 -->
+<div id="event-wrap" class="subscrip-theme">
+
+    <!-- flash 메시지 -->
+    {% with messages = get_flashed_messages(with_categories=true) %}
+    {% if messages %}
+    {% for category, message in messages %}
+    <div class="event-flash {{ category }}">{{ message }}</div>
+    {% endfor %}
+    {% endif %}
+    {% endwith %}
+
+    <form name="eventReqForm" id="eventReqForm" method="POST" action="{{ url_for('public.event_submit') }}">
+        <input type="hidden" name="page_code" value="{{ page_code }}">
+
+        <section id="event-container">
+            <div class="event-content">
+
+                <!-- 개인정보 동의 -->
+                <div class="event-agree">
+                    <h3 class="event-agree-titles">개인정보보호를 위한 이용자 동의사항 <em>(필수)</em></h3>
+                    <textarea name="agreetext" id="agreetext" class="event-agree-text" readonly>구독신청 등을 희망하는 고객님의 개인정보를 아래와 같이 수집, 이용, 제공합니다.
+
+1. 수집항목 : 이름, 이메일, 전화번호, 수취인정보(수취인명, 이메일, 전화번호, 주소)
+2. 수집목적 : 구독신청 접수 및 신문 배송
+3. 보유기간 : 접수일로부터 1년간 보관 후 파기
+4. 개인정보 수집에 동의하지 않을 경우 구독신청 접수가 불가합니다.</textarea>
+                    <label class="event-agree-check">
+                        <input type="checkbox" id="useagree" name="useagree" required>
+                        <span>개인정보보호를 위한 이용자 동의사항을 확인하였습니다.</span>
+                    </label>
+                </div>
+
+                <hr>
+
+                <!-- 섹션 1: 신청자정보 -->
+                <div class="event-section-header">
+                    <h4>신청자정보</h4>
+                </div>
+
+                <!-- 이름 -->
+                <fieldset id="fieldset_name" class="event-field">
+                    <label for="ev_name">이름 <em class="required">*</em></label>
+                    <input type="text" id="ev_name" name="name" placeholder="홍길동" required>
+                </fieldset>
+
+                <!-- 이메일 -->
+                <fieldset id="fieldset_email" class="event-field">
+                    <label for="ev_email">이메일 <em class="required">*</em></label>
+                    <input type="email" id="ev_email" name="email" placeholder="email@naver.com" required>
+                </fieldset>
+
+                <!-- 전화번호 -->
+                <fieldset id="fieldset_tel" class="event-field">
+                    <label for="ev_tel">전화번호 <em class="required">*</em></label>
+                    <input type="tel" id="ev_tel" name="tel" placeholder="010-1234-4567" required>
+                    <small class="help-text">※ 예) 010-1234-4567</small>
+                </fieldset>
+
+                <hr>
+
+                <!-- 섹션 2: 우편수취인정보 -->
+                <div class="event-section-header">
+                    <h4>우편수취인정보</h4>
+                    <p class="sub-text">(실제 신문을 받아보실 분의 정보를 입력하세요.)</p>
+                </div>
+
+                <!-- 수취인명 -->
+                <fieldset class="event-field">
+                    <label for="ev_reqname">수취인명</label>
+                    <input type="text" id="ev_reqname" name="reqname">
+                </fieldset>
+
+                <!-- 이메일 -->
+                <fieldset class="event-field">
+                    <label for="ev_reqemail">이메일</label>
+                    <input type="email" id="ev_reqemail" name="reqemail">
+                </fieldset>
+
+                <!-- 부수 -->
+                <fieldset class="event-field">
+                    <label for="ev_reqnum">부수</label>
+                    <input type="text" id="ev_reqnum" name="reqnum">
+                </fieldset>
+
+                <!-- 연락처 -->
+                <fieldset class="event-field">
+                    <label for="ev_reqtel">연락처</label>
+                    <input type="tel" id="ev_reqtel" name="reqtel">
+                </fieldset>
+
+                <!-- 주소 -->
+                <fieldset class="event-field">
+                    <label for="ev_reqaddr">주소</label>
+                    <input type="text" id="ev_reqaddr" name="reqaddr">
+                </fieldset>
+
+                <!-- 요금형태 -->
+                <fieldset class="event-field">
+                    <label for="ev_reqmoney">요금형태</label>
+                    <select id="ev_reqmoney" name="reqmoney">
+                        <option value="월납">월납</option>
+                        <option value="연/일시납">연/일시납</option>
+                    </select>
+                </fieldset>
+
+                <hr>
+
+                <!-- 요구사항 -->
+                <fieldset class="event-field">
+                    <label for="ev_othertext">요구사항 <em class="required">*</em></label>
+                    <textarea id="ev_othertext" name="othertext" placeholder="요구사항을 입력해주세요" required></textarea>
+                </fieldset>
+
+                <!-- 버튼 -->
+                <div id="confirmBtn" class="event-buttons">
+                    <button type="submit" class="button user-bg">확인</button>
+                    <button type="reset" class="button nd-white">취소</button>
+                </div>
+
+            </div>
+        </section>
+    </form>
+</div>

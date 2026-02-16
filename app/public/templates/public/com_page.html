@@ -1,0 +1,168 @@
+{% extends "public/base.html" %}
+{% block title %}{{ page.title }} < 안내데스크 - 웰다잉뉴스{% endblock %}
+
+{% block extra_head %}
+<style type="text/css">
+/* 히어로 비주얼 */
+.com-visual {position:relative;height:220px;margin:-1px -9999px 0;padding:0 9999px;background:url("{{ url_for('static', filename='images/company_visual03.jpg') }}") 50% 50% no-repeat;background-size:cover;display:flex;align-items:center;justify-content:center}
+.com-visual::before {content:'';position:absolute;z-index:1;left:0;top:0;width:100%;height:100%;background-color:rgba(0,0,0,.5)}
+.com-visual .com-titles {position:relative;z-index:2;font-size:2rem;font-weight:700;color:#fff;text-align:center;letter-spacing:-.025em}
+{% if page.group == '약관 및 정책' %}
+.com-visual {background-image:url("{{ url_for('static', filename='images/company_visual04.jpg') }}")}
+{% elif page.group == '고객센터' %}
+.com-visual {background-image:url("{{ url_for('static', filename='images/company_visual04.jpg') }}")}
+{% endif %}
+
+/* 레이아웃 */
+{% if is_mobile %}
+.com-wrapper {display:block;margin-top:20px}
+.com-wrapper > .com-sidebar {display:none}
+.com-wrapper > .com-content {display:block;padding-left:0}
+.com-visual {height:140px !important}
+.com-visual .com-titles, .com-visual h2 {font-size:1.5rem !important;line-height:140px !important}
+{% else %}
+.com-wrapper {display:table;width:100%;table-layout:fixed;margin-top:40px}
+.com-wrapper > .com-sidebar {display:table-cell;width:195px;vertical-align:top}
+.com-wrapper > .com-content {display:table-cell;vertical-align:top;padding-left:50px}
+@media screen and (max-width:63.9375em) {
+    .com-wrapper, .com-wrapper > .com-sidebar, .com-wrapper > .com-content {display:block;width:auto}
+    .com-wrapper > .com-content {padding-left:0;margin-top:20px}
+}
+{% endif %}
+
+/* 사이드바 네비 */
+.com-sidebar .group-title {font-size:1.125rem;font-weight:700;color:#222;padding-bottom:12px;border-bottom:2px solid #333;margin-bottom:0}
+.com-sidebar .nav-list {list-style:none;margin:0;padding:0}
+.com-sidebar .nav-list li {border-bottom:1px solid #eee}
+.com-sidebar .nav-list li a {display:block;padding:10px 12px;font-size:.9375rem;color:#555;text-decoration:none}
+.com-sidebar .nav-list li a:hover, .com-sidebar .nav-list li a.active {color:#5e1985;font-weight:700}
+.com-sidebar .nav-group {margin-bottom:25px}
+
+/* 콘텐츠 영역 */
+.com-content .breadcrumbs {margin-bottom:25px}
+.com-content .breadcrumbs li {font-size:13px}
+
+/* 인사말 */
+.about-us .header {margin-bottom:30px}
+.about-us .header .titles {font-size:1.75rem;font-weight:400;line-height:1.4;color:#222}
+.about-us .header .subtitles {font-size:1rem;font-weight:300;color:#666;margin-top:10px}
+.about-us .content p {font-size:15px;line-height:1.8;color:#444;margin-bottom:8px}
+
+/* 약관/정책 공통 */
+.user-com-about.privacy {font-size:14px;line-height:1.7;color:#444}
+.privacy-list {margin-bottom:30px;padding:20px;background:#f9f9f9;border:1px solid #eee;border-radius:4px}
+.privacy-list-header {font-size:14px;line-height:1.7;color:#555;margin-bottom:0}
+.privacy-list-groups {list-style:none;margin:0;padding:0}
+.privacy-list-groups li {padding:4px 0}
+.privacy-list-groups li a {color:#333;text-decoration:none;font-size:14px}
+.privacy-list-groups li a:hover {color:#5e1985}
+.privacy-list-groups li a strong {font-weight:500}
+.privacy-group {padding:20px 0}
+.privacy-group-title {font-size:1.125rem;font-weight:700;color:#222;margin-bottom:15px;padding-bottom:10px;border-bottom:1px solid #eee}
+.privacy-group-summary {font-size:14px;line-height:1.7;color:#444;margin-bottom:10px}
+.privacy-group-list {padding-left:20px;margin-bottom:10px}
+.privacy-group-list li {margin-bottom:8px;font-size:14px;line-height:1.7}
+.privacy-group-list.no-bullet {list-style:none;padding-left:0}
+.user-com-about table {width:100%;border-collapse:collapse;margin:15px 0}
+.user-com-about table th, .user-com-about table td {padding:10px 12px;border:1px solid #ddd;font-size:13px;line-height:1.6}
+.user-com-about table th {background:#f5f5f5;font-weight:600;white-space:nowrap}
+.user-com-about table td ul, .user-com-about table td ol {margin:8px 0 0;padding-left:18px}
+.user-com-about table td ul li, .user-com-about table td ol li {margin-bottom:4px}
+.user-com-about hr {border:none;border-top:1px solid #eee;margin:0}
+
+/* 지도 */
+#com-map .map-header {margin-bottom:20px}
+#com-map .map-header .root_daum_roughmap {width:100%;height:350px}
+#com-map .map-container {padding:20px;background:#f9f9f9;border:1px solid #eee;border-radius:4px}
+#com-map .map-container .titles {font-size:1rem;font-weight:700;color:#222;margin-bottom:8px}
+#com-map .map-container .address {font-size:14px;color:#555;font-style:normal;margin-bottom:5px;display:block}
+#com-map .map-container .add-info {font-size:14px;color:#666}
+#com-map .map-container .add-info em {font-style:normal}
+
+/* 광고문의 폼 */
+.ad-form fieldset {margin-bottom:15px}
+.ad-form label {display:block;font-size:14px;font-weight:600;color:#333;margin-bottom:5px}
+.ad-form input[type="text"], .ad-form input[type="email"], .ad-form input[type="tel"],
+.ad-form textarea {width:100%;padding:8px 12px;border:1px solid #ddd;border-radius:3px;font-size:14px}
+.ad-form textarea {min-height:150px;resize:vertical}
+.ad-form .btn-submit {display:inline-block;padding:10px 30px;background:#5e1985;color:#fff;border:none;border-radius:3px;font-size:15px;cursor:pointer}
+.ad-form .btn-submit:hover {background:#4a1369}
+
+.martop-16 {margin-top:16px}
+.mary-20 {margin-top:20px;margin-bottom:20px}
+.marbtm-0 {margin-bottom:0!important}
+
+/* 신청 폼 */
+#event-wrap {max-width:700px}
+.event-flash {padding:12px 15px;margin-bottom:15px;border-radius:4px;font-size:14px}
+.event-flash.success {background:#f0fff0;color:#2a7a2a;border:1px solid #b2e6b2}
+.event-flash.error {background:#fff0f0;color:#c00;border:1px solid #fdd}
+.event-agree {margin-bottom:20px}
+.event-agree-titles {font-size:1rem;font-weight:700;color:#222;margin-bottom:10px}
+.event-agree-titles em {color:#c00;font-style:normal;font-size:.875rem}
+.event-agree-text {display:block;width:100%;height:120px;padding:12px;margin-bottom:10px;font-size:13px;line-height:1.6;color:#555;background:#f9f9f9;border:1px solid #ddd;border-radius:3px;resize:none}
+.event-agree-check {display:flex;align-items:center;gap:8px;font-size:14px;color:#333;cursor:pointer}
+.event-agree-check input[type="checkbox"] {width:18px;height:18px;margin:0;accent-color:#5e1985}
+.event-field {border:none;padding:0;margin:0 0 15px}
+.event-field label {display:block;font-size:14px;font-weight:600;color:#333;margin-bottom:5px}
+.event-field label .required {color:#c00;font-style:normal}
+.event-field input[type="text"], .event-field input[type="email"], .event-field input[type="tel"],
+.event-field select {width:100%;height:38px;padding:0 10px;border:1px solid #ddd;border-radius:3px;font-size:14px;color:#333}
+.event-field textarea {width:100%;min-height:160px;padding:10px;border:1px solid #ddd;border-radius:3px;font-size:14px;color:#333;resize:vertical;line-height:1.6}
+.event-field select {background:#fff}
+.event-field .help-text {display:block;margin-top:4px;font-size:12px;color:#999}
+.event-section-header {margin:20px 0 15px;padding-bottom:10px;border-bottom:2px solid #5e1985}
+.event-section-header h4 {font-size:1rem;font-weight:700;color:#222;margin:0}
+.event-section-header .sub-text {font-size:13px;color:#888;margin-top:4px}
+.event-buttons {margin-top:25px;text-align:center}
+.event-buttons .button {display:inline-block;min-width:100px;height:40px;padding:0 20px;font-size:15px;line-height:40px;border:none;border-radius:3px;cursor:pointer;text-align:center}
+.event-buttons .button.nd-white {background:#eee;color:#333;margin-left:8px}
+.event-buttons .button.nd-white:hover {background:#ddd}
+#event-wrap hr {border:none;border-top:1px solid #eee;margin:20px 0}
+</style>
+{% endblock %}
+
+{% block content %}
+<div style="max-width:{% if is_mobile %}728{% else %}1240{% endif %}px;margin:0 auto">
+
+    <!-- 히어로 비주얼 -->
+    <div class="com-visual" style="margin:0 auto;height:220px;position:relative;overflow:hidden;background-size:cover;background-position:center;border-radius:0;
+        {% if page.group == '매체소개' %}background-image:url('{{ url_for('static', filename='images/company_visual03.jpg') }}')
+        {% elif page.group == '고객센터' %}background-image:url('{{ url_for('static', filename='images/company_visual04.jpg') }}')
+        {% else %}background-image:url('{{ url_for('static', filename='images/company_visual04.jpg') }}'){% endif %}">
+        <div style="position:absolute;left:0;top:0;width:100%;height:100%;background:rgba(0,0,0,.5)"></div>
+        <h2 class="com-titles" style="position:relative;z-index:2;text-align:center;width:100%;font-size:2rem;font-weight:700;color:#fff;line-height:220px;margin:0">{{ page.title }}</h2>
+    </div>
+
+    <!-- 본문 -->
+    <div class="com-wrapper">
+
+        <!-- 사이드바 -->
+        <nav class="com-sidebar">
+            {% for group in com_nav %}
+            <div class="nav-group">
+                <div class="group-title">{{ group.group }}</div>
+                <ul class="nav-list">
+                    {% for item in group.links %}
+                    <li><a href="{{ url_for('public.com_page', page_code=item.code) }}"{% if item.code == page_code %} class="active"{% endif %}>{{ item.title }}</a></li>
+                    {% endfor %}
+                </ul>
+            </div>
+            {% endfor %}
+        </nav>
+
+        <!-- 콘텐츠 -->
+        <div class="com-content">
+            <ul class="breadcrumbs">
+                <li><a href="{{ url_for('public.index') }}"><i class="icon-home"></i> 홈</a></li>
+                <li>안내데스크</li>
+                <li class="disabled"><strong class="user-point">{{ page.title }}</strong></li>
+            </ul>
+
+            {% include 'public/' + page.content %}
+        </div>
+    </div>
+
+    <div class="clearfix" style="margin-bottom:60px"></div>
+</div>
+{% endblock %}

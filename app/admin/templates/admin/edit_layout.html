@@ -1,58 +1,351 @@
 {% extends "admin/base.html" %}
 {% block nav_title %}편집 - {{ layout_name }}{% endblock %}
 {% block content %}
+<style>
+.block-item {
+    background:#fff;border:1px solid #dee2e6;border-radius:6px;padding:12px 15px;margin-bottom:8px;
+    display:flex;align-items:center;gap:10px;cursor:grab;transition:box-shadow .15s,border-color .15s;
+}
+.block-item:hover {border-color:#6c63ff;box-shadow:0 2px 8px rgba(0,0,0,.08)}
+.block-item.sortable-ghost {opacity:.4;border:2px dashed #6c63ff}
+.block-item.inactive {opacity:.5;background:#f8f9fa}
+.block-item .grip {color:#aaa;font-size:18px;cursor:grab;flex-shrink:0}
+.block-item .block-icon {font-size:20px;color:#5e1985;flex-shrink:0;width:28px;text-align:center}
+.block-item .block-info {flex:1;min-width:0}
+.block-item .block-info .block-name {font-weight:600;font-size:14px;color:#333}
+.block-item .block-info .block-type-badge {font-size:11px;color:#888;margin-left:6px}
+.block-item .block-settings-preview {font-size:12px;color:#999;margin-top:2px}
+.block-item .block-actions {display:flex;gap:4px;flex-shrink:0}
+.block-item .block-actions .btn {padding:4px 8px;font-size:12px}
+.available-item {
+    background:#fff;border:1px solid #dee2e6;border-radius:6px;padding:10px 12px;margin-bottom:6px;
+    display:flex;align-items:center;gap:8px;cursor:pointer;transition:all .15s;
+}
+.available-item:hover {border-color:#5e1985;background:#f8f5fc}
+.available-item .av-icon {font-size:16px;color:#5e1985;width:24px;text-align:center}
+.available-item .av-label {flex:1;font-size:13px;font-weight:500}
+.canvas-empty {text-align:center;padding:40px 20px;color:#aaa}
+.canvas-empty i {font-size:48px;display:block;margin-bottom:10px}
+#settings-panel {display:none;position:fixed;top:50%;left:50%;transform:translate(-50%,-50%);
+    width:450px;background:#fff;border-radius:8px;box-shadow:0 10px 40px rgba(0,0,0,.2);z-index:1050;padding:0}
+#settings-overlay {display:none;position:fixed;top:0;left:0;width:100%;height:100%;background:rgba(0,0,0,.3);z-index:1040}
+#settings-panel .panel-header {padding:15px 20px;border-bottom:1px solid #eee;font-weight:600;font-size:15px;
+    display:flex;justify-content:space-between;align-items:center}
+#settings-panel .panel-body {padding:20px}
+#settings-panel .panel-footer {padding:15px 20px;border-top:1px solid #eee;text-align:right}
+.toast-msg {position:fixed;top:20px;right:20px;z-index:9999;padding:12px 20px;border-radius:6px;
+    background:#198754;color:#fff;font-size:14px;display:none;box-shadow:0 4px 12px rgba(0,0,0,.15)}
+</style>
+
 <div class="card">
     <div class="card-header d-flex justify-content-between align-items-center">
-        <strong>{{ layout_name }} 편집</strong>
+        <strong><i class="bi bi-layout-text-window"></i> {{ layout_name }} 편집</strong>
         <span class="badge bg-secondary">{{ layout_type }}</span>
     </div>
     <div class="card-body">
-        <div class="alert alert-info mb-3">
-            <i class="bi bi-info-circle"></i> {{ layout_name }} 페이지의 레이아웃을 편집합니다. 섹션 블록을 드래그하여 배치할 수 있습니다.
+        <div class="alert alert-info mb-3" style="font-size:13px">
+            <i class="bi bi-info-circle"></i>
+            블록을 드래그하여 순서를 변경하고, 토글 버튼으로 활성/비활성 상태를 전환하세요.
+            우측 팔레트에서 새 블록을 추가할 수 있습니다.
         </div>
         <div class="row g-3">
+            <!-- 레이아웃 캔버스 -->
             <div class="col-md-8">
-                <div class="border rounded p-3 bg-light" style="min-height:400px">
-                    <div class="text-center text-muted py-5">
-                        <i class="bi bi-layout-text-window" style="font-size:48px"></i>
-                        <p class="mt-3">{{ layout_name }} 레이아웃 영역</p>
-                        <p class="small">섹션 블록을 이 영역에 드래그하여 배치하세요.</p>
+                <h6 class="fw-bold mb-2"><i class="bi bi-grid-1x2"></i> 현재 레이아웃 ({{ blocks|length }}개 블록)</h6>
+                <div id="block-canvas" style="min-height:300px;padding:10px;border:2px dashed #dee2e6;border-radius:8px;background:#fafafa">
+                    {% for b in blocks %}
+                    <div class="block-item {% if not b.is_active %}inactive{% endif %}" data-id="{{ b.id }}" data-type="{{ b.block_type }}" data-settings='{{ b.settings|tojson }}' data-active="{{ b.is_active|lower }}">
+                        <i class="bi bi-grip-vertical grip"></i>
+                        <i class="bi {{ b.icon }} block-icon"></i>
+                        <div class="block-info">
+                            <span class="block-name">{{ b.block_label }}</span>
+                            <span class="block-type-badge">{{ b.block_type }}</span>
+                            <div class="block-settings-preview">
+                                {% for k, v in b.settings.items() %}{{ k }}={{ v }}{% if not loop.last %}, {% endif %}{% endfor %}
+                            </div>
+                        </div>
+                        <div class="block-actions">
+                            <button class="btn btn-sm {% if b.is_active %}btn-success{% else %}btn-outline-secondary{% endif %} btn-toggle" title="활성/비활성">
+                                <i class="bi {% if b.is_active %}bi-eye{% else %}bi-eye-slash{% endif %}"></i>
+                            </button>
+                            <button class="btn btn-sm btn-outline-primary btn-settings" title="설정">
+                                <i class="bi bi-gear"></i>
+                            </button>
+                            <button class="btn btn-sm btn-outline-danger btn-remove" title="삭제">
+                                <i class="bi bi-trash"></i>
+                            </button>
+                        </div>
                     </div>
+                    {% endfor %}
+                    {% if not blocks %}
+                    <div class="canvas-empty" id="canvas-empty">
+                        <i class="bi bi-inbox"></i>
+                        <p>배치된 블록이 없습니다.<br>우측에서 블록을 추가하세요.</p>
+                    </div>
+                    {% endif %}
+                </div>
+                <div class="d-flex justify-content-end mt-3 gap-2">
+                    <button class="btn btn-primary" id="btn-save"><i class="bi bi-save"></i> 저장</button>
                 </div>
             </div>
+
+            <!-- 블록 팔레트 -->
             <div class="col-md-4">
-                <h6 class="fw-bold mb-2">사용 가능한 블록</h6>
-                <div class="list-group">
-                    <div class="list-group-item list-group-item-action d-flex justify-content-between align-items-center">
-                        <span><i class="bi bi-image"></i> 메인 헤드라인</span>
-                        <i class="bi bi-grip-vertical text-muted"></i>
+                <h6 class="fw-bold mb-2"><i class="bi bi-plus-circle"></i> 추가 가능한 블록</h6>
+                <div id="block-palette">
+                    {% for av in available %}
+                    <div class="available-item" data-type="{{ av.type }}" data-label="{{ av.label }}" data-icon="{{ av.icon }}">
+                        <i class="bi {{ av.icon }} av-icon"></i>
+                        <span class="av-label">{{ av.label }}</span>
+                        <i class="bi bi-plus-circle text-muted"></i>
                     </div>
-                    <div class="list-group-item list-group-item-action d-flex justify-content-between align-items-center">
-                        <span><i class="bi bi-grid-3x2"></i> 최신기사 그리드</span>
-                        <i class="bi bi-grip-vertical text-muted"></i>
+                    {% else %}
+                    <div class="text-muted text-center py-3" style="font-size:13px" id="palette-empty">
+                        모든 블록이 사용 중입니다.
                     </div>
-                    <div class="list-group-item list-group-item-action d-flex justify-content-between align-items-center">
-                        <span><i class="bi bi-list-ul"></i> 기사 리스트</span>
-                        <i class="bi bi-grip-vertical text-muted"></i>
-                    </div>
-                    <div class="list-group-item list-group-item-action d-flex justify-content-between align-items-center">
-                        <span><i class="bi bi-card-text"></i> 섹션별 기사</span>
-                        <i class="bi bi-grip-vertical text-muted"></i>
-                    </div>
-                    <div class="list-group-item list-group-item-action d-flex justify-content-between align-items-center">
-                        <span><i class="bi bi-megaphone"></i> 배너 영역</span>
-                        <i class="bi bi-grip-vertical text-muted"></i>
-                    </div>
-                    <div class="list-group-item list-group-item-action d-flex justify-content-between align-items-center">
-                        <span><i class="bi bi-bar-chart"></i> 인기기사</span>
-                        <i class="bi bi-grip-vertical text-muted"></i>
-                    </div>
-                </div>
-                <div class="d-grid mt-3">
-                    <button class="btn btn-primary"><i class="bi bi-save"></i> 저장</button>
+                    {% endfor %}
                 </div>
             </div>
         </div>
     </div>
 </div>
+
+<!-- 설정 패널 (모달) -->
+<div id="settings-overlay"></div>
+<div id="settings-panel">
+    <div class="panel-header">
+        <span id="settings-title">블록 설정</span>
+        <button class="btn btn-sm btn-close" id="settings-close"></button>
+    </div>
+    <div class="panel-body" id="settings-body"></div>
+    <div class="panel-footer">
+        <button class="btn btn-sm btn-secondary me-1" id="settings-cancel">취소</button>
+        <button class="btn btn-sm btn-primary" id="settings-apply">적용</button>
+    </div>
+</div>
+
+<!-- 토스트 -->
+<div class="toast-msg" id="toast-msg"></div>
+
+<script src="https://cdn.jsdelivr.net/npm/sortablejs@1.15.0/Sortable.min.js"></script>
+<script>
+var LAYOUT_TYPE = '{{ layout_type }}';
+
+// Sortable 초기화
+var canvas = document.getElementById('block-canvas');
+Sortable.create(canvas, {
+    handle: '.grip',
+    animation: 150,
+    ghostClass: 'sortable-ghost',
+    filter: '.canvas-empty',
+    onEnd: function() { updateEmptyState(); }
+});
+
+function updateEmptyState() {
+    var items = canvas.querySelectorAll('.block-item');
+    var empty = document.getElementById('canvas-empty');
+    if (items.length === 0) {
+        if (!empty) {
+            canvas.innerHTML = '<div class="canvas-empty" id="canvas-empty"><i class="bi bi-inbox"></i><p>배치된 블록이 없습니다.<br>우측에서 블록을 추가하세요.</p></div>';
+        }
+    } else if (empty) {
+        empty.remove();
+    }
+}
+
+// 토글 활성/비활성
+canvas.addEventListener('click', function(e) {
+    var btn = e.target.closest('.btn-toggle');
+    if (btn) {
+        var item = btn.closest('.block-item');
+        var active = item.dataset.active === 'true';
+        item.dataset.active = active ? 'false' : 'true';
+        item.classList.toggle('inactive', active);
+        btn.className = 'btn btn-sm btn-toggle ' + (active ? 'btn-outline-secondary' : 'btn-success');
+        btn.querySelector('i').className = 'bi ' + (active ? 'bi-eye-slash' : 'bi-eye');
+    }
+});
+
+// 삭제
+canvas.addEventListener('click', function(e) {
+    var btn = e.target.closest('.btn-remove');
+    if (btn) {
+        if (!confirm('이 블록을 삭제하시겠습니까?')) return;
+        var item = btn.closest('.block-item');
+        var blockId = item.dataset.id;
+        fetch('{{ url_for("admin.edit_layout_block_delete") }}', {
+            method: 'POST',
+            headers: {'Content-Type': 'application/json'},
+            body: JSON.stringify({id: parseInt(blockId)})
+        }).then(r => r.json()).then(function(res) {
+            if (res.success) {
+                // 팔레트에 복원
+                var type = item.dataset.type;
+                var label = item.querySelector('.block-name').textContent;
+                var icon = item.querySelector('.block-icon').className.replace('bi ', '').replace('block-icon', '').trim();
+                addToPalette(type, label, icon);
+                item.remove();
+                updateEmptyState();
+                showToast('블록이 삭제되었습니다.');
+            }
+        });
+    }
+});
+
+// 설정
+var currentSettingsItem = null;
+canvas.addEventListener('click', function(e) {
+    var btn = e.target.closest('.btn-settings');
+    if (btn) {
+        currentSettingsItem = btn.closest('.block-item');
+        var settings = JSON.parse(currentSettingsItem.dataset.settings || '{}');
+        var label = currentSettingsItem.querySelector('.block-name').textContent;
+        document.getElementById('settings-title').textContent = label + ' 설정';
+        var body = document.getElementById('settings-body');
+        body.innerHTML = '';
+        // 동적으로 설정 폼 생성
+        var keys = Object.keys(settings);
+        if (keys.length === 0) {
+            body.innerHTML = '<p class="text-muted mb-0">설정 가능한 항목이 없습니다.</p>';
+        } else {
+            keys.forEach(function(k) {
+                var div = document.createElement('div');
+                div.className = 'mb-3';
+                var labelEl = document.createElement('label');
+                labelEl.className = 'form-label fw-bold';
+                labelEl.textContent = settingLabel(k);
+                var input = document.createElement('input');
+                input.type = 'text';
+                input.className = 'form-control form-control-sm';
+                input.name = k;
+                input.value = settings[k];
+                div.appendChild(labelEl);
+                div.appendChild(input);
+                body.appendChild(div);
+            });
+        }
+        document.getElementById('settings-panel').style.display = 'block';
+        document.getElementById('settings-overlay').style.display = 'block';
+    }
+});
+
+function settingLabel(key) {
+    var labels = {
+        'count': '표시 개수',
+        'section_code': '섹션 코드',
+        'columns': '열 수',
+        'position': '배치 위치',
+        'per_page': '페이지당 수'
+    };
+    return labels[key] || key;
+}
+
+document.getElementById('settings-close').addEventListener('click', closeSettings);
+document.getElementById('settings-cancel').addEventListener('click', closeSettings);
+document.getElementById('settings-overlay').addEventListener('click', closeSettings);
+
+function closeSettings() {
+    document.getElementById('settings-panel').style.display = 'none';
+    document.getElementById('settings-overlay').style.display = 'none';
+    currentSettingsItem = null;
+}
+
+document.getElementById('settings-apply').addEventListener('click', function() {
+    if (!currentSettingsItem) return;
+    var inputs = document.getElementById('settings-body').querySelectorAll('input');
+    var settings = {};
+    inputs.forEach(function(inp) {
+        var val = inp.value;
+        // 숫자 변환 시도
+        if (/^\d+$/.test(val)) val = parseInt(val);
+        settings[inp.name] = val;
+    });
+    currentSettingsItem.dataset.settings = JSON.stringify(settings);
+    // 미리보기 업데이트
+    var preview = currentSettingsItem.querySelector('.block-settings-preview');
+    preview.textContent = Object.entries(settings).map(function(e) { return e[0] + '=' + e[1]; }).join(', ');
+    closeSettings();
+    showToast('설정이 적용되었습니다.');
+});
+
+// 블록 추가 (팔레트 클릭)
+document.getElementById('block-palette').addEventListener('click', function(e) {
+    var item = e.target.closest('.available-item');
+    if (!item) return;
+    var type = item.dataset.type;
+    fetch('{{ url_for("admin.edit_layout_block_add") }}', {
+        method: 'POST',
+        headers: {'Content-Type': 'application/json'},
+        body: JSON.stringify({layout_type: LAYOUT_TYPE, block_type: type})
+    }).then(r => r.json()).then(function(res) {
+        if (res.success) {
+            var b = res.block;
+            var settingsStr = JSON.stringify(b.settings);
+            var previewParts = Object.entries(b.settings).map(function(e) { return e[0] + '=' + e[1]; }).join(', ');
+            var html = '<div class="block-item" data-id="' + b.id + '" data-type="' + b.block_type + '" data-settings=\'' + settingsStr + '\' data-active="true">'
+                + '<i class="bi bi-grip-vertical grip"></i>'
+                + '<i class="bi ' + b.icon + ' block-icon"></i>'
+                + '<div class="block-info">'
+                + '<span class="block-name">' + b.block_label + '</span>'
+                + '<span class="block-type-badge">' + b.block_type + '</span>'
+                + '<div class="block-settings-preview">' + previewParts + '</div>'
+                + '</div>'
+                + '<div class="block-actions">'
+                + '<button class="btn btn-sm btn-success btn-toggle" title="활성/비활성"><i class="bi bi-eye"></i></button>'
+                + '<button class="btn btn-sm btn-outline-primary btn-settings" title="설정"><i class="bi bi-gear"></i></button>'
+                + '<button class="btn btn-sm btn-outline-danger btn-remove" title="삭제"><i class="bi bi-trash"></i></button>'
+                + '</div></div>';
+            var empty = document.getElementById('canvas-empty');
+            if (empty) empty.remove();
+            canvas.insertAdjacentHTML('beforeend', html);
+            item.remove();
+            // 팔레트 빈 상태 확인
+            if (document.getElementById('block-palette').querySelectorAll('.available-item').length === 0) {
+                document.getElementById('block-palette').innerHTML = '<div class="text-muted text-center py-3" style="font-size:13px" id="palette-empty">모든 블록이 사용 중입니다.</div>';
+            }
+            showToast(b.block_label + ' 블록이 추가되었습니다.');
+        }
+    });
+});
+
+function addToPalette(type, label, iconClass) {
+    var palette = document.getElementById('block-palette');
+    var emptyMsg = document.getElementById('palette-empty');
+    if (emptyMsg) emptyMsg.remove();
+    var html = '<div class="available-item" data-type="' + type + '" data-label="' + label + '" data-icon="' + iconClass + '">'
+        + '<i class="bi ' + iconClass + ' av-icon"></i>'
+        + '<span class="av-label">' + label + '</span>'
+        + '<i class="bi bi-plus-circle text-muted"></i></div>';
+    palette.insertAdjacentHTML('beforeend', html);
+}
+
+// 저장
+document.getElementById('btn-save').addEventListener('click', function() {
+    var items = canvas.querySelectorAll('.block-item');
+    var blocks = [];
+    items.forEach(function(item) {
+        blocks.push({
+            id: parseInt(item.dataset.id),
+            is_active: item.dataset.active === 'true',
+            settings: JSON.parse(item.dataset.settings || '{}')
+        });
+    });
+    fetch('{{ url_for("admin.edit_layout_save") }}', {
+        method: 'POST',
+        headers: {'Content-Type': 'application/json'},
+        body: JSON.stringify({layout_type: LAYOUT_TYPE, blocks: blocks})
+    }).then(r => r.json()).then(function(res) {
+        if (res.success) {
+            showToast('레이아웃이 저장되었습니다.');
+        }
+    });
+});
+
+function showToast(msg) {
+    var t = document.getElementById('toast-msg');
+    t.textContent = msg;
+    t.style.display = 'block';
+    setTimeout(function() { t.style.display = 'none'; }, 2500);
+}
+</script>
 {% endblock %}

@@ -166,6 +166,7 @@ class BoardPost(db.Model):
     title = db.Column(db.String(500), nullable=False)
     content = db.Column(db.Text, default='')
     author_name = db.Column(db.String(50), default='')
+    password = db.Column(db.String(200), default='')
     view_count = db.Column(db.Integer, default=0)
     is_hidden = db.Column(db.Boolean, default=False)
     created_at = db.Column(db.DateTime, default=datetime.now)
@@ -178,6 +179,7 @@ class BoardReply(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     post_id = db.Column(db.Integer, db.ForeignKey('board_post.id'), nullable=False)
     author_name = db.Column(db.String(50), default='')
+    password = db.Column(db.String(200), default='')
     content = db.Column(db.Text, nullable=False)
     is_hidden = db.Column(db.Boolean, default=False)
     created_at = db.Column(db.DateTime, default=datetime.now)
@@ -188,11 +190,15 @@ class EventRequest(db.Model):
     """신청글 (구독신청, 기사제보, 저작권문의 등)"""
     __tablename__ = 'event_request'
     id = db.Column(db.Integer, primary_key=True)
-    event_code = db.Column(db.String(20), nullable=False)  # event3, event4, event5
+    event_code = db.Column(db.String(20), nullable=False)  # event2~event7
     name = db.Column(db.String(50), default='')
     email = db.Column(db.String(100), default='')
     phone = db.Column(db.String(20), default='')
+    subject = db.Column(db.String(200), default='')
     content = db.Column(db.Text, default='')
+    # 구독신청 전용 필드
+    extra_data = db.Column(db.Text, default='')  # JSON (reqname, reqemail, reqnum, reqtel, reqaddr, reqmoney)
+    ip_address = db.Column(db.String(50), default='')
     is_processed = db.Column(db.Boolean, default=False)
     created_at = db.Column(db.DateTime, default=datetime.now)
 
@@ -260,3 +266,15 @@ class SiteSetting(db.Model):
     key = db.Column(db.String(50), unique=True, nullable=False)
     value = db.Column(db.Text, default='')
     description = db.Column(db.String(200), default='')
+
+
+class LayoutBlock(db.Model):
+    """편집 레이아웃 블록"""
+    __tablename__ = 'layout_block'
+    id = db.Column(db.Integer, primary_key=True)
+    layout_type = db.Column(db.String(20), nullable=False)  # MAIN, MOBILE, PCVIEW, PCLIST, LETTER
+    block_type = db.Column(db.String(50), nullable=False)  # headline, latest_grid, etc.
+    block_label = db.Column(db.String(100), default='')
+    settings = db.Column(db.Text, default='{}')  # JSON: section_code, count, skin 등
+    sort_order = db.Column(db.Integer, default=0)
+    is_active = db.Column(db.Boolean, default=True)

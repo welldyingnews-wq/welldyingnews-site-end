@@ -1,9 +1,14 @@
 from datetime import datetime, timedelta
 
+import re
+
 from flask import render_template, request, abort, redirect, url_for, flash
 from werkzeug.security import generate_password_hash, check_password_hash
 
-from app.models import db, Section, SubSection, Article, ArticleRelation, ArticleComment, SiteSetting
+import json
+
+from app.models import (db, Section, SubSection, Article, ArticleRelation, ArticleComment,
+                        SiteSetting, Board, BoardPost, BoardReply, Banner, EventRequest, Popup)
 from app.public import public_bp
 
 
@@ -20,6 +25,7 @@ def _get_published_query():
 @public_bp.context_processor
 def inject_sections():
     sections = Section.query.order_by(Section.sort_order).all()
+    boards = Board.query.filter_by(is_active=True).order_by(Board.sort_order).all()
     # 최근 기사 업데이트 시간
     latest = Article.query.filter_by(is_deleted=False, recognition='E').order_by(
         Article.updated_at.desc()
@@ -32,7 +38,30 @@ def inject_sections():
         t = datetime.now()
         weekdays = ['월', '화', '수', '목', '금', '토', '일']
         updated_time = f"{t.strftime('%Y-%m-%d %H:%M')} ({weekdays[t.weekday()]})"
-    return {'nav_sections': sections, 'updated_time': updated_time}
+    # 활성 배너 (position별 그룹)
+    now = datetime.now()
+    active_banners = Banner.query.filter(
+        Banner.is_active == True,  # noqa: E712
+        db.or_(Banner.start_date == None, Banner.start_date <= now),  # noqa: E711
+        db.or_(Banner.end_date == None, Banner.end_date >= now)  # noqa: E711
+    ).order_by(Banner.sort_order).all()
+    banners_by_pos = {}
+    for b in active_banners:
+        banners_by_pos.setdefault(b.position, []).append(b)
+    # 활성 팝업
+    active_popups = Popup.query.filter(
+        Popup.is_active == True,  # noqa: E712
+        db.or_(Popup.start_date == None, Popup.start_date <= now),  # noqa: E711
+        db.or_(Popup.end_date == None, Popup.end_date >= now)  # noqa: E711
+    ).all()
+    # 모바일 감지
+    is_mobile = False
+    if request.cookies.get('view_pc') != 'y':
+        ua = request.headers.get('User-Agent', '')
+        if re.search(r'Mobile|Android|iPhone|iPod|Opera Mini|IEMobile', ua, re.I):
+            is_mobile = True
+    return {'nav_sections': sections, 'nav_boards': boards, 'updated_time': updated_time,
+            'banners': banners_by_pos, 'popups': active_popups, 'is_mobile': is_mobile}
 
 
 @public_bp.route('/')
@@ -105,6 +134,7 @@ def article_list():
     page = request.args.get('page', 1, type=int)
     sc_section_code = request.args.get('sc_section_code', '')
     sc_sub_section_code = request.args.get('sc_sub_section_code', '')
+    sc_area = request.args.get('sc_area', 'A')
     sc_word = request.args.get('sc_word', '').strip()
     view_type = request.args.get('view_type', '')
 
@@ -124,9 +154,16 @@ def article_list():
             query = query.filter(Article.section_id == section.id)
 
     if sc_word:
-        query = query.filter(
-            db.or_(Article.title.contains(sc_word), Article.content.contains(sc_word))
-        )
+        if sc_area == 'T':
+            query = query.filter(Article.title.contains(sc_word))
+        elif sc_area == 'C':
+            query = query.filter(Article.content.contains(sc_word))
+        elif sc_area == 'N':
+            query = query.filter(Article.author_name.contains(sc_word))
+        else:  # A = 제목+내용
+            query = query.filter(
+                db.or_(Article.title.contains(sc_word), Article.content.contains(sc_word))
+            )
 
     pagination = query.order_by(Article.created_at.desc()).paginate(
         page=page, per_page=20, error_out=False
@@ -141,6 +178,7 @@ def article_list():
                            subsection=subsection,
                            sc_section_code=sc_section_code,
                            sc_sub_section_code=sc_sub_section_code,
+                           sc_area=sc_area,
                            sc_word=sc_word,
                            view_type=view_type,
                            sidebar_opinion=sidebar_opinion,
@@ -273,3 +311,296 @@ def comment_delete():
     db.session.commit()
 
     return redirect(url_for('public.article_view', idxno=article_id) + '#comment')
+
+
+@public_bp.route('/banner/click/<int:banner_id>')
+def banner_click(banner_id):
+    """배너 클릭 추적 후 링크로 리다이렉트"""
+    banner = Banner.query.get_or_404(banner_id)
+    banner.click_count += 1
+    db.session.commit()
+    return redirect(banner.link_url or '/')
+
+
+# ===== 정보 페이지 (Company/Info) =====
+
+COM_PAGES = {
+    'com-1':       {'title': '인사말',             'group': '매체소개',    'content': 'com/company.html'},
+    'com-2':       {'title': '찾아오시는길',       'group': '매체소개',    'content': 'com/map.html'},
+    'service':     {'title': '이용약관',           'group': '약관 및 정책', 'content': 'com/service.html'},
+    'privacy':     {'title': '개인정보처리방침',   'group': '약관 및 정책', 'content': 'com/privacy.html'},
+    'youthpolicy': {'title': '청소년보호정책',     'group': '약관 및 정책', 'content': 'com/youthpolicy.html'},
+    'copyright':   {'title': '저작권보호정책',     'group': '약관 및 정책', 'content': 'com/copyright.html'},
+    'emailno':     {'title': '이메일무단수집거부', 'group': '약관 및 정책', 'content': 'com/emailno.html'},
+    'ad':          {'title': '광고문의',           'group': '고객센터',    'content': 'com/event_form.html', 'event_code': 'event1'},
+    'jb':          {'title': '기사제보',           'group': '고객센터',    'content': 'com/event_form.html', 'event_code': 'event4'},
+    'kd':          {'title': '구독신청',           'group': '고객센터',    'content': 'com/event_kd.html',   'event_code': 'event5'},
+    'copy':        {'title': '저작권문의',         'group': '고객센터',    'content': 'com/event_form.html', 'event_code': 'event3'},
+    'bp':          {'title': '불편신고',           'group': '고객센터',    'content': 'com/event_form.html', 'event_code': 'event6'},
+    'tg':          {'title': '독자투고',           'group': '고객센터',    'content': 'com/event_form.html', 'event_code': 'event7'},
+    'jh':          {'title': '제휴문의',           'group': '고객센터',    'content': 'com/event_form.html', 'event_code': 'event2'},
+}
+
+COM_NAV = [
+    {'group': '매체소개', 'links': [
+        {'code': 'com-1', 'title': '인사말'},
+        {'code': 'com-2', 'title': '찾아오시는길'},
+    ]},
+    {'group': '약관 및 정책', 'links': [
+        {'code': 'service', 'title': '이용약관'},
+        {'code': 'privacy', 'title': '개인정보처리방침'},
+        {'code': 'youthpolicy', 'title': '청소년보호정책'},
+        {'code': 'copyright', 'title': '저작권보호정책'},
+        {'code': 'emailno', 'title': '이메일무단수집거부'},
+    ]},
+    {'group': '고객센터', 'links': [
+        {'code': 'jb', 'title': '기사제보'},
+        {'code': 'kd', 'title': '구독신청'},
+        {'code': 'ad', 'title': '광고문의'},
+        {'code': 'bp', 'title': '불편신고'},
+        {'code': 'tg', 'title': '독자투고'},
+        {'code': 'jh', 'title': '제휴문의'},
+        {'code': 'copy', 'title': '저작권문의'},
+    ]},
+]
+
+
+@public_bp.route('/com/<page_code>.html')
+def com_page(page_code):
+    """정보 페이지 (인사말, 이용약관, 개인정보처리방침 등)"""
+    page = COM_PAGES.get(page_code)
+    if not page:
+        abort(404)
+    return render_template('public/com_page.html',
+                           page=page, page_code=page_code, com_nav=COM_NAV)
+
+
+@public_bp.route('/com/event/submit', methods=['POST'])
+def event_submit():
+    """신청 폼 제출 처리"""
+    page_code = request.form.get('page_code', '')
+    page = COM_PAGES.get(page_code)
+    if not page or 'event_code' not in page:
+        abort(400)
+
+    name = request.form.get('name', '').strip()
+    email = request.form.get('email', '').strip()
+    phone = request.form.get('tel', '').strip()
+    subject = request.form.get('subject', '').strip()
+    content = request.form.get('maintext', '').strip() or request.form.get('othertext', '').strip()
+
+    # 필수 검증
+    if not name or not email or not phone:
+        flash('이름, 이메일, 연락처는 필수 입력 항목입니다.', 'error')
+        return redirect(url_for('public.com_page', page_code=page_code), code=303)
+
+    req = EventRequest(
+        event_code=page['event_code'],
+        name=name,
+        email=email,
+        phone=phone,
+        subject=subject,
+        content=content,
+        ip_address=request.remote_addr,
+    )
+
+    # 구독신청 추가 필드
+    if page['event_code'] == 'event5':
+        extra = {
+            'reqname': request.form.get('reqname', ''),
+            'reqemail': request.form.get('reqemail', ''),
+            'reqnum': request.form.get('reqnum', ''),
+            'reqtel': request.form.get('reqtel', ''),
+            'reqaddr': request.form.get('reqaddr', ''),
+            'reqmoney': request.form.get('reqmoney', ''),
+        }
+        req.extra_data = json.dumps(extra, ensure_ascii=False)
+
+    db.session.add(req)
+    db.session.commit()
+
+    flash('신청이 완료되었습니다. 감사합니다.', 'success')
+    return redirect(url_for('public.com_page', page_code=page_code), code=303)
+
+
+# ===== 게시판 (BBS) =====
+
+@public_bp.route('/bbs/list.html')
+def bbs_list():
+    table = request.args.get('table', '')
+    page = request.args.get('page', 1, type=int)
+    sc_area = request.args.get('sc_area', 'T')
+    sc_word = request.args.get('sc_word', '').strip()
+
+    board = Board.query.filter_by(code=table, is_active=True).first()
+    if not board:
+        # table 파라미터 없으면 첫 번째 활성 게시판
+        board = Board.query.filter_by(is_active=True).order_by(Board.sort_order).first()
+        if not board:
+            abort(404)
+
+    query = BoardPost.query.filter_by(board_id=board.id, is_hidden=False)
+
+    if sc_word:
+        if sc_area == 'T':
+            query = query.filter(BoardPost.title.contains(sc_word))
+        elif sc_area == 'C':
+            query = query.filter(BoardPost.content.contains(sc_word))
+        elif sc_area == 'A':
+            query = query.filter(
+                db.or_(BoardPost.title.contains(sc_word), BoardPost.content.contains(sc_word))
+            )
+        elif sc_area == 'N':
+            query = query.filter(BoardPost.author_name.contains(sc_word))
+
+    pagination = query.order_by(BoardPost.created_at.desc()).paginate(
+        page=page, per_page=20, error_out=False
+    )
+
+    # 전체 글 수 기반 번호 계산용
+    total = pagination.total
+
+    return render_template('public/bbs_list.html',
+                           board=board,
+                           posts=pagination.items,
+                           pagination=pagination,
+                           total=total,
+                           sc_area=sc_area,
+                           sc_word=sc_word)
+
+
+@public_bp.route('/bbs/view.html')
+def bbs_view():
+    idxno = request.args.get('idxno', 0, type=int)
+    if not idxno:
+        abort(404)
+
+    post = BoardPost.query.get_or_404(idxno)
+    if post.is_hidden:
+        abort(404)
+
+    # 조회수 증가
+    post.view_count += 1
+    db.session.commit()
+
+    replies = post.replies.filter_by(is_hidden=False).order_by(BoardReply.created_at.asc()).all()
+
+    # 이전/다음 글
+    prev_post = BoardPost.query.filter(
+        BoardPost.board_id == post.board_id,
+        BoardPost.is_hidden == False,  # noqa: E712
+        BoardPost.id < post.id
+    ).order_by(BoardPost.id.desc()).first()
+    next_post = BoardPost.query.filter(
+        BoardPost.board_id == post.board_id,
+        BoardPost.is_hidden == False,  # noqa: E712
+        BoardPost.id > post.id
+    ).order_by(BoardPost.id.asc()).first()
+
+    return render_template('public/bbs_view.html',
+                           board=post.board,
+                           post=post,
+                           replies=replies,
+                           prev_post=prev_post,
+                           next_post=next_post)
+
+
+@public_bp.route('/bbs/writeForm.html')
+def bbs_write_form():
+    table = request.args.get('table', '')
+    board = Board.query.filter_by(code=table, is_active=True).first()
+    if not board:
+        abort(404)
+    return render_template('public/bbs_write.html', board=board)
+
+
+@public_bp.route('/bbs/write', methods=['POST'])
+def bbs_write():
+    table = request.form.get('table', '')
+    title = request.form.get('title', '').strip()
+    content = request.form.get('content', '').strip()
+    author_name = request.form.get('author_name', '').strip()
+    password = request.form.get('password', '').strip()
+
+    board = Board.query.filter_by(code=table, is_active=True).first()
+    if not board:
+        abort(404)
+
+    if not title or not content:
+        flash('제목과 내용을 입력해주세요.', 'error')
+        return redirect(url_for('public.bbs_write_form', table=table))
+
+    post = BoardPost(
+        board_id=board.id,
+        title=title,
+        content=content,
+        author_name=author_name or '익명',
+        password=generate_password_hash(password) if password else ''
+    )
+    db.session.add(post)
+    db.session.commit()
+
+    return redirect(url_for('public.bbs_view', idxno=post.id))
+
+
+@public_bp.route('/bbs/delete', methods=['POST'])
+def bbs_delete():
+    post_id = request.form.get('post_id', 0, type=int)
+    password = request.form.get('password', '').strip()
+
+    post = BoardPost.query.get_or_404(post_id)
+    table = post.board.code
+
+    if not post.password or not check_password_hash(post.password, password):
+        flash('비밀번호가 일치하지 않습니다.', 'error')
+        return redirect(url_for('public.bbs_view', idxno=post_id))
+
+    # 댓글도 함께 삭제
+    BoardReply.query.filter_by(post_id=post.id).delete()
+    db.session.delete(post)
+    db.session.commit()
+
+    return redirect(url_for('public.bbs_list', table=table))
+
+
+@public_bp.route('/bbs/reply/write', methods=['POST'])
+def bbs_reply_write():
+    post_id = request.form.get('post_id', 0, type=int)
+    author_name = request.form.get('author_name', '').strip()
+    password = request.form.get('password', '').strip()
+    content = request.form.get('content', '').strip()
+
+    post = BoardPost.query.get_or_404(post_id)
+
+    if not content:
+        flash('댓글 내용을 입력해주세요.', 'error')
+        return redirect(url_for('public.bbs_view', idxno=post_id) + '#replies')
+
+    reply = BoardReply(
+        post_id=post_id,
+        author_name=author_name or '익명',
+        password=generate_password_hash(password) if password else '',
+        content=content
+    )
+    db.session.add(reply)
+    db.session.commit()
+
+    return redirect(url_for('public.bbs_view', idxno=post_id) + '#replies')
+
+
+@public_bp.route('/bbs/reply/delete', methods=['POST'])
+def bbs_reply_delete():
+    reply_id = request.form.get('reply_id', 0, type=int)
+    password = request.form.get('password', '').strip()
+    post_id = request.form.get('post_id', 0, type=int)
+
+    reply = BoardReply.query.get_or_404(reply_id)
+
+    if not reply.password or not check_password_hash(reply.password, password):
+        flash('비밀번호가 일치하지 않습니다.', 'error')
+        return redirect(url_for('public.bbs_view', idxno=post_id) + '#replies')
+
+    db.session.delete(reply)
+    db.session.commit()
+
+    return redirect(url_for('public.bbs_view', idxno=post_id) + '#replies')

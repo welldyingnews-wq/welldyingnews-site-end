@@ -13,7 +13,7 @@ from app.admin import admin_bp
 from app.models import (db, AdminUser, Section, SubSection, Article, ArticleRelation,
                         SiteSetting, ArticleComment, Board, BoardPost, BoardReply,
                         EventRequest, Banner, Popup, Poll, PollOption, SerialCode,
-                        Department, MemberDivision, EtcLevel)
+                        Department, MemberDivision, EtcLevel, LayoutBlock)
 
 
 def admin_required(f):
@@ -1025,34 +1025,179 @@ def article_structure():
 
 # ── 편집 ──
 
+# 레이아웃별 사용 가능한 블록 타입 정의
+LAYOUT_BLOCK_DEFS = {
+    'MAIN': [
+        {'type': 'headline', 'label': '헤드라인', 'icon': 'bi-newspaper', 'defaults': {'count': 3}},
+        {'type': 'latest_grid', 'label': '최신기사 그리드', 'icon': 'bi-grid-3x2', 'defaults': {'count': 8}},
+        {'type': 'opinion_sidebar', 'label': '오피니언 (사이드바)', 'icon': 'bi-chat-quote', 'defaults': {'count': 4, 'section_code': 'S1N2'}},
+        {'type': 'popular_sidebar', 'label': '많이 본 뉴스 (사이드바)', 'icon': 'bi-bar-chart', 'defaults': {'count': 5}},
+        {'type': 'section_articles', 'label': '섹션별 기사', 'icon': 'bi-columns-gap', 'defaults': {'count': 4, 'columns': 3}},
+        {'type': 'banner', 'label': '배너 영역', 'icon': 'bi-megaphone', 'defaults': {'position': 'main_bottom'}},
+    ],
+    'MOBILE': [
+        {'type': 'headline', 'label': '헤드라인', 'icon': 'bi-newspaper', 'defaults': {'count': 3}},
+        {'type': 'latest_list', 'label': '최신기사 리스트', 'icon': 'bi-list-ul', 'defaults': {'count': 10}},
+        {'type': 'popular', 'label': '많이 본 뉴스', 'icon': 'bi-bar-chart', 'defaults': {'count': 5}},
+        {'type': 'section_articles', 'label': '섹션별 기사', 'icon': 'bi-columns-gap', 'defaults': {'count': 3}},
+        {'type': 'banner', 'label': '배너 영역', 'icon': 'bi-megaphone', 'defaults': {'position': 'mobile'}},
+    ],
+    'PCVIEW': [
+        {'type': 'related_articles', 'label': '관련기사', 'icon': 'bi-link-45deg', 'defaults': {'count': 5}},
+        {'type': 'article_nav', 'label': '이전/다음 기사', 'icon': 'bi-arrow-left-right', 'defaults': {}},
+        {'type': 'comment', 'label': '댓글', 'icon': 'bi-chat-dots', 'defaults': {}},
+        {'type': 'opinion_sidebar', 'label': '오피니언 (사이드바)', 'icon': 'bi-chat-quote', 'defaults': {'count': 4}},
+        {'type': 'popular_sidebar', 'label': '많이 본 뉴스 (사이드바)', 'icon': 'bi-bar-chart', 'defaults': {'count': 5}},
+        {'type': 'banner', 'label': '배너 영역', 'icon': 'bi-megaphone', 'defaults': {'position': 'view_bottom'}},
+    ],
+    'PCLIST': [
+        {'type': 'article_list', 'label': '기사 목록', 'icon': 'bi-list-ul', 'defaults': {'per_page': 20}},
+        {'type': 'opinion_sidebar', 'label': '오피니언 (사이드바)', 'icon': 'bi-chat-quote', 'defaults': {'count': 4}},
+        {'type': 'popular_sidebar', 'label': '많이 본 뉴스 (사이드바)', 'icon': 'bi-bar-chart', 'defaults': {'count': 5}},
+        {'type': 'banner', 'label': '배너 영역', 'icon': 'bi-megaphone', 'defaults': {'position': 'list_bottom'}},
+    ],
+    'LETTER': [
+        {'type': 'headline', 'label': '주요 기사', 'icon': 'bi-newspaper', 'defaults': {'count': 3}},
+        {'type': 'latest_list', 'label': '최신 기사', 'icon': 'bi-list-ul', 'defaults': {'count': 10}},
+        {'type': 'opinion', 'label': '오피니언', 'icon': 'bi-chat-quote', 'defaults': {'count': 3}},
+    ],
+}
+
+
+def _edit_layout(layout_type, layout_name):
+    import json
+    blocks = LayoutBlock.query.filter_by(layout_type=layout_type).order_by(LayoutBlock.sort_order).all()
+    block_defs = LAYOUT_BLOCK_DEFS.get(layout_type, [])
+    # 현재 사용 중인 블록 타입 목록
+    used_types = [b.block_type for b in blocks]
+    # 추가 가능한 블록 (아직 사용하지 않는 것)
+    available = [d for d in block_defs if d['type'] not in used_types]
+    # 블록에 아이콘 정보 매핑
+    icon_map = {d['type']: d['icon'] for d in block_defs}
+    blocks_data = []
+    for b in blocks:
+        blocks_data.append({
+            'id': b.id,
+            'block_type': b.block_type,
+            'block_label': b.block_label,
+            'settings': json.loads(b.settings or '{}'),
+            'sort_order': b.sort_order,
+            'is_active': b.is_active,
+            'icon': icon_map.get(b.block_type, 'bi-box'),
+        })
+    return render_template('admin/edit_layout.html',
+                           layout_type=layout_type,
+                           layout_name=layout_name,
+                           blocks=blocks_data,
+                           available=available,
+                           blocks_json=json.dumps(blocks_data, ensure_ascii=False))
+
+
 @admin_bp.route('/edit/main')
 @admin_required
 def edit_layout_main():
-    return render_template('admin/edit_layout.html', layout_type='MAIN', layout_name='메인')
+    return _edit_layout('MAIN', '메인')
 
 
 @admin_bp.route('/edit/mobile')
 @admin_required
 def edit_layout_mobile():
-    return render_template('admin/edit_layout.html', layout_type='MOBILE', layout_name='모바일메인')
+    return _edit_layout('MOBILE', '모바일메인')
 
 
 @admin_bp.route('/edit/article-view')
 @admin_required
 def edit_layout_article_view():
-    return render_template('admin/edit_layout.html', layout_type='PCVIEW', layout_name='기사뷰')
+    return _edit_layout('PCVIEW', '기사뷰')
 
 
 @admin_bp.route('/edit/article-list')
 @admin_required
 def edit_layout_article_list():
-    return render_template('admin/edit_layout.html', layout_type='PCLIST', layout_name='기사리스트')
+    return _edit_layout('PCLIST', '기사리스트')
 
 
 @admin_bp.route('/edit/newsletter')
 @admin_required
 def edit_layout_newsletter():
-    return render_template('admin/edit_layout.html', layout_type='LETTER', layout_name='뉴스레터')
+    return _edit_layout('LETTER', '뉴스레터')
+
+
+@admin_bp.route('/edit/save', methods=['POST'])
+@admin_required
+def edit_layout_save():
+    """레이아웃 블록 순서/활성 상태/설정 저장 (AJAX)"""
+    import json
+    data = request.get_json()
+    layout_type = data.get('layout_type', '')
+    blocks = data.get('blocks', [])
+
+    for i, bdata in enumerate(blocks):
+        block_id = bdata.get('id')
+        if block_id:
+            block = LayoutBlock.query.get(block_id)
+            if block and block.layout_type == layout_type:
+                block.sort_order = i + 1
+                block.is_active = bdata.get('is_active', True)
+                block.settings = json.dumps(bdata.get('settings', {}), ensure_ascii=False)
+
+    db.session.commit()
+    return jsonify({'success': True})
+
+
+@admin_bp.route('/edit/block/add', methods=['POST'])
+@admin_required
+def edit_layout_block_add():
+    """블록 추가 (AJAX)"""
+    import json
+    data = request.get_json()
+    layout_type = data.get('layout_type', '')
+    block_type = data.get('block_type', '')
+    block_defs = LAYOUT_BLOCK_DEFS.get(layout_type, [])
+    defn = next((d for d in block_defs if d['type'] == block_type), None)
+    if not defn:
+        return jsonify({'success': False, 'error': 'Invalid block type'}), 400
+
+    max_order = db.session.query(db.func.max(LayoutBlock.sort_order)).filter_by(
+        layout_type=layout_type).scalar() or 0
+
+    block = LayoutBlock(
+        layout_type=layout_type,
+        block_type=block_type,
+        block_label=defn['label'],
+        settings=json.dumps(defn['defaults'], ensure_ascii=False),
+        sort_order=max_order + 1,
+        is_active=True
+    )
+    db.session.add(block)
+    db.session.commit()
+
+    return jsonify({
+        'success': True,
+        'block': {
+            'id': block.id,
+            'block_type': block.block_type,
+            'block_label': block.block_label,
+            'settings': defn['defaults'],
+            'sort_order': block.sort_order,
+            'is_active': True,
+            'icon': defn['icon'],
+        }
+    })
+
+
+@admin_bp.route('/edit/block/delete', methods=['POST'])
+@admin_required
+def edit_layout_block_delete():
+    """블록 삭제 (AJAX)"""
+    data = request.get_json()
+    block_id = data.get('id')
+    block = LayoutBlock.query.get(block_id)
+    if block:
+        db.session.delete(block)
+        db.session.commit()
+        return jsonify({'success': True})
+    return jsonify({'success': False, 'error': 'Block not found'}), 404
 
 
 # ── 회원 - 휴면/등급/필자/부서 ──

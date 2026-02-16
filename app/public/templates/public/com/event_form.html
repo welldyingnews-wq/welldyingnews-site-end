@@ -1,0 +1,75 @@
+<!-- 신청 폼 (기사제보, 저작권문의, 불편신고, 독자투고, 제휴문의 공통) -->
+<div id="event-wrap" class="default-theme">
+
+    <!-- flash 메시지 -->
+    {% with messages = get_flashed_messages(with_categories=true) %}
+    {% if messages %}
+    {% for category, message in messages %}
+    <div class="event-flash {{ category }}">{{ message }}</div>
+    {% endfor %}
+    {% endif %}
+    {% endwith %}
+
+    <form name="eventReqForm" id="eventReqForm" method="POST" action="{{ url_for('public.event_submit') }}">
+        <input type="hidden" name="page_code" value="{{ page_code }}">
+
+        <section id="event-container">
+            <div class="event-content">
+
+                <!-- 개인정보 동의 -->
+                <div class="event-agree">
+                    <h3 class="event-agree-titles">개인정보보호를 위한 이용자 동의사항 <em>(필수)</em></h3>
+                    <textarea name="agreetext" id="agreetext" class="event-agree-text" readonly>{{ page.title }} 등을 희망하는 고객님의 개인정보를 아래와 같이 수집, 이용, 제공합니다.
+
+1. 수집항목 : 이름, 이메일, 연락처
+2. 수집목적 : {{ page.title }} 접수 및 처리
+3. 보유기간 : 접수일로부터 1년간 보관 후 파기
+4. 개인정보 수집에 동의하지 않을 경우 {{ page.title }} 접수가 불가합니다.</textarea>
+                    <label class="event-agree-check">
+                        <input type="checkbox" id="useagree" name="useagree" required>
+                        <span>개인정보보호를 위한 이용자 동의사항을 확인하였습니다.</span>
+                    </label>
+                </div>
+
+                <hr>
+
+                <!-- 이름 -->
+                <fieldset id="fieldset_name" class="event-field">
+                    <label for="ev_name">이름 <em class="required">*</em></label>
+                    <input type="text" id="ev_name" name="name" placeholder="홍길동" required>
+                </fieldset>
+
+                <!-- 이메일 -->
+                <fieldset id="fieldset_email" class="event-field">
+                    <label for="ev_email">이메일 <em class="required">*</em></label>
+                    <input type="email" id="ev_email" name="email" placeholder="email@naver.com" required>
+                </fieldset>
+
+                <!-- 연락처 -->
+                <fieldset id="fieldset_tel" class="event-field">
+                    <label for="ev_tel">연락처 <em class="required">*</em></label>
+                    <input type="tel" id="ev_tel" name="tel" placeholder="010-1234-4567" required>
+                </fieldset>
+
+                <!-- 제목 -->
+                <fieldset id="fieldset_subject" class="event-field">
+                    <label for="ev_subject">제목 <em class="required">*</em></label>
+                    <input type="text" id="ev_subject" name="subject" placeholder="제목을 입력해주세요." required>
+                </fieldset>
+
+                <!-- 내용 -->
+                <fieldset id="fieldset_maintext" class="event-field">
+                    <label for="ev_maintext">내용 <em class="required">*</em></label>
+                    <textarea id="ev_maintext" name="maintext" placeholder="내용을 입력해주세요" required></textarea>
+                </fieldset>
+
+                <!-- 버튼 -->
+                <div id="confirmBtn" class="event-buttons">
+                    <button type="submit" class="button user-bg">확인</button>
+                    <button type="reset" class="button nd-white">취소</button>
+                </div>
+
+            </div>
+        </section>
+    </form>
+</div>
