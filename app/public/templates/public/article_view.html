@@ -5,8 +5,8 @@
 <meta property="og:type" content="article">
 <meta property="og:title" content="{{ article.title }}">
 <meta property="og:description" content="{{ article.summary_text|truncate(200) }}">
-{% if article.thumbnail_path %}
-<meta property="og:image" content="{{ url_for('static', filename=article.thumbnail_path, _external=True) }}">
+{% if article.thumb_url %}
+<meta property="og:image" content="{{ article.thumb_url }}">
 {% endif %}
 {% endblock %}
 
@@ -55,6 +55,47 @@
 .article-more:hover {border-color:#5e1985;color:#5e1985}
 /* 저작권 */
 .article-copy {margin:20px 0;padding:15px;text-align:center;font-size:13px;color:#999;background-color:#fafafa;border:1px solid #eee}
+/* 댓글 */
+#comment {display:block;margin:2.5rem auto}
+.cmt-header::after {content:'';display:table;clear:both}
+.cmt-header .titles {float:left;font-size:1.25rem;font-weight:normal;line-height:35px;color:#000}
+.cmt-header .comment-count {font-weight:bold}
+.comment-write {display:block;overflow:hidden;margin-bottom:2.1875rem;background-color:#fff;border:1px solid rgba(0,0,0,.25);border-radius:.3125rem}
+.comment-write .wrt-header {display:block;padding:1.25rem}
+.comment-write .wrt-header::after {content:'';display:table;clear:both}
+#comment-guest {font-size:0;white-space:nowrap}
+#comment-guest input[type="text"], #comment-guest input[type="password"] {display:inline-block;width:140px;height:32px;margin:0;font-size:.8125rem;border:1px solid rgba(0,0,0,.15);border-radius:2rem;padding:0 12px}
+#comment-guest input[type="password"] {margin-left:.25rem}
+.comment-write .comment-content {display:block;min-height:80px;width:100%;margin:0 auto;padding:0 1.25rem;font-size:.9375rem;font-weight:300;line-height:1.625;color:#000;border:none;border-radius:0;resize:vertical}
+.comment-write .wrt-footer {display:block;padding:.375rem 1.25rem;border-top:1px solid rgba(0,0,0,.08)}
+.comment-write .wrt-footer::after {content:'';display:table;clear:both}
+.comment-write .wrt-footer .cur--length {float:left;font-size:.75rem;font-weight:300;line-height:32px;color:#989898}
+.comment-write .wrt-footer .comment-text-cur {color:#000}
+.comment-write .wrt-footer .btn-comment-save {float:right;height:32px;padding:0 1.125rem;font-size:.8125rem;line-height:1;color:#fff;border:none;border-radius:.25rem;background-color:#5e1985;cursor:pointer}
+.comment-write .wrt-footer .btn-comment-save:hover {background-color:#4a1369}
+#comment-list {display:block}
+.comment-item {display:block}
+.comment-item .first {padding:1.25rem 0;border-top:1px solid rgba(0,0,0,.08)}
+.normal-content > .comment-item:first-child .first {padding-top:0;border-top:none}
+.comment-item .first::after {content:'';display:table;clear:both}
+.comment-item .photo {float:left}
+.comment-item .photo > .pfile {display:block;overflow:hidden;width:45px;height:45px;background-color:#e0d5ea;border-radius:50%}
+.comment-item .photo + .user-textbox {float:right;width:calc(100% - 65px)}
+.comment-item .textbox-header {margin-bottom:.75rem}
+.comment-item .textbox-header::after {content:'';display:table;clear:both}
+.comment-item .textbox-info {display:block;font-size:0;text-align:left}
+.comment-item .textbox-info > * {display:inline-block;white-space:nowrap;vertical-align:middle}
+.comment-item .textbox-info > :not(:first-child) {margin-left:.5rem}
+.comment-item .textbox-info > .name {font-size:.9375rem;line-height:25px;color:#000}
+.comment-item .textbox-info > .datetime {position:relative;padding-left:.75rem;margin-left:.75rem;font-size:.8125rem;font-weight:300;color:rgba(0,0,0,.7)}
+.comment-item .textbox-info > .datetime::before {content:'';overflow:hidden;position:absolute;z-index:1;left:0;top:50%;width:0;height:.625rem;border-left:1px solid rgba(0,0,0,.12);transform:translateY(-50%)}
+.comment-item .textbox-option {float:right;font-size:0;text-align:right}
+.comment-item .textbox-option > a {display:inline-block;font-size:.8125rem;font-weight:300;line-height:25px;color:rgba(0,0,0,.65);cursor:pointer}
+.comment-item .comment-content-view {font-size:.9375rem;font-weight:300;line-height:1.375;color:#000;white-space:pre-wrap;word-break:break-word}
+.comment-empty {padding:40px 0;text-align:center;font-size:.9375rem;color:rgba(0,0,0,.45)}
+/* flash 메시지 */
+.comment-flash {padding:10px 15px;margin-bottom:15px;border-radius:4px;font-size:13px}
+.comment-flash.error {background:#fff0f0;color:#c00;border:1px solid #fdd}
 /* 이전/다음 기사 */
 .article-navigate {border-top:2px solid #333;margin-top:30px}
 .article-navigate .item {display:block;padding:12px 0;border-bottom:1px solid #eee;overflow:hidden}
@@ -215,6 +256,81 @@
         </div>
 
         <div class="clearfix"></div>
+
+        <!-- 댓글 -->
+        {% if comment_use != 'N' %}
+        <article id="comment">
+            <header class="cmt-header">
+                <div class="titles"><strong class="comment-count">{{ comment_count }}</strong>개의 댓글</div>
+            </header>
+
+            <!-- flash 메시지 -->
+            {% with messages = get_flashed_messages(with_categories=true) %}
+            {% if messages %}
+            {% for category, message in messages %}
+            <div class="comment-flash {{ category }}">{{ message }}</div>
+            {% endfor %}
+            {% endif %}
+            {% endwith %}
+
+            <!-- 댓글 작성 -->
+            <article class="comment-write">
+                <form method="POST" action="{{ url_for('public.comment_write') }}">
+                    <input type="hidden" name="article_id" value="{{ article.id }}">
+                    <header class="wrt-header">
+                        <article id="comment-guest">
+                            <label for="guestName" class="show-for-sr">작성자</label>
+                            <input type="text" name="author_name" id="guestName" placeholder="작성자" required>
+                            <label for="guestPassword" class="show-for-sr">비밀번호</label>
+                            <input type="password" name="password" id="guestPassword" placeholder="비밀번호" required>
+                        </article>
+                    </header>
+                    <label for="cmtContent" class="show-for-sr">댓글 내용입력</label>
+                    <textarea name="content" id="cmtContent" class="comment-content" placeholder="댓글을 입력하세요. (욕설 및 비하 내용은 관련법률에 의해 제재될 수 있습니다.)" maxlength="{{ comment_max_length }}" required></textarea>
+                    <footer class="wrt-footer">
+                        <span class="cur--length"><strong class="comment-text-cur">0</strong> / {{ comment_max_length }}</span>
+                        <button type="submit" class="btn-comment-save">등록</button>
+                    </footer>
+                </form>
+            </article>
+
+            <!-- 댓글 목록 -->
+            <article id="comment-list">
+                <section class="normal-content">
+                    {% for cmt in comments %}
+                    <div class="comment-item">
+                        <div class="first">
+                            <div class="photo"><em class="pfile"></em></div>
+                            <div class="user-textbox" style="float:right;width:calc(100% - 65px)">
+                                <div class="textbox-header">
+                                    <div class="textbox-info">
+                                        <span class="name">{{ cmt.author_name }}</span>
+                                        <span class="datetime">{{ cmt.created_at.strftime('%Y.%m.%d %H:%M') }}</span>
+                                    </div>
+                                    {% if cmt.password %}
+                                    <div class="textbox-option">
+                                        <a href="#" class="btn-delete-comment" data-id="{{ cmt.id }}">삭제</a>
+                                    </div>
+                                    {% endif %}
+                                </div>
+                                <div class="comment-content-view">{{ cmt.content }}</div>
+                            </div>
+                        </div>
+                    </div>
+                    {% else %}
+                    <div class="comment-empty">등록된 댓글이 없습니다.</div>
+                    {% endfor %}
+                </section>
+            </article>
+        </article>
+
+        <!-- 댓글 삭제용 hidden form -->
+        <form id="deleteCommentForm" method="POST" action="{{ url_for('public.comment_delete') }}" style="display:none">
+            <input type="hidden" name="comment_id" id="deleteCommentId">
+            <input type="hidden" name="password" id="deleteCommentPw">
+            <input type="hidden" name="article_id" value="{{ article.id }}">
+        </form>
+        {% endif %}
     </article>
 
     <!-- 사이드바 -->
@@ -232,7 +348,7 @@
                             <div class="item{% if not loop.first %} martop-15{% endif %}">
                                 <a href="{{ url_for('public.article_view', idxno=art.id) }}" class="auto-valign">
                                     <div class="frame for-middle">
-                                        <em class="auto-images radius ratio-11" style="{% if art.thumbnail_path %}background-image:url({{ url_for('static', filename=art.thumbnail_path) }}){% else %}background-color:#e0d5ea{% endif %}"></em>
+                                        <em class="auto-images radius ratio-11" style="{% if art.thumb_url %}background-image:url({{ art.thumb_url }}){% else %}background-color:#e0d5ea{% endif %}"></em>
                                     </div>
                                     <div class="content for-middle">
                                         <H2 class="auto-titles size-15 line-3x2 auto-fontA onload">{{ art.title }}</H2>
@@ -283,6 +399,24 @@ $(document).on('click', '.fontsise-btn', function(){
     var size = parseInt(body.css('font-size'));
     if($(this).val() === 'up' && size < 24) body.css('font-size', (size+1)+'px');
     if($(this).val() === 'down' && size > 12) body.css('font-size', (size-1)+'px');
+});
+
+// 댓글 글자수 카운트
+$('#cmtContent').on('input', function(){
+    var len = $(this).val().length;
+    $('.comment-text-cur').text(len);
+});
+
+// 댓글 삭제
+$(document).on('click', '.btn-delete-comment', function(e){
+    e.preventDefault();
+    var id = $(this).data('id');
+    var pw = prompt('댓글 삭제를 위해 비밀번호를 입력하세요.');
+    if(pw !== null && pw !== ''){
+        $('#deleteCommentId').val(id);
+        $('#deleteCommentPw').val(pw);
+        $('#deleteCommentForm').submit();
+    }
 });
 </script>
 {% endblock %}

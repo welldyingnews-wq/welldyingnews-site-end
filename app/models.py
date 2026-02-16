@@ -108,6 +108,17 @@ class Article(db.Model):
         text = re.sub(r'<[^>]+>', '', self.content or '')
         return text[:200]
 
+    @property
+    def thumb_url(self):
+        """썸네일 URL 반환: thumbnail_path가 유효한 파일이면 사용, 아니면 본문 첫 이미지 추출"""
+        if self.thumbnail_path and '/' in self.thumbnail_path:
+            return '/static/' + self.thumbnail_path
+        import re
+        match = re.search(r'<img[^>]+src=["\']([^"\']+)["\']', self.content or '')
+        if match:
+            return match.group(1)
+        return ''
+
 
 class ArticleRelation(db.Model):
     """관련기사 매핑"""
@@ -128,6 +139,7 @@ class ArticleComment(db.Model):
     article_id = db.Column(db.Integer, db.ForeignKey('article.id'), nullable=False)
     author_name = db.Column(db.String(50), default='')
     content = db.Column(db.Text, nullable=False)
+    password = db.Column(db.String(200), default='')
     ip_address = db.Column(db.String(50), default='')
     is_hidden = db.Column(db.Boolean, default=False)
     created_at = db.Column(db.DateTime, default=datetime.now)
