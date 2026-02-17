@@ -580,8 +580,13 @@ def com_page(page_code):
     page = COM_PAGES.get(page_code)
     if not page:
         abort(404)
+    recaptcha_site_key = ''
+    if 'event_code' in page:
+        s = SiteSetting.query.filter_by(key='recaptcha_site_key').first()
+        recaptcha_site_key = s.value if s and s.value else ''
     return render_template('public/com_page.html',
-                           page=page, page_code=page_code, com_nav=COM_NAV)
+                           page=page, page_code=page_code, com_nav=COM_NAV,
+                           recaptcha_site_key=recaptcha_site_key)
 
 
 @public_bp.route('/com/event/submit', methods=['POST'])
@@ -603,6 +608,28 @@ def event_submit():
         flash('이름, 이메일, 연락처는 필수 입력 항목입니다.', 'error')
         return redirect(url_for('public.com_page', page_code=page_code), code=303)
 
+    # reCAPTCHA 검증
+    recaptcha_secret = _get_setting('recaptcha_secret_key', '')
+    if recaptcha_secret:
+        import urllib.request, urllib.parse
+        recaptcha_response = request.form.get('g-recaptcha-response', '')
+        if not recaptcha_response:
+            flash('자동등록방지(CAPTCHA)를 확인해주세요.', 'error')
+            return redirect(url_for('public.com_page', page_code=page_code), code=303)
+        try:
+            verify_data = urllib.parse.urlencode({
+                'secret': recaptcha_secret, 'response': recaptcha_response
+            }).encode()
+            verify_req = urllib.request.Request('https://www.google.com/recaptcha/api/siteverify',
+                                                data=verify_data, method='POST')
+            verify_resp = urllib.request.urlopen(verify_req, timeout=5)
+            result = json.loads(verify_resp.read().decode())
+            if not result.get('success'):
+                flash('자동등록방지 인증에 실패했습니다. 다시 시도해주세요.', 'error')
+                return redirect(url_for('public.com_page', page_code=page_code), code=303)
+        except Exception:
+            pass  # 검증 실패 시 통과 허용 (네트워크 오류 등)
+
     req = EventRequest(
         event_code=page['event_code'],
         name=name,
@@ -613,7 +640,7 @@ def event_submit():
         ip_address=request.remote_addr,
     )
 
-    # 기사제보 파일 첨부
+    # 기사제보 파일 첨부 (Google Drive 지원)
     if page['event_code'] == 'event4':
         import os
         from werkzeug.utils import secure_filename
@@ -624,7 +651,16 @@ def event_submit():
             os.makedirs(upload_dir, exist_ok=True)
             filepath = os.path.join(upload_dir, f'{int(datetime.now().timestamp())}_{fname}')
             file.save(filepath)
-            req.extra_data = json.dumps({'attachment': filepath}, ensure_ascii=False)
+            # Google Drive 업로드 시도
+            from app.utils.cloud_storage import gdrive_configured, gdrive_upload
+            if gdrive_configured():
+                gdrive_url = gdrive_upload(filepath, fname, file.content_type or 'application/octet-stream')
+                if gdrive_url:
+                    req.extra_data = json.dumps({'attachment': gdrive_url, 'filename': fname}, ensure_ascii=False)
+                else:
+                    req.extra_data = json.dumps({'attachment': filepath, 'filename': fname}, ensure_ascii=False)
+            else:
+                req.extra_data = json.dumps({'attachment': filepath, 'filename': fname}, ensure_ascii=False)
 
     # 구독신청 추가 필드
     if page['event_code'] == 'event5':
@@ -1183,6 +1219,25 @@ def member_update():
 
     if new_password:
         member.password_hash = generate_password_hash(new_password)
+
+    # 프로필 이미지 업로드 (Cloudinary 지원)
+    profile_file = request.files.get('profile_image')
+    if profile_file and profile_file.filename:
+        import os, uuid
+        from werkzeug.utils import secure_filename as sf
+        ext = profile_file.filename.rsplit('.', 1)[-1].lower()
+        if ext in ('jpg', 'jpeg', 'png', 'gif', 'webp'):
+            fname = f"profile_{uuid.uuid4().hex}.{ext}"
+            upload_dir = os.path.join('app', 'static', 'uploads', 'profile')
+            os.makedirs(upload_dir, exist_ok=True)
+            local_path = os.path.join(upload_dir, fname)
+            profile_file.save(local_path)
+            from app.utils.cloud_storage import cloudinary_configured, cloudinary_upload
+            if cloudinary_configured():
+                cloud_url = cloudinary_upload(local_path, folder='welldying/profiles')
+                member.profile_image = cloud_url if cloud_url else url_for('static', filename=f'uploads/profile/{fname}')
+            else:
+                member.profile_image = url_for('static', filename=f'uploads/profile/{fname}')
 
     db.session.commit()
     flash('회원정보가 수정되었습니다.', 'success')

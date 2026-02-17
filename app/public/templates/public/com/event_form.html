@@ -98,6 +98,18 @@
                 </fieldset>
                 {% endif %}
 
+                {% if recaptcha_site_key %}
+                <!-- reCAPTCHA -->
+                <fieldset class="row expanded small-collapse medium-uncollapse">
+                    <div class="medium-3 large-2 columns">
+                        <label class="medium-middle"><strong>자동등록방지</strong></label>
+                    </div>
+                    <div class="medium-9 large-10 columns">
+                        <div class="g-recaptcha" data-sitekey="{{ recaptcha_site_key }}"></div>
+                    </div>
+                </fieldset>
+                {% endif %}
+
                 <!-- 버튼 -->
                 <hr>
                 <div class="clearfix text-center" id="confirmBtn">

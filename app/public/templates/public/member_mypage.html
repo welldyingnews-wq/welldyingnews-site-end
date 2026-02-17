@@ -20,6 +20,9 @@
 .mb-mypage .help-text{font-size:.75rem;color:#999;margin-top:4px}
 .mb-mypage .button.user-bg{background-color:#5e1985!important;color:#fff}
 .mb-mypage .button.user-bg:hover{background-color:#4a1369!important}
+.mb-mypage .profile-area{text-align:center;margin-bottom:20px}
+.mb-mypage .profile-img{width:80px;height:80px;border-radius:50%;background:#e0d5ea;display:inline-block;overflow:hidden;background-size:cover;background-position:center}
+.mb-mypage .profile-img img{width:100%;height:100%;object-fit:cover}
 .callout.alert{background:#fff0f0;color:#c00;border:1px solid #fdd}
 .callout.success{background:#f0fff0;color:#2a7a2a;border:1px solid #b2e6b2}
 </style>
@@ -41,6 +44,11 @@
     {% endif %}
     {% endwith %}
 
+    <!-- 프로필 이미지 -->
+    <div class="profile-area">
+        <div class="profile-img" {% if member.profile_image %}style="background-image:url({{ member.profile_image }})"{% endif %}></div>
+    </div>
+
     <!-- 회원 정보 -->
     <article class="mb-content">
         <h3 class="join-subject">회원정보</h3>
@@ -52,9 +60,19 @@
     </article>
 
     <!-- 정보 수정 -->
-    <form method="POST" action="{{ url_for('public.member_update') }}">
+    <form method="POST" action="{{ url_for('public.member_update') }}" enctype="multipart/form-data">
         <article class="mb-content">
             <h3 class="join-subject">회원정보 수정</h3>
+
+            <fieldset class="row expanded small-collapse medium-uncollapse">
+                <div class="medium-4 columns">
+                    <label for="profile_image" class="text-left medium-middle"><strong>프로필 이미지</strong></label>
+                </div>
+                <div class="medium-8 columns">
+                    <input type="file" id="profile_image" name="profile_image" accept="image/*">
+                    <span class="help-text">jpg, png, gif (최대 2MB)</span>
+                </div>
+            </fieldset>
 
             <fieldset class="row expanded small-collapse medium-uncollapse">
                 <div class="medium-4 columns">

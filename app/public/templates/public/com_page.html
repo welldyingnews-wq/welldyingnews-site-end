@@ -160,4 +160,7 @@
 
     <div class="clearfix" style="margin-bottom:60px"></div>
 </div>
+{% if recaptcha_site_key %}
+<script src="https://www.google.com/recaptcha/api.js" async defer></script>
+{% endif %}
 {% endblock %}

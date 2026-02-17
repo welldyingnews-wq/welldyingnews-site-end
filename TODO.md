@@ -24,7 +24,7 @@
 - [x] 댓글 추천/비추천 투표 기능 (AJAX, IP/회원 중복 방지)
 - [x] "더보기" 페이지네이션 (5개씩 더보기 버튼)
 - [x] 댓글 수정 기능 (비밀번호/회원 확인 후 인라인 수정)
-- [ ] 작성자 프로필 이미지 표시 누락
+- [x] 작성자 프로필 이미지 표시 (Member.profile_image → 댓글 .pfile에 표시)
 - [x] 작성자 IP 부분 숨김 표시 (123.456.***.***)
 
 ### 사이드바
@@ -65,7 +65,7 @@
 
 - [x] 폼 레이아웃 2컬럼 그리드 (Foundation medium-3/medium-9 grid)
 - [x] 기사제보 페이지 파일 첨부 필드 (event4 전용, 10MB 제한)
-- [ ] 자동등록방지(CAPTCHA) 누락 (원본: Google reCAPTCHA)
+- [x] 자동등록방지(CAPTCHA) — Google reCAPTCHA v2 (관리자 설정에서 Site Key/Secret Key 입력)
 - [x] 개인정보 동의 문구 원본 일치
 
 ---
@@ -108,8 +108,8 @@
 - [x] BEST 댓글 설정 (기준수, 노출수)
 - [x] 작성자 이름/IP/아이디 숨김 처리 설정
 - [x] 관리자 표기 이름 변경 설정
-- [ ] 프로필 이미지 업로드 설정 누락
-- [ ] 비회원 CAPTCHA 설정 누락
+- [x] 프로필 이미지 업로드 설정 (허용/미허용 토글)
+- [x] 비회원 CAPTCHA 설정 (reCAPTCHA Site Key/Secret Key 입력)
 
 ### 기사설정
 - [x] 섹션 설정 페이지에서 드래그앤드롭 순서 변경 기능 (Sortable.js)
@@ -130,7 +130,7 @@
 ### 기사 작성
 - [x] 사진/영상/파일 업로드 Dropzone.js 드래그앤드롭 (클릭하면 본문 삽입)
 - [x] 임시보관함(자동저장) 기능 (ArticleDraft 모델, 60초 자동저장, 이어쓰기)
-- [ ] 포토DB 검색/즐겨찾기 기능 누락
+- [x] 포토DB 검색/즐겨찾기 기능 (Photo 모델, 업로드 시 자동 등록, 검색 모달 + 즐겨찾기 토글)
 - [x] 기자 선택 팝업 (모달 — AdminUser 목록에서 선택)
 - [x] 본문 크기 토글 (데스크탑/모바일 미리보기 전환)
 
@@ -169,14 +169,15 @@
 ## 10. 이미지 Cloudinary 전환
 
 > 이미지 파일(기사 본문/썸네일/배너/팝업/프로필)은 Cloudinary를 통해 업로드/서빙.
+> 환경변수(CLOUDINARY_CLOUD_NAME, CLOUDINARY_API_KEY, CLOUDINARY_API_SECRET) 설정 시 자동 활성화.
 
-- [ ] Cloudinary SDK 연동 (cloudinary python SDK 설치, 환경변수 설정: CLOUD_NAME, API_KEY, API_SECRET)
-- [ ] 기사 본문 이미지 업로드 → Cloudinary (admin upload_image 라우트 변경)
-- [ ] 기사 대표 이미지(thumbnail) 업로드 → Cloudinary
-- [ ] Dropzone 이미지 업로드 → Cloudinary (업로드 후 Cloudinary URL 반환)
-- [ ] 배너/팝업 이미지 업로드 → Cloudinary
-- [ ] 회원 프로필 이미지 업로드 → Cloudinary
-- [ ] 댓글 작성자 프로필 이미지 → Cloudinary URL 참조
+- [x] Cloudinary SDK 연동 (app/utils/cloud_storage.py — cloudinary_upload 함수)
+- [x] 기사 본문 이미지 업로드 → Cloudinary (admin upload_image 라우트)
+- [x] 기사 대표 이미지(thumbnail) 업로드 → Cloudinary
+- [x] Dropzone 이미지 업로드 → Cloudinary (업로드 후 Cloudinary URL 반환)
+- [x] 배너/팝업 이미지 업로드 → Cloudinary
+- [x] 회원 프로필 이미지 업로드 → Cloudinary
+- [x] 댓글 작성자 프로필 이미지 → Cloudinary URL 참조 (Member.profile_image)
 - [ ] 기존 로컬 이미지(`static/uploads/`) → Cloudinary 마이그레이션 스크립트 작성
 - [ ] 모든 템플릿에서 로컬 이미지 경로를 Cloudinary URL로 교체
 
@@ -185,12 +186,12 @@
 ## 11. 첨부파일 Google Drive 전환
 
 > 이미지가 아닌 첨부파일(문서, PDF, HWP 등)은 Google Drive를 통해 업로드/서빙.
+> 환경변수(GOOGLE_SERVICE_ACCOUNT_JSON, GOOGLE_DRIVE_FOLDER_ID) 설정 시 자동 활성화.
 
-- [ ] Google Drive API 연동 (google-api-python-client SDK 설치, 서비스 계정 키 설정)
-- [ ] 공유 폴더 설정 (업로드 대상 폴더 ID 환경변수)
-- [ ] 기사제보 첨부파일(.doc/.hwp/.pdf 등) 업로드 → Google Drive
-- [ ] Dropzone 비이미지 파일 업로드 → Google Drive (업로드 후 공유 링크 반환)
-- [ ] 첨부파일 다운로드 링크를 Google Drive 공유 URL로 변경
+- [x] Google Drive API 연동 (app/utils/cloud_storage.py — gdrive_upload 함수)
+- [x] 공유 폴더 설정 (GOOGLE_DRIVE_FOLDER_ID 환경변수)
+- [x] 기사제보 첨부파일(.doc/.hwp/.pdf 등) 업로드 → Google Drive
+- [x] Dropzone 비이미지 파일 업로드 → Google Drive (업로드 후 공유 링크 반환)
 - [ ] 기존 로컬 첨부파일 → Google Drive 마이그레이션 스크립트 작성
 
 ---
@@ -219,4 +220,3 @@
 - [x] 회원 로그인/로그아웃/마이페이지
 - [x] 모바일 뷰 (UA 감지 + 전용 레이아웃)
 - [x] 편집 레이아웃 (드래그앤드롭 블록 편집기)
-

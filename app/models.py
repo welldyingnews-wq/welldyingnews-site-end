@@ -30,6 +30,7 @@ class Member(db.Model):
     email = db.Column(db.String(100), default='')
     phone = db.Column(db.String(20), default='')
     level = db.Column(db.String(20), default='일반')  # 일반/시민기자/기자/데스크
+    profile_image = db.Column(db.String(500), default='')  # 프로필 이미지 경로/URL
     is_active = db.Column(db.Boolean, default=True)
     is_dormant = db.Column(db.Boolean, default=False)  # 휴면회원
     created_at = db.Column(db.DateTime, default=datetime.now)
@@ -292,6 +293,7 @@ class BoardReply(db.Model):
     is_hidden = db.Column(db.Boolean, default=False)
     created_at = db.Column(db.DateTime, default=datetime.now)
     post = db.relationship('BoardPost', backref=db.backref('replies', lazy='dynamic'))
+    member = db.relationship('Member', backref='board_replies')
     children = db.relationship('BoardReply', backref=db.backref('parent', remote_side='BoardReply.id'),
                                lazy='dynamic', order_by='BoardReply.created_at.asc()')
 
@@ -399,3 +401,19 @@ class LayoutBlock(db.Model):
     settings = db.Column(db.Text, default='{}')  # JSON: section_code, count, skin 등
     sort_order = db.Column(db.Integer, default=0)
     is_active = db.Column(db.Boolean, default=True)
+
+
+class Photo(db.Model):
+    """포토DB (업로드된 이미지 관리)"""
+    __tablename__ = 'photo'
+    id = db.Column(db.Integer, primary_key=True)
+    filename = db.Column(db.String(200), nullable=False)
+    original_name = db.Column(db.String(200), default='')
+    file_path = db.Column(db.String(500), nullable=False)
+    file_url = db.Column(db.String(500), default='')
+    file_size = db.Column(db.Integer, default=0)
+    width = db.Column(db.Integer, default=0)
+    height = db.Column(db.Integer, default=0)
+    is_favorite = db.Column(db.Boolean, default=False)
+    uploaded_by = db.Column(db.String(50), default='')
+    created_at = db.Column(db.DateTime, default=datetime.now)

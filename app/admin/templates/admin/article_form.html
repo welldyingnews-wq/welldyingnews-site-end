@@ -104,7 +104,10 @@
             <div class="card mb-3">
                 <div class="card-header d-flex justify-content-between align-items-center py-2">
                     <strong>사진/파일 업로드</strong>
-                    <small class="text-muted">드래그앤드롭 또는 클릭하여 업로드 (클릭하면 본문에 삽입)</small>
+                    <div>
+                        <button type="button" class="btn btn-sm btn-outline-primary" data-bs-toggle="modal" data-bs-target="#photoDbModal"><i class="bi bi-images"></i> 포토DB</button>
+                        <small class="text-muted ms-2">드래그앤드롭 또는 클릭하여 업로드</small>
+                    </div>
                 </div>
                 <div class="card-body">
                     <div id="mediaDropzone" class="dz-area">
@@ -306,6 +309,29 @@
         </div>
     </div>
 </form>
+
+<!-- 포토DB 모달 -->
+<div class="modal fade" id="photoDbModal" tabindex="-1">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h6 class="modal-title">포토DB</h6>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <div class="d-flex gap-2 mb-3">
+                    <input type="text" id="photoSearchInput" class="form-control form-control-sm" placeholder="파일명 검색...">
+                    <button type="button" class="btn btn-sm btn-outline-secondary" onclick="searchPhotos()"><i class="bi bi-search"></i></button>
+                    <button type="button" class="btn btn-sm btn-outline-warning" id="photoFavFilter" onclick="toggleFavFilter()"><i class="bi bi-star"></i> 즐겨찾기</button>
+                </div>
+                <div id="photoGrid" style="display:grid;grid-template-columns:repeat(auto-fill,minmax(100px,1fr));gap:8px;max-height:400px;overflow-y:auto"></div>
+                <div class="text-center mt-2">
+                    <button type="button" class="btn btn-sm btn-outline-secondary" id="photoLoadMore" onclick="loadMorePhotos()" style="display:none">더보기</button>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
 
 <!-- 기자 선택 모달 -->
 <div class="modal fade" id="reporterModal" tabindex="-1">
@@ -697,6 +723,61 @@ document.getElementById('sectionSelect').addEventListener('change', function() {
                 subSelect.appendChild(opt);
             });
         });
+});
+
+// ── 포토DB ──
+var photoPage = 1, photoFav = false, photoQuery = '';
+function searchPhotos() {
+    photoQuery = document.getElementById('photoSearchInput').value;
+    photoPage = 1;
+    document.getElementById('photoGrid').innerHTML = '';
+    loadPhotos();
+}
+function toggleFavFilter() {
+    photoFav = !photoFav;
+    document.getElementById('photoFavFilter').classList.toggle('btn-warning', photoFav);
+    document.getElementById('photoFavFilter').classList.toggle('btn-outline-warning', !photoFav);
+    searchPhotos();
+}
+function loadMorePhotos() { photoPage++; loadPhotos(); }
+function loadPhotos() {
+    var url = '/admin/api/photos?page=' + photoPage + '&q=' + encodeURIComponent(photoQuery);
+    if (photoFav) url += '&favorite=1';
+    fetch(url).then(r => r.json()).then(data => {
+        var grid = document.getElementById('photoGrid');
+        data.photos.forEach(function(p) {
+            var div = document.createElement('div');
+            div.style.cssText = 'position:relative;cursor:pointer;border:1px solid #ddd;border-radius:4px;overflow:hidden';
+            div.innerHTML = '<img src="' + p.url + '" style="width:100%;height:80px;object-fit:cover" title="' + p.original_name + '">'
+                + '<div style="position:absolute;top:2px;right:2px"><button type="button" onclick="event.stopPropagation();togglePhotoFav(' + p.id + ',this)" class="btn btn-sm p-0" style="font-size:14px;line-height:1">' + (p.is_favorite ? '⭐' : '☆') + '</button></div>'
+                + '<div style="font-size:9px;padding:2px 4px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">' + p.original_name + '</div>';
+            div.addEventListener('click', function() { insertPhotoToEditor(p.url); });
+            grid.appendChild(div);
+        });
+        document.getElementById('photoLoadMore').style.display = (data.photos.length >= data.per_page) ? '' : 'none';
+    });
+}
+function togglePhotoFav(id, btn) {
+    fetch('/admin/api/photos/' + id + '/favorite', {method:'POST'}).then(r => r.json()).then(data => {
+        btn.textContent = data.is_favorite ? '⭐' : '☆';
+    });
+}
+function insertPhotoToEditor(url) {
+    if (window.editorInstance) {
+        window.editorInstance.model.change(function(writer) {
+            var img = writer.createElement('imageBlock', {src: url});
+            window.editorInstance.model.insertContent(img);
+        });
+    }
+    bootstrap.Modal.getInstance(document.getElementById('photoDbModal')).hide();
+}
+document.getElementById('photoDbModal').addEventListener('show.bs.modal', function() {
+    photoPage = 1; photoQuery = ''; photoFav = false;
+    document.getElementById('photoSearchInput').value = '';
+    document.getElementById('photoGrid').innerHTML = '';
+    document.getElementById('photoFavFilter').classList.remove('btn-warning');
+    document.getElementById('photoFavFilter').classList.add('btn-outline-warning');
+    loadPhotos();
 });
 </script>
 {% endblock %}

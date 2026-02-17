@@ -112,6 +112,14 @@
                     <textarea id="ev_othertext" name="othertext" placeholder="요구사항을 입력해주세요" required></textarea>
                 </fieldset>
 
+                {% if recaptcha_site_key %}
+                <!-- reCAPTCHA -->
+                <fieldset class="event-field">
+                    <label><strong>자동등록방지</strong></label>
+                    <div class="g-recaptcha" data-sitekey="{{ recaptcha_site_key }}"></div>
+                </fieldset>
+                {% endif %}
+
                 <!-- 버튼 -->
                 <div id="confirmBtn" class="event-buttons">
                     <button type="submit" class="button user-bg">확인</button>

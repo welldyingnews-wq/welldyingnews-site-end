@@ -15,7 +15,7 @@ from app.models import (db, AdminUser, Section, SubSection, Article, ArticleRela
                         ArticleDraft, SiteSetting, ArticleComment, Board, BoardPost,
                         BoardReply, EventRequest, Banner, Popup, Poll, PollOption,
                         SerialCode, Department, MemberDivision, EtcLevel, LayoutBlock,
-                        Member, MemberLog, DailyStat, PageView, VisitorLog)
+                        Member, MemberLog, DailyStat, PageView, VisitorLog, Photo)
 
 
 def admin_required(f):
@@ -270,13 +270,18 @@ def _save_article(article):
     else:
         article.embargo_date = None
 
-    # 썸네일 업로드
+    # 썸네일 업로드 (Cloudinary 지원)
     thumbnail = request.files.get('thumbnail')
     if thumbnail and thumbnail.filename:
+        from app.utils.cloud_storage import cloudinary_configured, cloudinary_upload
         filename = f"{uuid.uuid4().hex}_{secure_filename(thumbnail.filename)}"
         filepath = os.path.join(current_app.config['UPLOAD_FOLDER'], filename)
         thumbnail.save(filepath)
-        article.thumbnail_path = f'uploads/{filename}'
+        if cloudinary_configured():
+            cloud_url = cloudinary_upload(filepath, folder='welldying/thumbnails')
+            article.thumbnail_path = cloud_url if cloud_url else f'uploads/{filename}'
+        else:
+            article.thumbnail_path = f'uploads/{filename}'
 
     article.updated_at = datetime.now()
     if is_new:
@@ -521,16 +526,85 @@ def find_related():
 @admin_bp.route('/api/upload-image', methods=['POST'])
 @admin_required
 def upload_image():
-    """CKEditor 이미지 업로드 API"""
+    """CKEditor 이미지 업로드 API + 포토DB 저장 (Cloudinary/Google Drive 지원)"""
+    from app.utils.cloud_storage import cloudinary_configured, cloudinary_upload, gdrive_configured, gdrive_upload
+
     upload = request.files.get('upload')
     if not upload or not upload.filename:
         return jsonify({'error': {'message': '파일이 없습니다.'}}), 400
 
+    original_name = upload.filename
     filename = f"{uuid.uuid4().hex}_{secure_filename(upload.filename)}"
     filepath = os.path.join(current_app.config['UPLOAD_FOLDER'], filename)
     upload.save(filepath)
-    url = url_for('static', filename=f'uploads/{filename}')
+
+    ext = filename.rsplit('.', 1)[-1].lower() if '.' in filename else ''
+    is_image = ext in ('jpg', 'jpeg', 'png', 'gif', 'webp', 'bmp', 'svg')
+
+    # Cloudinary 업로드 시도 (이미지) / Google Drive 업로드 시도 (비이미지)
+    if is_image and cloudinary_configured():
+        cloud_url = cloudinary_upload(filepath, folder='welldying/articles')
+        url = cloud_url if cloud_url else url_for('static', filename=f'uploads/{filename}')
+    elif not is_image and gdrive_configured():
+        gdrive_url = gdrive_upload(filepath, original_name, upload.content_type or 'application/octet-stream')
+        url = gdrive_url if gdrive_url else url_for('static', filename=f'uploads/{filename}')
+    else:
+        url = url_for('static', filename=f'uploads/{filename}')
+
+    # 이미지 파일이면 포토DB에 저장
+    if is_image:
+        file_size = os.path.getsize(filepath)
+        photo = Photo(
+            filename=filename, original_name=original_name,
+            file_path=filepath, file_url=url,
+            file_size=file_size,
+            uploaded_by=current_user.name if current_user else ''
+        )
+        db.session.add(photo)
+        db.session.commit()
+
     return jsonify({'url': url})
+
+
+# ── 포토DB ──
+
+@admin_bp.route('/api/photos')
+@admin_required
+def api_photos():
+    """포토DB 목록/검색 API"""
+    q = request.args.get('q', '').strip()
+    fav = request.args.get('favorite', '')
+    page = request.args.get('page', 1, type=int)
+    per_page = 20
+
+    query = Photo.query
+    if q:
+        query = query.filter(Photo.original_name.contains(q))
+    if fav == '1':
+        query = query.filter_by(is_favorite=True)
+    query = query.order_by(Photo.created_at.desc())
+    total = query.count()
+    photos = query.offset((page - 1) * per_page).limit(per_page).all()
+
+    return jsonify({
+        'photos': [{
+            'id': p.id, 'filename': p.filename, 'original_name': p.original_name,
+            'url': p.file_url, 'file_size': p.file_size,
+            'is_favorite': p.is_favorite, 'uploaded_by': p.uploaded_by,
+            'created_at': p.created_at.strftime('%Y-%m-%d %H:%M')
+        } for p in photos],
+        'total': total, 'page': page, 'per_page': per_page
+    })
+
+
+@admin_bp.route('/api/photos/<int:photo_id>/favorite', methods=['POST'])
+@admin_required
+def api_photo_favorite(photo_id):
+    """포토DB 즐겨찾기 토글"""
+    photo = Photo.query.get_or_404(photo_id)
+    photo.is_favorite = not photo.is_favorite
+    db.session.commit()
+    return jsonify({'ok': True, 'is_favorite': photo.is_favorite})
 
 
 # ── 임시보관함 ──
@@ -1799,10 +1873,15 @@ def _save_banner(banner):
     banner.is_active = request.form.get('is_active') == '1'
     image = request.files.get('image')
     if image and image.filename:
+        from app.utils.cloud_storage import cloudinary_configured, cloudinary_upload
         filename = f"{uuid.uuid4().hex}_{secure_filename(image.filename)}"
         filepath = os.path.join(current_app.config['UPLOAD_FOLDER'], filename)
         image.save(filepath)
-        banner.image_path = f'uploads/{filename}'
+        if cloudinary_configured():
+            cloud_url = cloudinary_upload(filepath, folder='welldying/banners')
+            banner.image_path = cloud_url if cloud_url else f'uploads/{filename}'
+        else:
+            banner.image_path = f'uploads/{filename}'
     if is_new:
         max_order = db.session.query(db.func.max(Banner.sort_order)).scalar() or 0
         banner.sort_order = max_order + 1
@@ -1857,10 +1936,15 @@ def _save_popup(popup):
     popup.is_active = request.form.get('is_active') == '1'
     image = request.files.get('image')
     if image and image.filename:
+        from app.utils.cloud_storage import cloudinary_configured, cloudinary_upload
         filename = f"{uuid.uuid4().hex}_{secure_filename(image.filename)}"
         filepath = os.path.join(current_app.config['UPLOAD_FOLDER'], filename)
         image.save(filepath)
-        popup.image_path = f'uploads/{filename}'
+        if cloudinary_configured():
+            cloud_url = cloudinary_upload(filepath, folder='welldying/popups')
+            popup.image_path = cloud_url if cloud_url else f'uploads/{filename}'
+        else:
+            popup.image_path = f'uploads/{filename}'
     if is_new:
         db.session.add(popup)
     db.session.commit()
@@ -2029,6 +2113,8 @@ def settings_comment():
                 'comment_best_threshold', 'comment_best_count',
                 'comment_show_name', 'comment_show_ip', 'comment_show_id',
                 'comment_admin_name',
+                'comment_profile_image', 'comment_captcha_use',
+                'recaptcha_site_key', 'recaptcha_secret_key',
                 'bbs_comment_use', 'bbs_comment_login_required']
         for key in keys:
             setting = SiteSetting.query.filter_by(key=key).first()

@@ -454,7 +454,7 @@
             {% macro render_comment(cmt, is_reply=false) %}
             <div class="comment-item{% if is_reply %} reply-item{% endif %}" id="cmt-{{ cmt.id }}">
                 <div class="first">
-                    <div class="photo"><em class="pfile"></em></div>
+                    <div class="photo">{% if cmt.member and cmt.member.profile_image %}<em class="pfile" style="background-image:url({{ cmt.member.profile_image }});background-size:cover;background-position:center"></em>{% else %}<em class="pfile"></em>{% endif %}</div>
                     <div class="user-textbox" style="float:right;width:calc(100% - {% if is_reply %}55{% else %}65{% endif %}px)">
                         <div class="textbox-header">
                             <div class="textbox-info">
