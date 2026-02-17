@@ -138,6 +138,11 @@
 #sticky-header .aht-btn {display:none}
 #sticky-header .aht-wrapper {padding:10px 15px}
 {% endif %}
+/* 글자크기 아이콘 */
+#article-view .quick-tool .font-size {display:inline-block;margin:0 auto}
+#article-view .quick-tool .font-size::before {content:'';display:inline-block;width:16px;height:16px;background-size:contain;background-repeat:no-repeat;background-position:center;vertical-align:middle}
+#article-view .quick-tool .font-size.down::before {background-image:url({{ url_for('static', filename='images/font-size-down.svg') }})}
+#article-view .quick-tool .font-size.up::before {background-image:url({{ url_for('static', filename='images/font-size-up.svg') }})}
 /* 다른 공유 모달 */
 .social-group.for-other {font-size:0;text-align:left}
 .social-group.for-other::after {content:'';display:table;clear:both}
