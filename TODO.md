@@ -28,7 +28,7 @@
 - [x] 작성자 IP 부분 숨김 표시 (123.456.***.***)
 
 ### 사이드바
-- [ ] 탭 플러그인이 원본과 다름 (원본: `jquery.tabslet` 사용)
+- [x] 탭 플러그인 (커스텀 JS로 tabslet 동일 동작 구현)
 - [ ] 사이드바 배너 위치/순서가 원본과 다를 수 있음
 
 ---
@@ -50,7 +50,7 @@
 ### 목록 페이지
 - [x] 검색 영역 레이아웃 (flex-end 우측 정렬 — 원본과 동일)
 - [x] 테이블 접근성 속성 (`scope="col"`, `summary`, `caption`, `show-for-medium/large`)
-- [ ] 비밀글(secret post) 옵션 누락
+- [x] 비밀글(secret post) 옵션 (is_secret + 비밀번호 확인 페이지)
 - [x] 페이지네이션 스타일 (`pagin-group`, `pagination-start/end`, `current user-bg`)
 
 ### 상세/글쓰기
@@ -80,7 +80,7 @@
 ## 6. 배너/팝업
 
 - [x] 팝업 모바일 노출 (중앙 모달 스타일, 오늘 하루 보지 않기 지원)
-- [ ] 윙배너(wing banner) / 플로팅 배너 미구현
+- [x] 윙배너(wing banner) 구현 (position:fixed, wing_left/wing_right, 닫기 버튼)
 - [x] 팝업 "오늘 하루 보지 않기" 쿠키 기능 (base.html에 구현 완료)
 
 ---

@@ -416,6 +416,30 @@
 {# ==================== CONTENT (shared) ==================== #}
 {% block content %}{% endblock %}
 
+{# ==================== 윙배너 (데스크탑 전용) ==================== #}
+{% if not is_mobile %}
+{% if banners.get('wing_left') %}
+<div class="wing-banner wing-left" style="position:fixed;z-index:990;left:10px;top:50%;transform:translateY(-50%)">
+    {% for b in banners['wing_left'] %}
+    <a href="{{ url_for('public.banner_click', banner_id=b.id) }}" target="_blank" rel="noopener" style="display:block{% if not loop.first %};margin-top:5px{% endif %}">
+        <img src="{{ url_for('static', filename=b.image_path) }}" alt="{{ b.name }}" style="max-width:120px">
+    </a>
+    {% endfor %}
+    <button type="button" class="wing-close" onclick="this.parentElement.style.display='none'" style="position:absolute;top:-8px;right:-8px;width:20px;height:20px;border-radius:50%;border:1px solid #ddd;background:#fff;font-size:10px;line-height:18px;text-align:center;cursor:pointer;color:#999">&times;</button>
+</div>
+{% endif %}
+{% if banners.get('wing_right') %}
+<div class="wing-banner wing-right" style="position:fixed;z-index:990;right:10px;top:50%;transform:translateY(-50%)">
+    {% for b in banners['wing_right'] %}
+    <a href="{{ url_for('public.banner_click', banner_id=b.id) }}" target="_blank" rel="noopener" style="display:block{% if not loop.first %};margin-top:5px{% endif %}">
+        <img src="{{ url_for('static', filename=b.image_path) }}" alt="{{ b.name }}" style="max-width:120px">
+    </a>
+    {% endfor %}
+    <button type="button" class="wing-close" onclick="this.parentElement.style.display='none'" style="position:absolute;top:-8px;left:-8px;width:20px;height:20px;border-radius:50%;border:1px solid #ddd;background:#fff;font-size:10px;line-height:18px;text-align:center;cursor:pointer;color:#999">&times;</button>
+</div>
+{% endif %}
+{% endif %}
+
 {% if is_mobile %}
 {# ==================== MOBILE FOOTER ==================== #}
 </section>

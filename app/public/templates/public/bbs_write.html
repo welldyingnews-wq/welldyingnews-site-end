@@ -75,6 +75,16 @@
                 <textarea name="content" placeholder="내용을 입력하세요" required>{{ edit_post.content if edit_post else '' }}</textarea>
             </div>
         </div>
+        {% if not edit_post %}
+        <div class="form-row">
+            <div class="label-cell">옵션</div>
+            <div class="input-cell" style="display:flex;align-items:center;height:38px">
+                <label style="display:flex;align-items:center;gap:5px;font-size:14px;cursor:pointer">
+                    <input type="checkbox" name="is_secret" value="1"> <i class="icon-lock"></i> 비밀글
+                </label>
+            </div>
+        </div>
+        {% endif %}
     </div>
 
     <div class="bbs-write-actions">

@@ -625,6 +625,10 @@ def bbs_view():
     if post.is_hidden:
         abort(404)
 
+    # 비밀글 접근 확인
+    if post.is_secret and not session.get(f'bbs_secret_{post.id}'):
+        return render_template('public/bbs_secret.html', post=post, board=post.board)
+
     # 조회수 증가
     post.view_count += 1
     db.session.commit()
@@ -676,12 +680,15 @@ def bbs_write():
         flash('제목과 내용을 입력해주세요.', 'error')
         return redirect(url_for('public.bbs_write_form', table=table))
 
+    is_secret = request.form.get('is_secret') == '1'
+
     post = BoardPost(
         board_id=board.id,
         title=title,
         content=content,
         author_name=author_name or '익명',
-        password=generate_password_hash(password) if password else ''
+        password=generate_password_hash(password) if password else '',
+        is_secret=is_secret
     )
     db.session.add(post)
     db.session.commit()
@@ -707,6 +714,22 @@ def bbs_delete():
     db.session.commit()
 
     return redirect(url_for('public.bbs_list', table=table))
+
+
+@public_bp.route('/bbs/secret/verify', methods=['POST'])
+def bbs_secret_verify():
+    """비밀글 비밀번호 확인"""
+    post_id = request.form.get('post_id', 0, type=int)
+    password = request.form.get('password', '').strip()
+
+    post = BoardPost.query.get_or_404(post_id)
+
+    if not post.password or not check_password_hash(post.password, password):
+        flash('비밀번호가 일치하지 않습니다.', 'error')
+        return redirect(url_for('public.bbs_view', idxno=post_id))
+
+    session[f'bbs_secret_{post_id}'] = True
+    return redirect(url_for('public.bbs_view', idxno=post_id))
 
 
 @public_bp.route('/bbs/edit/verify', methods=['POST'])

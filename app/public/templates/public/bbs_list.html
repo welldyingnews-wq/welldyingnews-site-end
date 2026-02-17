@@ -85,7 +85,7 @@
             <tr>
                 <td class="text-center bbs-skin-width-small">{{ row_num }}</td>
                 <td class="bbs-list-title bbs-skin-width-large">
-                    <a href="{{ url_for('public.bbs_view', idxno=post.id) }}">{{ post.title }}</a>
+                    <a href="{{ url_for('public.bbs_view', idxno=post.id) }}">{% if post.is_secret %}<i class="icon-lock" style="color:#5e1985;font-size:12px"></i> {% endif %}{{ post.title }}</a>
                     {% if post.view_count >= 100 %}<span class="label alert tiny">HOT</span>{% endif %}
                     {% set reply_count = post.replies.filter_by(is_hidden=False).count() %}
                     {% if reply_count > 0 %}<span class="reply-count">[{{ reply_count }}]</span>{% endif %}

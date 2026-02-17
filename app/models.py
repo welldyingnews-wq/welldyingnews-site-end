@@ -200,6 +200,7 @@ class BoardPost(db.Model):
     password = db.Column(db.String(200), default='')
     view_count = db.Column(db.Integer, default=0)
     is_hidden = db.Column(db.Boolean, default=False)
+    is_secret = db.Column(db.Boolean, default=False)
     created_at = db.Column(db.DateTime, default=datetime.now)
     board = db.relationship('Board', backref=db.backref('posts', lazy='dynamic'))
 
