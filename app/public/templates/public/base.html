@@ -194,6 +194,34 @@
     <div class="nav-overlap"></div>
 </header>
 
+<!-- 모바일 팝업 -->
+{% if popups %}
+{% for popup in popups %}
+<div class="popup-layer popup-mobile" id="popup-m-{{ popup.id }}" style="position:fixed;z-index:99999;left:50%;top:50%;transform:translate(-50%,-50%);width:calc(100vw - 40px);max-width:360px;display:none">
+    <div class="popup-content" style="background:#fff;border:1px solid #333;box-shadow:0 4px 20px rgba(0,0,0,.3);border-radius:6px;overflow:hidden">
+        {% if popup.image_path %}
+        <div class="popup-image">
+            {% if popup.link_url %}<a href="{{ popup.link_url }}" target="_blank" rel="noopener">{% endif %}
+            <img src="{{ url_for('static', filename=popup.image_path) }}" alt="{{ popup.name }}" style="display:block;width:100%">
+            {% if popup.link_url %}</a>{% endif %}
+        </div>
+        {% endif %}
+        {% if popup.content %}
+        <div class="popup-body" style="padding:12px;font-size:13px;line-height:1.6;color:#333">
+            {{ popup.content|safe }}
+        </div>
+        {% endif %}
+        <div class="popup-footer" style="display:flex;justify-content:space-between;align-items:center;padding:8px 10px;background:#f5f5f5;border-top:1px solid #ddd;font-size:11px">
+            <label style="cursor:pointer;color:#666;display:flex;align-items:center;gap:4px">
+                <input type="checkbox" class="popup-today-close" data-popup-id="m-{{ popup.id }}"> 오늘 하루 보지 않기
+            </label>
+            <button type="button" class="popup-close-btn" data-popup-id="m-{{ popup.id }}" style="padding:4px 12px;background:#5e1985;color:#fff;border:none;border-radius:3px;font-size:11px;cursor:pointer">닫기</button>
+        </div>
+    </div>
+</div>
+{% endfor %}
+{% endif %}
+
 <!-- 본문 -->
 <section id="user-container" class="pady-0">
 

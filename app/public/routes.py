@@ -7,8 +7,8 @@ from werkzeug.security import generate_password_hash, check_password_hash
 
 import json
 from app.models import (db, Section, SubSection, Article, ArticleRelation, ArticleComment,
-                        SiteSetting, Board, BoardPost, BoardReply, Banner, EventRequest, Popup,
-                        Poll, PollOption, Member)
+                        CommentVote, SiteSetting, Board, BoardPost, BoardReply, Banner,
+                        EventRequest, Popup, Poll, PollOption, Member)
 from app.public import public_bp
 
 
@@ -251,15 +251,24 @@ def article_view():
     comment_max_length = int(_get_setting('comment_max_length', '500') or 500)
     comment_sort = request.args.get('csort', 'newest')  # newest / oldest
     comments = []
+    best_comments = []
     comment_count = 0
     if comment_use != 'N':
-        q = article.comments.filter_by(is_hidden=False)
+        # 전체 댓글 수 (대댓글 포함)
+        comment_count = article.comments.filter_by(is_hidden=False).count()
+        # 최상위 댓글만 (parent_id IS NULL)
+        q = article.comments.filter_by(is_hidden=False, parent_id=None)
         if comment_sort == 'oldest':
             q = q.order_by(ArticleComment.created_at.asc())
         else:
             q = q.order_by(ArticleComment.created_at.desc())
         comments = q.all()
-        comment_count = len(comments)
+        # BEST 댓글: 추천 3개 이상, 최대 3개
+        best_comments = article.comments.filter(
+            ArticleComment.is_hidden == False,
+            ArticleComment.like_count >= 3,
+            ArticleComment.parent_id == None
+        ).order_by(ArticleComment.like_count.desc()).limit(3).all()
 
     return render_template('public/article_view.html',
                            article=article,
@@ -271,6 +280,7 @@ def article_view():
                            popular_today=popular_today,
                            popular_week=popular_week,
                            comments=comments,
+                           best_comments=best_comments,
                            comment_count=comment_count,
                            comment_use=comment_use,
                            comment_max_length=comment_max_length,
@@ -285,6 +295,7 @@ def _get_setting(key, default=''):
 @public_bp.route('/news/comment/write', methods=['POST'])
 def comment_write():
     article_id = request.form.get('article_id', 0, type=int)
+    parent_id = request.form.get('parent_id', 0, type=int) or None
     author_name = request.form.get('author_name', '').strip()
     password = request.form.get('password', '').strip()
     content = request.form.get('content', '').strip()
@@ -321,6 +332,7 @@ def comment_write():
 
     comment = ArticleComment(
         article_id=article_id,
+        parent_id=parent_id,
         member_id=member_id if member_id else None,
         author_name=author_name or '익명',
         content=content,
@@ -343,16 +355,92 @@ def comment_delete():
 
     # 로그인 회원 본인 댓글이면 비밀번호 없이 삭제
     member_id = session.get('member_id')
+    can_delete = False
     if comment.member_id and comment.member_id == member_id:
-        db.session.delete(comment)
-        db.session.commit()
-        return redirect(url_for('public.article_view', idxno=article_id) + '#comment')
+        can_delete = True
+    elif comment.password and check_password_hash(comment.password, password):
+        can_delete = True
 
-    if not comment.password or not check_password_hash(comment.password, password):
+    if not can_delete:
         flash('비밀번호가 일치하지 않습니다.', 'error')
         return redirect(url_for('public.article_view', idxno=article_id) + '#comment')
 
+    # 대댓글도 함께 삭제
+    ArticleComment.query.filter_by(parent_id=comment.id).delete()
+    CommentVote.query.filter_by(comment_id=comment.id).delete()
     db.session.delete(comment)
+    db.session.commit()
+
+    return redirect(url_for('public.article_view', idxno=article_id) + '#comment')
+
+
+@public_bp.route('/news/comment/vote', methods=['POST'])
+def comment_vote():
+    """댓글 추천/비추천"""
+    from flask import jsonify
+    comment_id = request.form.get('comment_id', 0, type=int)
+    vote_type = request.form.get('vote_type', '')  # like / dislike
+
+    if not comment_id or vote_type not in ('like', 'dislike'):
+        return jsonify({'error': 'invalid'}), 400
+
+    comment = ArticleComment.query.get_or_404(comment_id)
+    ip = request.remote_addr or ''
+    member_id = session.get('member_id')
+
+    # 중복 투표 확인 (IP 또는 회원 기준)
+    existing = CommentVote.query.filter_by(comment_id=comment_id, ip_address=ip).first()
+    if not existing and member_id:
+        existing = CommentVote.query.filter_by(comment_id=comment_id, member_id=member_id).first()
+    if existing:
+        return jsonify({'error': 'already_voted', 'like': comment.like_count, 'dislike': comment.dislike_count})
+
+    vote = CommentVote(
+        comment_id=comment_id,
+        ip_address=ip,
+        member_id=member_id,
+        vote_type=vote_type
+    )
+    db.session.add(vote)
+
+    if vote_type == 'like':
+        comment.like_count = (comment.like_count or 0) + 1
+    else:
+        comment.dislike_count = (comment.dislike_count or 0) + 1
+
+    db.session.commit()
+    return jsonify({'like': comment.like_count, 'dislike': comment.dislike_count})
+
+
+@public_bp.route('/news/comment/edit', methods=['POST'])
+def comment_edit():
+    """댓글 수정"""
+    comment_id = request.form.get('comment_id', 0, type=int)
+    password = request.form.get('password', '').strip()
+    content = request.form.get('content', '').strip()
+    article_id = request.form.get('article_id', 0, type=int)
+
+    if not content:
+        flash('댓글 내용을 입력하세요.', 'error')
+        return redirect(url_for('public.article_view', idxno=article_id) + '#comment')
+
+    comment = ArticleComment.query.get_or_404(comment_id)
+
+    # 권한 확인
+    member_id = session.get('member_id')
+    can_edit = False
+    if comment.member_id and comment.member_id == member_id:
+        can_edit = True
+    elif comment.password and check_password_hash(comment.password, password):
+        can_edit = True
+
+    if not can_edit:
+        flash('비밀번호가 일치하지 않습니다.', 'error')
+        return redirect(url_for('public.article_view', idxno=article_id) + '#comment')
+
+    # 글자수 제한
+    max_length = int(_get_setting('comment_max_length', '500') or 500)
+    comment.content = content[:max_length]
     db.session.commit()
 
     return redirect(url_for('public.article_view', idxno=article_id) + '#comment')
@@ -448,6 +536,19 @@ def event_submit():
         content=content,
         ip_address=request.remote_addr,
     )
+
+    # 기사제보 파일 첨부
+    if page['event_code'] == 'event4':
+        import os
+        from werkzeug.utils import secure_filename
+        file = request.files.get('attachment')
+        if file and file.filename:
+            fname = secure_filename(file.filename)
+            upload_dir = os.path.join('app', 'static', 'uploads', 'event')
+            os.makedirs(upload_dir, exist_ok=True)
+            filepath = os.path.join(upload_dir, f'{int(datetime.now().timestamp())}_{fname}')
+            file.save(filepath)
+            req.extra_data = json.dumps({'attachment': filepath}, ensure_ascii=False)
 
     # 구독신청 추가 필드
     if page['event_code'] == 'event5':

@@ -130,6 +130,39 @@
 .btn-comment-more {display:inline-block;padding:.5rem 2rem;font-size:.875rem;color:#666;background:#fff;border:1px solid #ddd;border-radius:.25rem;cursor:pointer}
 .btn-comment-more:hover {border-color:#5e1985;color:#5e1985}
 .btn-comment-more .more-count {color:#5e1985;font-weight:600}
+/* 추천/비추천 */
+.comment-vote {display:inline-flex;gap:4px;margin-top:.5rem;font-size:0}
+.comment-vote .vote-btn {display:inline-flex;align-items:center;gap:3px;padding:2px 8px;font-size:.75rem;color:rgba(0,0,0,.5);background:none;border:1px solid rgba(0,0,0,.12);border-radius:2rem;cursor:pointer;line-height:1}
+.comment-vote .vote-btn:hover {border-color:#5e1985;color:#5e1985}
+.comment-vote .vote-btn .cnt {font-weight:600}
+/* 대댓글 */
+.comment-item.reply-item {margin-left:60px}
+.comment-item.reply-item .first {padding-left:15px;border-left:2px solid rgba(0,0,0,.06)}
+.comment-item.reply-item .photo > .pfile {width:35px;height:35px}
+.comment-item.reply-item .photo + .user-textbox {width:calc(100% - 55px)}
+.btn-reply-toggle {display:inline-block;margin-top:.375rem;padding:0;font-size:.8125rem;color:rgba(0,0,0,.5);background:none;border:none;cursor:pointer}
+.btn-reply-toggle:hover {color:#5e1985}
+.reply-write-box {display:none;margin:10px 0 0 60px;padding:10px;background:#fafafa;border:1px solid rgba(0,0,0,.1);border-radius:.25rem}
+.reply-write-box textarea {width:100%;min-height:50px;padding:8px;font-size:.875rem;border:1px solid rgba(0,0,0,.15);border-radius:.25rem;resize:vertical}
+.reply-write-box .reply-inputs {display:flex;gap:6px;margin-bottom:6px}
+.reply-write-box .reply-inputs input {flex:1;height:30px;padding:0 10px;font-size:.8125rem;border:1px solid rgba(0,0,0,.15);border-radius:2rem}
+.reply-write-box .reply-footer {display:flex;justify-content:flex-end;margin-top:6px;gap:6px}
+.reply-write-box .reply-footer button {height:28px;padding:0 12px;font-size:.8125rem;border:none;border-radius:.25rem;cursor:pointer}
+.reply-write-box .btn-reply-submit {background:#5e1985;color:#fff}
+.reply-write-box .btn-reply-cancel {background:#eee;color:#666}
+/* BEST 댓글 */
+.best-comment-list {margin-bottom:1.25rem;padding:.75rem;background:#faf5ff;border:1px solid #e8d5f5;border-radius:.3125rem}
+.best-comment-list .best-label {display:inline-block;padding:2px 8px;margin-bottom:.5rem;font-size:.6875rem;font-weight:700;color:#fff;background:#5e1985;border-radius:2px}
+.best-comment-list .comment-item .first {border-top-color:rgba(94,25,133,.1)}
+/* 수정 폼 */
+.comment-edit-form {margin-top:.5rem}
+.comment-edit-form textarea {width:100%;min-height:60px;padding:8px;font-size:.875rem;border:1px solid rgba(0,0,0,.15);border-radius:.25rem;resize:vertical}
+.comment-edit-form .edit-footer {display:flex;justify-content:flex-end;gap:6px;margin-top:6px}
+.comment-edit-form .edit-footer button {height:28px;padding:0 12px;font-size:.8125rem;border:none;border-radius:.25rem;cursor:pointer}
+.comment-edit-form .btn-edit-save {background:#5e1985;color:#fff}
+.comment-edit-form .btn-edit-cancel {background:#eee;color:#666}
+/* 옵션 버튼 간격 */
+.comment-item .textbox-option > a + a {margin-left:.5rem}
 /* flash 메시지 */
 .comment-flash {padding:10px 15px;margin-bottom:15px;border-radius:4px;font-size:13px}
 .comment-flash.error {background:#fff0f0;color:#c00;border:1px solid #fdd}
@@ -418,53 +451,111 @@
                 </form>
             </article>
 
+            {% macro render_comment(cmt, is_reply=false) %}
+            <div class="comment-item{% if is_reply %} reply-item{% endif %}" id="cmt-{{ cmt.id }}">
+                <div class="first">
+                    <div class="photo"><em class="pfile"></em></div>
+                    <div class="user-textbox" style="float:right;width:calc(100% - {% if is_reply %}55{% else %}65{% endif %}px)">
+                        <div class="textbox-header">
+                            <div class="textbox-info">
+                                <span class="name{% if cmt.member_id %} is-member{% endif %}">{{ cmt.author_name }}</span>
+                                {% if cmt.ip_address and not cmt.member_id %}
+                                {% set ip_parts = cmt.ip_address.split('.') %}
+                                <span class="ip">{{ ip_parts[0] }}.{{ ip_parts[1] }}.***.***</span>
+                                {% endif %}
+                                <span class="datetime">{{ cmt.created_at.strftime('%Y.%m.%d %H:%M') }}</span>
+                            </div>
+                            <div class="textbox-option">
+                                {% if cmt.member_id and current_member and cmt.member_id == current_member.id %}
+                                <a href="#" class="btn-edit-comment btn-member-edit" data-id="{{ cmt.id }}">수정</a>
+                                <a href="#" class="btn-delete-comment btn-member-delete" data-id="{{ cmt.id }}">삭제</a>
+                                {% elif cmt.password %}
+                                <a href="#" class="btn-edit-comment" data-id="{{ cmt.id }}">수정</a>
+                                <a href="#" class="btn-delete-comment" data-id="{{ cmt.id }}">삭제</a>
+                                {% endif %}
+                            </div>
+                        </div>
+                        <div class="comment-content-view" id="cmt-text-{{ cmt.id }}">{{ cmt.content }}</div>
+                        <!-- 추천/비추천 -->
+                        <div class="comment-vote">
+                            <button type="button" class="vote-btn" data-id="{{ cmt.id }}" data-type="like"><i class="icon-thumbs-up"></i> <span class="cnt">{{ cmt.like_count or 0 }}</span></button>
+                            <button type="button" class="vote-btn" data-id="{{ cmt.id }}" data-type="dislike"><i class="icon-thumbs-down"></i> <span class="cnt">{{ cmt.dislike_count or 0 }}</span></button>
+                        </div>
+                        {% if not is_reply %}
+                        <button type="button" class="btn-reply-toggle" data-id="{{ cmt.id }}"><i class="icon-reply"></i> 답글</button>
+                        {% endif %}
+                    </div>
+                </div>
+            </div>
+            {% if not is_reply %}
+            <!-- 답글 작성 폼 -->
+            <div class="reply-write-box" id="reply-box-{{ cmt.id }}">
+                <form method="POST" action="{{ url_for('public.comment_write') }}">
+                    <input type="hidden" name="article_id" value="{{ article.id }}">
+                    <input type="hidden" name="parent_id" value="{{ cmt.id }}">
+                    {% if not current_member %}
+                    <div class="reply-inputs">
+                        <input type="text" name="author_name" placeholder="작성자">
+                        <input type="password" name="password" placeholder="비밀번호">
+                    </div>
+                    {% endif %}
+                    <textarea name="content" placeholder="답글을 입력하세요..." maxlength="{{ comment_max_length }}" required></textarea>
+                    <div class="reply-footer">
+                        <button type="button" class="btn-reply-cancel" data-id="{{ cmt.id }}">취소</button>
+                        <button type="submit" class="btn-reply-submit">등록</button>
+                    </div>
+                </form>
+            </div>
+            <!-- 대댓글 목록 -->
+            {% set child_comments = cmt.replies.filter_by(is_hidden=False).all() %}
+            {% for reply in child_comments %}
+                {{ render_comment(reply, is_reply=true) }}
+            {% endfor %}
+            {% endif %}
+            {% endmacro %}
+
+            <!-- BEST 댓글 -->
+            {% if best_comments %}
+            <article class="best-comment-list">
+                <span class="best-label">BEST</span>
+                <section class="normal-content">
+                    {% for cmt in best_comments %}
+                    {{ render_comment(cmt) }}
+                    {% endfor %}
+                </section>
+            </article>
+            {% endif %}
+
             <!-- 댓글 목록 -->
             <article id="comment-list">
                 <section class="normal-content">
                     {% for cmt in comments %}
-                    <div class="comment-item{% if loop.index > 5 %} comment-hidden{% endif %}">
-                        <div class="first">
-                            <div class="photo"><em class="pfile"></em></div>
-                            <div class="user-textbox" style="float:right;width:calc(100% - 65px)">
-                                <div class="textbox-header">
-                                    <div class="textbox-info">
-                                        <span class="name{% if cmt.member_id %} is-member{% endif %}">{{ cmt.author_name }}</span>
-                                        {% if cmt.ip_address and not cmt.member_id %}
-                                        {% set ip_parts = cmt.ip_address.split('.') %}
-                                        <span class="ip">{{ ip_parts[0] }}.{{ ip_parts[1] }}.***.***</span>
-                                        {% endif %}
-                                        <span class="datetime">{{ cmt.created_at.strftime('%Y.%m.%d %H:%M') }}</span>
-                                    </div>
-                                    {% if cmt.member_id and current_member and cmt.member_id == current_member.id %}
-                                    <div class="textbox-option">
-                                        <a href="#" class="btn-delete-comment btn-member-delete" data-id="{{ cmt.id }}">삭제</a>
-                                    </div>
-                                    {% elif cmt.password %}
-                                    <div class="textbox-option">
-                                        <a href="#" class="btn-delete-comment" data-id="{{ cmt.id }}">삭제</a>
-                                    </div>
-                                    {% endif %}
-                                </div>
-                                <div class="comment-content-view">{{ cmt.content }}</div>
-                            </div>
-                        </div>
-                    </div>
+                    {% if loop.index > 5 %}<div class="comment-hidden">{% endif %}
+                    {{ render_comment(cmt) }}
+                    {% if loop.index > 5 %}</div>{% endif %}
                     {% else %}
                     <div class="comment-empty">등록된 댓글이 없습니다.</div>
                     {% endfor %}
                 </section>
-                {% if comment_count > 5 %}
+                {% set top_count = comments|length %}
+                {% if top_count > 5 %}
                 <div class="comment-more-wrap">
-                    <button type="button" class="btn-comment-more" id="btnCommentMore">댓글 더보기 <span class="more-count">({{ comment_count - 5 }})</span></button>
+                    <button type="button" class="btn-comment-more" id="btnCommentMore">댓글 더보기 <span class="more-count">({{ top_count - 5 }})</span></button>
                 </div>
                 {% endif %}
             </article>
         </article>
 
-        <!-- 댓글 삭제용 hidden form -->
+        <!-- 댓글 삭제/수정용 hidden forms -->
         <form id="deleteCommentForm" method="POST" action="{{ url_for('public.comment_delete') }}" style="display:none">
             <input type="hidden" name="comment_id" id="deleteCommentId">
             <input type="hidden" name="password" id="deleteCommentPw">
+            <input type="hidden" name="article_id" value="{{ article.id }}">
+        </form>
+        <form id="editCommentForm" method="POST" action="{{ url_for('public.comment_edit') }}" style="display:none">
+            <input type="hidden" name="comment_id" id="editCommentId">
+            <input type="hidden" name="password" id="editCommentPw">
+            <input type="hidden" name="content" id="editCommentContent">
             <input type="hidden" name="article_id" value="{{ article.id }}">
         </form>
         {% endif %}
@@ -624,13 +715,83 @@ $(document).on('click', '.btn-member-delete', function(e){
 $('#btnCommentMore').on('click', function(){
     var hidden = $('.comment-hidden');
     var next = hidden.slice(0, 5);
-    next.removeClass('comment-hidden');
+    next.removeClass('comment-hidden').css('display','');
     var remaining = hidden.length - 5;
     if(remaining <= 0){
         $(this).parent().hide();
     } else {
         $(this).find('.more-count').text('(' + remaining + ')');
     }
+});
+
+// 댓글 추천/비추천
+$(document).on('click', '.vote-btn', function(){
+    var $btn = $(this), id = $btn.data('id'), type = $btn.data('type');
+    $.post('{{ url_for("public.comment_vote") }}', {comment_id: id, vote_type: type}, function(res){
+        var $votes = $btn.closest('.comment-vote');
+        $votes.find('[data-type="like"] .cnt').text(res.like);
+        $votes.find('[data-type="dislike"] .cnt').text(res.dislike);
+        if(res.error === 'already_voted') alert('이미 투표하셨습니다.');
+    }).fail(function(){ alert('투표 처리에 실패했습니다.'); });
+});
+
+// 답글 토글
+$(document).on('click', '.btn-reply-toggle', function(){
+    var id = $(this).data('id');
+    $('#reply-box-' + id).slideToggle(200);
+});
+$(document).on('click', '.btn-reply-cancel', function(){
+    var id = $(this).data('id');
+    $('#reply-box-' + id).slideUp(200);
+});
+
+// 댓글 수정 (비회원: 비밀번호)
+$(document).on('click', '.btn-edit-comment:not(.btn-member-edit)', function(e){
+    e.preventDefault();
+    var id = $(this).data('id');
+    var pw = prompt('댓글 수정을 위해 비밀번호를 입력하세요.');
+    if(pw === null || pw === '') return;
+    var $view = $('#cmt-text-' + id);
+    var oldText = $view.text();
+    $view.hide().after(
+        '<div class="comment-edit-form" id="edit-form-'+id+'">'+
+        '<textarea>'+$('<div/>').text(oldText).html()+'</textarea>'+
+        '<div class="edit-footer">'+
+        '<button type="button" class="btn-edit-cancel" data-id="'+id+'">취소</button>'+
+        '<button type="button" class="btn-edit-save" data-id="'+id+'" data-pw="'+$('<div/>').text(pw).html()+'">저장</button>'+
+        '</div></div>'
+    );
+});
+// 댓글 수정 (회원: 비밀번호 불필요)
+$(document).on('click', '.btn-member-edit', function(e){
+    e.preventDefault();
+    var id = $(this).data('id');
+    var $view = $('#cmt-text-' + id);
+    var oldText = $view.text();
+    $view.hide().after(
+        '<div class="comment-edit-form" id="edit-form-'+id+'">'+
+        '<textarea>'+$('<div/>').text(oldText).html()+'</textarea>'+
+        '<div class="edit-footer">'+
+        '<button type="button" class="btn-edit-cancel" data-id="'+id+'">취소</button>'+
+        '<button type="button" class="btn-edit-save" data-id="'+id+'" data-pw="">저장</button>'+
+        '</div></div>'
+    );
+});
+// 수정 취소
+$(document).on('click', '.btn-edit-cancel', function(){
+    var id = $(this).data('id');
+    $('#edit-form-' + id).remove();
+    $('#cmt-text-' + id).show();
+});
+// 수정 저장
+$(document).on('click', '.btn-edit-save', function(){
+    var id = $(this).data('id'), pw = $(this).data('pw');
+    var content = $('#edit-form-' + id).find('textarea').val().trim();
+    if(!content){ alert('댓글 내용을 입력하세요.'); return; }
+    $('#editCommentId').val(id);
+    $('#editCommentPw').val(pw);
+    $('#editCommentContent').val(content);
+    $('#editCommentForm').submit();
 });
 
 // sticky 스크롤 헤더

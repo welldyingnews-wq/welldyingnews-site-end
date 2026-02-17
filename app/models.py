@@ -150,15 +150,31 @@ class ArticleComment(db.Model):
     __tablename__ = 'article_comment'
     id = db.Column(db.Integer, primary_key=True)
     article_id = db.Column(db.Integer, db.ForeignKey('article.id'), nullable=False)
+    parent_id = db.Column(db.Integer, db.ForeignKey('article_comment.id'), nullable=True)
     member_id = db.Column(db.Integer, db.ForeignKey('member.id'), nullable=True)
     author_name = db.Column(db.String(50), default='')
     content = db.Column(db.Text, nullable=False)
     password = db.Column(db.String(200), default='')
     ip_address = db.Column(db.String(50), default='')
+    like_count = db.Column(db.Integer, default=0)
+    dislike_count = db.Column(db.Integer, default=0)
     is_hidden = db.Column(db.Boolean, default=False)
     created_at = db.Column(db.DateTime, default=datetime.now)
     article = db.relationship('Article', backref=db.backref('comments', lazy='dynamic'))
     member = db.relationship('Member', backref='comments')
+    replies = db.relationship('ArticleComment', backref=db.backref('parent', remote_side='ArticleComment.id'),
+                              lazy='dynamic', order_by='ArticleComment.created_at.asc()')
+
+
+class CommentVote(db.Model):
+    """댓글 추천/비추천"""
+    __tablename__ = 'comment_vote'
+    id = db.Column(db.Integer, primary_key=True)
+    comment_id = db.Column(db.Integer, db.ForeignKey('article_comment.id'), nullable=False)
+    ip_address = db.Column(db.String(50), default='')
+    member_id = db.Column(db.Integer, nullable=True)
+    vote_type = db.Column(db.String(10), nullable=False)  # like / dislike
+    created_at = db.Column(db.DateTime, default=datetime.now)
 
 
 class Board(db.Model):

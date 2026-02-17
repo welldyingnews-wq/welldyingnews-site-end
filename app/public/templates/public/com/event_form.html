@@ -10,7 +10,7 @@
     {% endif %}
     {% endwith %}
 
-    <form name="eventReqForm" id="eventReqForm" method="POST" action="{{ url_for('public.event_submit') }}">
+    <form name="eventReqForm" id="eventReqForm" method="POST" action="{{ url_for('public.event_submit') }}"{% if page.get('event_code') == 'event4' %} enctype="multipart/form-data"{% endif %}>
         <input type="hidden" name="page_code" value="{{ page_code }}">
 
         <section id="event-container">
@@ -84,6 +84,19 @@
                         <textarea rows="3" name="maintext" id="ev_maintext" placeholder="내용을 입력해주세요" title="내용" required></textarea>
                     </div>
                 </fieldset>
+
+                {% if page.get('event_code') == 'event4' %}
+                <!-- 파일 첨부 (기사제보) -->
+                <fieldset id="fieldset_file" class="row expanded small-collapse medium-uncollapse">
+                    <div class="medium-3 large-2 columns">
+                        <label class="medium-middle" for="ev_file"><strong>첨부파일</strong></label>
+                    </div>
+                    <div class="medium-9 large-10 columns">
+                        <input type="file" name="attachment" id="ev_file" title="첨부파일" accept=".jpg,.jpeg,.png,.gif,.pdf,.doc,.docx,.hwp,.zip">
+                        <span class="help-text">이미지, 문서 파일을 첨부할 수 있습니다. (최대 10MB)</span>
+                    </div>
+                </fieldset>
+                {% endif %}
 
                 <!-- 버튼 -->
                 <hr>
