@@ -9,7 +9,8 @@ import json
 from app.models import (db, Section, SubSection, Article, ArticleRelation, ArticleComment,
                         CommentVote, SiteSetting, Board, BoardPost, BoardReply,
                         BoardReplyVote, Banner,
-                        EventRequest, Popup, Poll, PollOption, Member)
+                        EventRequest, Popup, Poll, PollOption, Member,
+                        DailyStat, PageView, VisitorLog)
 from app.public import public_bp
 
 
@@ -69,6 +70,41 @@ def inject_sections():
     return {'nav_sections': sections, 'nav_boards': boards, 'updated_time': updated_time,
             'banners': banners_by_pos, 'popups': active_popups, 'is_mobile': is_mobile,
             'current_member': current_member}
+
+
+def _detect_device():
+    """User-Agent에서 디바이스 유형 감지"""
+    ua = request.headers.get('User-Agent', '')
+    if re.search(r'iPad|Tablet|PlayBook|Silk', ua, re.I):
+        return 'tablet'
+    if re.search(r'Mobile|Android|iPhone|iPod|Opera Mini|IEMobile', ua, re.I):
+        return 'mobile'
+    return 'pc'
+
+
+@public_bp.before_request
+def track_visitor():
+    """사이트 방문자(UV) 추적 — IP 기반 일별 중복 제거"""
+    if request.path.startswith('/static'):
+        return
+    today = datetime.now().date()
+    ip = request.remote_addr or '0.0.0.0'
+    # 이미 오늘 기록된 방문자인지 확인
+    exists = VisitorLog.query.filter_by(
+        ip_address=ip, date=today, article_id=None
+    ).first()
+    if not exists:
+        device = _detect_device()
+        log = VisitorLog(ip_address=ip, date=today, article_id=None, user_agent=device)
+        db.session.add(log)
+        # DailyStat UV 증가
+        stat = DailyStat.query.filter_by(date=today).first()
+        if not stat:
+            stat = DailyStat(date=today, page_views=0, unique_visitors=0, article_views=0)
+            db.session.add(stat)
+            db.session.flush()
+        stat.unique_visitors += 1
+        db.session.commit()
 
 
 @public_bp.route('/')
@@ -219,9 +255,48 @@ def article_view():
     if article.is_deleted or article.recognition != 'E':
         abort(404)
 
-    # 조회수 증가
-    article.view_count += 1
-    db.session.commit()
+    # 조회수 — IP 기반 일별 중복 제거
+    today = datetime.now().date()
+    ip = request.remote_addr or '0.0.0.0'
+    already_viewed = VisitorLog.query.filter_by(
+        ip_address=ip, date=today, article_id=article.id
+    ).first()
+    if not already_viewed:
+        # VisitorLog 기록
+        device = _detect_device()
+        db.session.add(VisitorLog(ip_address=ip, date=today, article_id=article.id, user_agent=device))
+        # Article 누적 조회수
+        article.view_count += 1
+        # PageView 일별 집계
+        pv = PageView.query.filter_by(article_id=article.id, date=today).first()
+        if not pv:
+            pv = PageView(article_id=article.id, date=today, view_count=0, unique_count=0)
+            db.session.add(pv)
+            db.session.flush()
+        pv.view_count += 1
+        pv.unique_count += 1
+        # DailyStat 기사PV 증가
+        stat = DailyStat.query.filter_by(date=today).first()
+        if not stat:
+            stat = DailyStat(date=today, page_views=0, unique_visitors=0, article_views=0)
+            db.session.add(stat)
+            db.session.flush()
+        stat.article_views += 1
+        stat.page_views += 1
+        db.session.commit()
+    else:
+        # 중복 방문이라도 PV(총 조회) 카운트는 증가
+        pv = PageView.query.filter_by(article_id=article.id, date=today).first()
+        if not pv:
+            pv = PageView(article_id=article.id, date=today, view_count=0, unique_count=0)
+            db.session.add(pv)
+            db.session.flush()
+        pv.view_count += 1
+        stat = DailyStat.query.filter_by(date=today).first()
+        if stat:
+            stat.page_views += 1
+            stat.article_views += 1
+        db.session.commit()
 
     # 관련 기사: 수동 설정 우선, 없으면 같은 2차섹션 자동
     relations = ArticleRelation.query.filter_by(

@@ -87,6 +87,47 @@ class SerialCode(db.Model):
     created_at = db.Column(db.DateTime, default=datetime.now)
 
 
+class DailyStat(db.Model):
+    """사이트 일별 통계"""
+    __tablename__ = 'daily_stat'
+    id = db.Column(db.Integer, primary_key=True)
+    date = db.Column(db.Date, nullable=False, unique=True, index=True)
+    page_views = db.Column(db.Integer, default=0)       # 전체 PV (모든 페이지 조회)
+    unique_visitors = db.Column(db.Integer, default=0)   # UV (IP 기반 고유 방문자)
+    article_views = db.Column(db.Integer, default=0)     # 기사 PV (기사 상세 조회)
+
+
+class PageView(db.Model):
+    """기사별 일별 조회 기록"""
+    __tablename__ = 'page_view'
+    id = db.Column(db.Integer, primary_key=True)
+    article_id = db.Column(db.Integer, db.ForeignKey('article.id'), nullable=False)
+    date = db.Column(db.Date, nullable=False, index=True)
+    view_count = db.Column(db.Integer, default=0)        # 해당일 총 PV
+    unique_count = db.Column(db.Integer, default=0)      # 해당일 UV
+
+    __table_args__ = (
+        db.UniqueConstraint('article_id', 'date', name='uq_pageview_article_date'),
+    )
+
+
+class VisitorLog(db.Model):
+    """방문자 로그 (UV 중복 체크용)"""
+    __tablename__ = 'visitor_log'
+    id = db.Column(db.Integer, primary_key=True)
+    ip_address = db.Column(db.String(50), nullable=False)
+    session_key = db.Column(db.String(64), default='')
+    user_agent = db.Column(db.String(20), default='pc')   # pc, mobile, tablet
+    date = db.Column(db.Date, nullable=False, index=True)
+    article_id = db.Column(db.Integer, nullable=True)    # NULL이면 사이트 방문, 값 있으면 기사 조회
+    created_at = db.Column(db.DateTime, default=datetime.now)
+
+    __table_args__ = (
+        db.Index('ix_visitor_ip_date', 'ip_address', 'date'),
+        db.Index('ix_visitor_article_ip_date', 'article_id', 'ip_address', 'date'),
+    )
+
+
 class ArticleDraft(db.Model):
     """임시보관함 (자동저장)"""
     __tablename__ = 'article_draft'

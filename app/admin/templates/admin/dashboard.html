@@ -245,11 +245,11 @@
                             </tr>
                         </thead>
                         <tbody>
-                            {% for article in recent_articles[:7] %}
+                            {% for item in top_pv_articles %}
                             <tr>
-                                <th><a href="{{ url_for('admin.article_edit', article_id=article.id) }}">{{ article.title[:40] }}{% if article.title|length > 40 %}...{% endif %}</a></th>
-                                <td>{{ article.view_count // 7 }}s</td>
-                                <td>{{ article.view_count }}</td>
+                                <th><a href="{{ url_for('admin.article_edit', article_id=item.article.id) }}">{{ item.article.title[:40] }}{% if item.article.title|length > 40 %}...{% endif %}</a></th>
+                                <td>{{ item.avg }}s</td>
+                                <td>{{ item.pv }}</td>
                             </tr>
                             {% else %}
                             <tr><td colspan="3" class="text-center" style="color:#999;padding:20px">데이터가 없습니다.</td></tr>
@@ -533,11 +533,10 @@ var pvOptions = {
 };
 new ApexCharts(document.querySelector("#days-pv"), pvOptions).render();
 
-// 신규/재방문자 도넛 (총 방문자 중 대략 85% 신규 가정)
-var totalVisitors = {{ visitor_data[-7:] | sum }};
-var newVisitors = Math.round(totalVisitors * 0.86);
-var returnVisitors = totalVisitors - newVisitors;
-if (totalVisitors === 0) { newVisitors = 0; returnVisitors = 0; }
+// 신규/재방문자 도넛 (실제 데이터)
+var newVisitors = {{ new_visitors_7d }};
+var returnVisitors = {{ return_visitors_7d }};
+var totalVisitors = newVisitors + returnVisitors;
 
 document.getElementById('visitor-total').textContent = totalVisitors;
 var newPct = totalVisitors > 0 ? (newVisitors / totalVisitors * 100).toFixed(1) : 0;
@@ -557,11 +556,11 @@ new ApexCharts(document.querySelector("#pageViews"), {
     colors: ['#ffca00', '#ffe687']
 }).render();
 
-// 접속디바이스 도넛 (60:36:4 비율 가정)
-var pcCnt = Math.round(totalVisitors * 0.60);
-var mbCnt = Math.round(totalVisitors * 0.36);
-var tbCnt = totalVisitors - pcCnt - mbCnt;
-var deviceTotal = totalVisitors;
+// 접속디바이스 도넛 (실제 데이터)
+var pcCnt = {{ device_map.get('pc', 0) }};
+var mbCnt = {{ device_map.get('mobile', 0) }};
+var tbCnt = {{ device_map.get('tablet', 0) }};
+var deviceTotal = pcCnt + mbCnt + tbCnt;
 document.getElementById('device-total').textContent = deviceTotal;
 
 var pcP = deviceTotal > 0 ? (pcCnt / deviceTotal * 100).toFixed(1) : 0;

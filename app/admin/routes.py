@@ -1,7 +1,7 @@
 import json
 import os
 import uuid
-from datetime import datetime
+from datetime import datetime, timedelta
 from functools import wraps
 
 from flask import (render_template, request, redirect, url_for, flash,
@@ -15,7 +15,7 @@ from app.models import (db, AdminUser, Section, SubSection, Article, ArticleRela
                         ArticleDraft, SiteSetting, ArticleComment, Board, BoardPost,
                         BoardReply, EventRequest, Banner, Popup, Poll, PollOption,
                         SerialCode, Department, MemberDivision, EtcLevel, LayoutBlock,
-                        Member, MemberLog)
+                        Member, MemberLog, DailyStat, PageView, VisitorLog)
 
 
 def admin_required(f):
@@ -53,8 +53,6 @@ def logout():
 @admin_bp.route('/')
 @admin_required
 def dashboard():
-    from datetime import timedelta
-
     total_articles = Article.query.filter_by(is_deleted=False).count()
     unapproved = Article.query.filter_by(is_deleted=False, recognition='C').count()
     embargo_count = Article.query.filter(
@@ -88,26 +86,68 @@ def dashboard():
         Article.created_at.desc()
     ).limit(10).all()
 
-    # 일자별 PV 데이터 (최근 31일) - 실제 view_count 기반 집계
+    # 일자별 PV/UV 데이터 (최근 31일) - DailyStat 테이블 기반
     today = datetime.now().date()
     pv_labels = []
     pv_data = []
     visitor_data = []
-    for i in range(30, -1, -1):
-        d = today - timedelta(days=i)
+    date_list = [today - timedelta(days=i) for i in range(30, -1, -1)]
+    stats_map = {}
+    for s in DailyStat.query.filter(DailyStat.date >= date_list[0]).all():
+        stats_map[s.date] = s
+    for d in date_list:
         pv_labels.append(d.strftime('%m.%d'))
-        day_views = db.session.query(
-            db.func.coalesce(db.func.sum(Article.view_count), 0)
-        ).filter(
-            db.func.date(Article.created_at) == d,
-            Article.is_deleted == False
-        ).scalar()
-        pv_data.append(int(day_views))
-        day_count = Article.query.filter(
-            db.func.date(Article.created_at) == d,
-            Article.is_deleted == False
-        ).count()
-        visitor_data.append(day_count)
+        s = stats_map.get(d)
+        pv_data.append(s.page_views if s else 0)
+        visitor_data.append(s.unique_visitors if s else 0)
+
+    # 페이지별 PV (최근 7일 실제 집계)
+    seven_days_ago = today - timedelta(days=7)
+    top_articles_pv = db.session.query(
+        PageView.article_id,
+        db.func.sum(PageView.view_count).label('total_pv'),
+        db.func.sum(PageView.unique_count).label('total_uv')
+    ).filter(
+        PageView.date >= seven_days_ago
+    ).group_by(PageView.article_id).order_by(
+        db.func.sum(PageView.view_count).desc()
+    ).limit(7).all()
+    top_pv_articles = []
+    for row in top_articles_pv:
+        art = Article.query.get(row.article_id)
+        if art:
+            top_pv_articles.append({
+                'article': art,
+                'pv': row.total_pv,
+                'avg': row.total_pv // 7
+            })
+
+    # 신규/재방문자 (최근 7일)
+    new_visitors_7d = 0
+    return_visitors_7d = 0
+    for d in date_list[-7:]:
+        day_ips = db.session.query(VisitorLog.ip_address).filter(
+            VisitorLog.date == d, VisitorLog.article_id == None  # noqa: E711
+        ).all()
+        for (ip,) in day_ips:
+            prev = VisitorLog.query.filter(
+                VisitorLog.ip_address == ip,
+                VisitorLog.date < d,
+                VisitorLog.article_id == None  # noqa: E711
+            ).first()
+            if prev:
+                return_visitors_7d += 1
+            else:
+                new_visitors_7d += 1
+
+    # 디바이스별 통계 (최근 7일)
+    device_stats = db.session.query(
+        VisitorLog.user_agent, db.func.count(VisitorLog.id)
+    ).filter(
+        VisitorLog.date >= seven_days_ago,
+        VisitorLog.article_id == None  # noqa: E711
+    ).group_by(VisitorLog.user_agent).all()
+    device_map = {d: c for d, c in device_stats}
 
     # 구독/제보/저작권 신청 수
     subscribe_count = EventRequest.query.filter_by(event_code='event5', is_processed=False).count()
@@ -146,6 +186,10 @@ def dashboard():
                            pv_labels=pv_labels,
                            pv_data=pv_data,
                            visitor_data=visitor_data,
+                           top_pv_articles=top_pv_articles,
+                           new_visitors_7d=new_visitors_7d,
+                           return_visitors_7d=return_visitors_7d,
+                           device_map=device_map,
                            subscribe_count=subscribe_count,
                            report_count=report_count,
                            copyright_count=copyright_count,
