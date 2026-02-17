@@ -1,3 +1,4 @@
+import json
 import os
 import uuid
 from datetime import datetime
@@ -11,9 +12,10 @@ from werkzeug.utils import secure_filename
 
 from app.admin import admin_bp
 from app.models import (db, AdminUser, Section, SubSection, Article, ArticleRelation,
-                        SiteSetting, ArticleComment, Board, BoardPost, BoardReply,
-                        EventRequest, Banner, Popup, Poll, PollOption, SerialCode,
-                        Department, MemberDivision, EtcLevel, LayoutBlock, Member)
+                        ArticleDraft, SiteSetting, ArticleComment, Board, BoardPost,
+                        BoardReply, EventRequest, Banner, Popup, Poll, PollOption,
+                        SerialCode, Department, MemberDivision, EtcLevel, LayoutBlock,
+                        Member, MemberLog)
 
 
 def admin_required(f):
@@ -159,7 +161,8 @@ def article_new():
         return _save_article(None)
 
     sections = Section.query.order_by(Section.sort_order).all()
-    return render_template('admin/article_form.html', article=None, sections=sections)
+    draft_id = request.args.get('draft_id', 0, type=int)
+    return render_template('admin/article_form.html', article=None, sections=sections, draft_id=draft_id)
 
 
 @admin_bp.route('/article/<int:article_id>/edit', methods=['GET', 'POST'])
@@ -478,6 +481,74 @@ def upload_image():
     return jsonify({'url': url})
 
 
+# ── 임시보관함 ──
+
+@admin_bp.route('/drafts')
+@admin_required
+def draft_list():
+    drafts = ArticleDraft.query.filter_by(admin_user_id=current_user.id).order_by(
+        ArticleDraft.updated_at.desc()
+    ).all()
+    return render_template('admin/draft_list.html', drafts=drafts)
+
+
+@admin_bp.route('/draft/save', methods=['POST'])
+@admin_required
+def draft_save():
+    """자동저장 AJAX"""
+    data = request.get_json(silent=True) or {}
+    draft_id = data.get('draft_id')
+    article_id = data.get('article_id')
+
+    if draft_id:
+        draft = ArticleDraft.query.get(draft_id)
+    else:
+        # 같은 기사의 기존 임시저장 찾기
+        draft = None
+        if article_id:
+            draft = ArticleDraft.query.filter_by(
+                admin_user_id=current_user.id, article_id=article_id
+            ).first()
+        if not draft:
+            draft = ArticleDraft(admin_user_id=current_user.id, article_id=article_id)
+            db.session.add(draft)
+
+    draft.title = data.get('title', '')
+    draft.content = data.get('content', '')
+    draft.data_json = json.dumps({
+        'section_id': data.get('section_id', ''),
+        'author_name': data.get('author_name', ''),
+        'author_email': data.get('author_email', ''),
+        'level': data.get('level', 'B'),
+    })
+    draft.updated_at = datetime.now()
+    db.session.commit()
+    return jsonify({'ok': True, 'draft_id': draft.id})
+
+
+@admin_bp.route('/draft/<int:draft_id>/load')
+@admin_required
+def draft_load(draft_id):
+    draft = ArticleDraft.query.get_or_404(draft_id)
+    return jsonify({
+        'id': draft.id,
+        'title': draft.title,
+        'content': draft.content,
+        'data': json.loads(draft.data_json or '{}'),
+        'updated_at': draft.updated_at.strftime('%Y-%m-%d %H:%M:%S')
+    })
+
+
+@admin_bp.route('/draft/<int:draft_id>/delete', methods=['POST'])
+@admin_required
+def draft_delete(draft_id):
+    draft = ArticleDraft.query.get_or_404(draft_id)
+    db.session.delete(draft)
+    db.session.commit()
+    flash('임시보관글이 삭제되었습니다.', 'success')
+    return redirect(url_for('admin.draft_list'))
+
+
 # ── 승인관리 ──
 
 @admin_bp.route('/articles/approval')
@@ -706,6 +777,17 @@ def _save_member(member):
         db.session.add(member)
 
     db.session.commit()
+
+    # 수정내역 로그
+    log = MemberLog(
+        member_id=member.id,
+        action='create' if is_new else 'update',
+        detail=f'이름:{member.name}, 등급:{member.level}, 이메일:{member.email}',
+        admin_name=current_user.name
+    )
+    db.session.add(log)
+    db.session.commit()
+
     flash('회원 정보가 저장되었습니다.', 'success')
     return redirect(url_for('admin.member_list'))
 
@@ -714,6 +796,10 @@ def _save_member(member):
 @admin_required
 def member_delete(member_id):
     member = Member.query.get_or_404(member_id)
+    log = MemberLog(member_id=member.id, action='delete',
+                    detail=f'아이디:{member.user_id}, 이름:{member.name}',
+                    admin_name=current_user.name)
+    db.session.add(log)
     db.session.delete(member)
     db.session.commit()
     flash('회원이 삭제되었습니다.', 'success')
@@ -726,8 +812,28 @@ def member_toggle_active(member_id):
     member = Member.query.get_or_404(member_id)
     member.is_active = not member.is_active
     db.session.commit()
+    log = MemberLog(member_id=member.id,
+                    action='activate' if member.is_active else 'deactivate',
+                    detail='', admin_name=current_user.name)
+    db.session.add(log)
+    db.session.commit()
     flash(f'회원 "{member.user_id}" 상태가 {"활성" if member.is_active else "비활성"}으로 변경되었습니다.', 'success')
     return redirect(url_for('admin.member_list'))
+
+
+@admin_bp.route('/member/<int:member_id>/logs')
+@admin_required
+def member_logs(member_id):
+    """회원 수정내역 조회 API"""
+    logs = MemberLog.query.filter_by(member_id=member_id).order_by(
+        MemberLog.created_at.desc()
+    ).limit(50).all()
+    return jsonify([{
+        'action': l.action,
+        'detail': l.detail,
+        'admin_name': l.admin_name,
+        'created_at': l.created_at.strftime('%Y-%m-%d %H:%M')
+    } for l in logs])
 
 
 # ── 통계 ──

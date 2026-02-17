@@ -1,0 +1,45 @@
+{% extends "admin/base.html" %}
+{% block nav_title %}임시보관함{% endblock %}
+
+{% block content %}
+<div class="card">
+    <div class="card-header d-flex justify-content-between align-items-center py-2">
+        <strong>임시보관함</strong>
+        <span class="badge bg-secondary">{{ drafts|length }}건</span>
+    </div>
+    <div class="table-responsive">
+        <table class="table table-hover table-sm mb-0 align-middle">
+            <thead class="table-light">
+                <tr>
+                    <th>제목</th>
+                    <th width="140">저장일시</th>
+                    <th width="160">관리</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for draft in drafts %}
+                <tr>
+                    <td>
+                        <strong>{{ draft.title or '(제목 없음)' }}</strong>
+                        {% if draft.article_id %}<span class="badge bg-info text-dark">기사 #{{ draft.article_id }}</span>{% endif %}
+                    </td>
+                    <td class="small">{{ draft.updated_at.strftime('%Y-%m-%d %H:%M') }}</td>
+                    <td>
+                        {% if draft.article_id %}
+                        <a href="{{ url_for('admin.article_edit', article_id=draft.article_id) }}?draft_id={{ draft.id }}" class="btn btn-sm btn-outline-primary"><i class="bi bi-pencil"></i> 이어쓰기</a>
+                        {% else %}
+                        <a href="{{ url_for('admin.article_new') }}?draft_id={{ draft.id }}" class="btn btn-sm btn-outline-primary"><i class="bi bi-pencil"></i> 이어쓰기</a>
+                        {% endif %}
+                        <form method="post" action="{{ url_for('admin.draft_delete', draft_id=draft.id) }}" class="d-inline" onsubmit="return confirm('삭제하시겠습니까?')">
+                            <button type="submit" class="btn btn-sm btn-outline-danger"><i class="bi bi-trash"></i></button>
+                        </form>
+                    </td>
+                </tr>
+                {% else %}
+                <tr><td colspan="3" class="text-center text-muted py-4">임시보관된 글이 없습니다.</td></tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>
+{% endblock %}

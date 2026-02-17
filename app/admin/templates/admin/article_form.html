@@ -429,6 +429,62 @@ function setPreview(mode) {
     }
 }
 
+// 임시보관함 (자동저장) — 60초마다
+var draftId = {{ draft_id|default(0) }};
+var articleId = {{ article.id if article and article.id else 0 }};
+var draftStatusEl = null;
+
+{% if draft_id|default(0) %}
+// draft에서 불러오기
+fetch('/admin/draft/' + draftId + '/load')
+    .then(r => r.json())
+    .then(data => {
+        if (data.title) document.querySelector('input[name="title"]').value = data.title;
+        if (data.content && editorInstance) {
+            editorInstance.setData(data.content);
+        } else if (data.content) {
+            document.querySelector('#editor').value = data.content;
+        }
+        if (data.data) {
+            if (data.data.author_name) document.getElementById('authorName').value = data.data.author_name;
+            if (data.data.author_email) document.getElementById('authorEmail').value = data.data.author_email;
+        }
+    });
+{% endif %}
+
+function autoSaveDraft() {
+    var title = document.querySelector('input[name="title"]').value;
+    var content = editorInstance ? editorInstance.getData() : '';
+    if (!title && !content) return;  // 빈 내용은 저장 안함
+
+    fetch('{{ url_for("admin.draft_save") }}', {
+        method: 'POST',
+        headers: {'Content-Type': 'application/json'},
+        body: JSON.stringify({
+            draft_id: draftId || null,
+            article_id: articleId || null,
+            title: title,
+            content: content,
+            section_id: document.querySelector('[name="section_id"]').value,
+            author_name: document.getElementById('authorName').value,
+            author_email: document.getElementById('authorEmail').value,
+            level: document.querySelector('[name="level"]:checked') ? document.querySelector('[name="level"]:checked').value : 'B'
+        })
+    }).then(r => r.json()).then(data => {
+        if (data.ok) {
+            draftId = data.draft_id;
+            var now = new Date().toLocaleTimeString('ko-KR', {hour:'2-digit', minute:'2-digit'});
+            if (!draftStatusEl) {
+                draftStatusEl = document.createElement('small');
+                draftStatusEl.className = 'text-muted ms-2';
+                document.querySelector('form button[type="submit"]').parentNode.appendChild(draftStatusEl);
+            }
+            draftStatusEl.textContent = '자동저장됨 ' + now;
+        }
+    }).catch(function(){});
+}
+setInterval(autoSaveDraft, 60000);
+
 // 섹션 동적 로딩
 document.getElementById('sectionSelect').addEventListener('change', function() {
     var sectionId = this.value;

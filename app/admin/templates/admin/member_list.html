@@ -84,6 +84,7 @@
                     </td>
                     <td class="small">{{ member.created_at.strftime('%Y-%m-%d') }}</td>
                     <td>
+                        <button type="button" class="btn btn-sm btn-outline-info" onclick="showLogs({{ member.id }})" title="수정내역"><i class="bi bi-clock-history"></i></button>
                         <a href="{{ url_for('admin.member_edit', member_id=member.id) }}" class="btn btn-sm btn-outline-primary">
                             <i class="bi bi-pencil"></i> 수정
                         </a>
@@ -111,4 +112,39 @@
         </a>
     </div>
 </div>
+
+<!-- 수정내역 모달 -->
+<div class="modal fade" id="logModal" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header"><h6 class="modal-title">회원 수정내역</h6><button type="button" class="btn-close" data-bs-dismiss="modal"></button></div>
+            <div class="modal-body" id="logBody" style="max-height:400px;overflow-y:auto"><p class="text-muted">로딩중...</p></div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_scripts %}
+<script>
+function showLogs(memberId) {
+    var modal = new bootstrap.Modal(document.getElementById('logModal'));
+    document.getElementById('logBody').innerHTML = '<p class="text-muted">로딩중...</p>';
+    modal.show();
+    fetch('/admin/member/' + memberId + '/logs')
+        .then(r => r.json())
+        .then(data => {
+            if (!data.length) {
+                document.getElementById('logBody').innerHTML = '<p class="text-muted text-center">수정내역이 없습니다.</p>';
+                return;
+            }
+            var html = '<table class="table table-sm"><thead><tr><th>일시</th><th>작업</th><th>상세</th><th>관리자</th></tr></thead><tbody>';
+            var labels = {create:'등록',update:'수정','delete':'삭제',activate:'활성화',deactivate:'비활성화'};
+            data.forEach(function(l) {
+                html += '<tr><td class="small">' + l.created_at + '</td><td><span class="badge bg-secondary">' + (labels[l.action]||l.action) + '</span></td><td class="small">' + (l.detail||'-') + '</td><td class="small">' + l.admin_name + '</td></tr>';
+            });
+            html += '</tbody></table>';
+            document.getElementById('logBody').innerHTML = html;
+        });
+}
+</script>
 {% endblock %}
