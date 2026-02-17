@@ -1,0 +1,179 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>회원이용약관동의 - 웰다잉뉴스</title>
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/foundation-sites@6.7.5/dist/css/foundation.min.css">
+<link href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@300;400;500;700&display=swap" rel="stylesheet">
+<style>
+*{box-sizing:border-box}
+body{margin:0;font-family:'Noto Sans KR','Apple SD Gothic Neo',sans-serif;background:#f5f5f5;color:#333}
+.user-point{color:#5e1985!important}
+.user-bg,.user-bg:hover,.user-bg:active,.user-bg:focus{background-color:#5e1985!important}
+.user-border{border-color:#5e1985!important}
+#user-wrap{min-height:100vh;display:flex;flex-direction:column}
+.mb-header{text-align:center;padding:40px 0 20px}
+.mb-header .logo img{height:45px}
+.mb-container{max-width:720px;margin:0 auto;padding:0 15px 40px}
+.join-header{margin-bottom:25px}
+.join-header-title{font-size:1.625rem;font-weight:700;color:#222;margin-bottom:8px}
+.join-header-guide{font-size:.875rem;color:#888;margin:0}
+.join-content{margin-bottom:20px}
+/* checkbox */
+.nd-checkbox{display:inline-block;cursor:pointer;font-size:.9375rem;position:relative;padding-left:28px;line-height:1.5}
+.nd-checkbox input[type="checkbox"]{position:absolute;left:0;top:3px;margin:0}
+.nd-checked{vertical-align:middle}
+.plug-in{border:none;margin:0 0 10px;padding:0}
+.plug-in .nd-checked{font-weight:700}
+.plug-in-guide{display:block;font-size:.75rem;color:#888;margin-top:4px;padding-left:28px}
+/* terms box */
+.member-privacy{max-height:200px;overflow-y:auto;border:1px solid #ddd;border-radius:3px;padding:15px;margin:10px 0 20px;background:#fff;font-size:.8125rem;line-height:1.6;color:#555}
+.member-privacy .privacy-group{margin-bottom:10px}
+.member-privacy .privacy-group-title{font-size:.875rem;font-weight:700;color:#333;margin-bottom:8px}
+.member-privacy .privacy-group-list{padding-left:18px;margin-bottom:8px}
+.member-privacy .privacy-group-list li{margin-bottom:4px}
+.member-privacy .privacy-group-summary{margin-bottom:8px}
+.member-privacy .privacy-list-header{margin-bottom:10px}
+.member-privacy hr{margin:10px 0;border-color:#eee}
+.member-privacy table{width:100%;border-collapse:collapse;font-size:.8125rem;margin:8px 0}
+.member-privacy table th,.member-privacy table td{border:1px solid #ddd;padding:6px 8px;text-align:left}
+.member-privacy table th{background:#f9f9f9;font-weight:600;white-space:nowrap}
+.member-privacy h6{font-size:.8125rem;font-weight:700;margin:10px 0 5px}
+.member-privacy ul,.member-privacy ol{padding-left:18px;margin-bottom:4px}
+.member-privacy .privacy-list{margin-bottom:10px}
+.member-privacy .privacy-list-groups{list-style:none;padding:0;margin:0 0 5px}
+.member-privacy .privacy-list-groups li{margin-bottom:2px}
+.member-privacy .privacy-list-groups a{color:#5e1985;text-decoration:none;font-size:.8125rem}
+.clearfix::after{content:'';display:table;clear:both}
+.martop-25{margin-top:25px!important}
+.marbtm-0{margin-bottom:0!important}
+.button.user-bg{color:#fff;border:none;border-radius:3px}
+.callout{margin-bottom:15px;padding:10px 15px;border-radius:4px;font-size:.875rem}
+.callout.alert{background:#fff0f0;color:#c00;border:1px solid #fdd}
+.mb-footer{text-align:center;padding:30px 0;font-size:.75rem;color:#aaa;margin-top:auto}
+small.text-muted{color:#999}
+</style>
+</head>
+<body>
+<div id="user-wrap" class="for-members">
+<div class="row expanded">
+
+<header class="mb-header">
+    <h1 class="logo">
+        <a href="{{ url_for('public.index') }}">
+            <img src="{{ url_for('static', filename='images/logo.png') }}" alt="웰다잉뉴스">
+        </a>
+    </h1>
+</header>
+
+<div class="mb-container">
+    <header class="join-header">
+        <h1 class="join-header-title">이용약관</h1>
+        <p class="join-header-guide">회원가입을 통해 다양한 혜택을 누리시기 바랍니다.</p>
+    </header>
+
+    {% with messages = get_flashed_messages(with_categories=true) %}
+    {% if messages %}
+    {% for category, message in messages %}
+    <div class="callout {{ 'alert' if category == 'error' else category }}">
+        <p style="margin:0">{{ message }}</p>
+    </div>
+    {% endfor %}
+    {% endif %}
+    {% endwith %}
+
+    <article class="join-content">
+        <form name="memberAgreeForm" id="memberAgreeForm" method="POST" action="{{ url_for('public.member_agree') }}">
+
+            <!-- 모두 동의 -->
+            <fieldset class="plug-in">
+                <label class="nd-checkbox">
+                    <input type="checkbox" id="agree_check" name="agree_check" value="Y">
+                    <strong class="nd-checked">모두 동의합니다.</strong>
+                </label>
+                <span class="plug-in-guide">약관, 개인정보 수집 및 이용 안내, 서비스 홍보 및 마케팅 활용에 모두 동의.</span>
+            </fieldset>
+
+            <hr>
+
+            <!-- 1. 이용약관동의 (필수) -->
+            <div class="clearfix">
+                <label class="nd-checkbox">
+                    <input type="checkbox" id="check1" name="check1" value="Y">
+                    <span class="nd-checked">이용약관동의 <small class="text-muted">(필수)</small></span>
+                </label>
+                <div class="member-privacy">
+                    {% include "public/com/service.html" %}
+                </div>
+            </div>
+
+            <!-- 2. 개인정보 수집 및 이용 (필수) -->
+            <div class="clearfix">
+                <label class="nd-checkbox">
+                    <input type="checkbox" id="check2" name="check2" value="Y">
+                    <span class="nd-checked">개인정보 수집 및 이용에 대한 안내 <small class="text-muted">(필수)</small></span>
+                </label>
+                <div class="member-privacy">
+                    {% include "public/com/privacy.html" %}
+                </div>
+            </div>
+
+            <!-- 3. 프로모션 수신 (선택) -->
+            <div class="clearfix">
+                <label class="nd-checkbox">
+                    <input type="checkbox" id="check3" name="check3" value="Y">
+                    <span class="nd-checked">이벤트 등 프로모션 알림 메일 수신 <small class="text-muted">(선택)</small></span>
+                </label>
+            </div>
+
+            <!-- 동의 버튼 -->
+            <div class="clearfix martop-25">
+                <button type="submit" class="button user-bg expanded large marbtm-0">동의합니다</button>
+            </div>
+
+        </form>
+    </article>
+</div>
+
+<script src="https://code.jquery.com/jquery-3.7.1.min.js"></script>
+<script>
+$(function(){
+    // 모두 동의
+    $('#agree_check').on('click', function(){
+        var checked = $(this).is(':checked');
+        $('#check1, #check2, #check3').prop('checked', checked);
+    });
+    // 개별 체크 해제 시 모두동의 해제
+    $('#check1, #check2, #check3').on('click', function(){
+        if(!$(this).is(':checked')){
+            $('#agree_check').prop('checked', false);
+        }
+        if($('#check1').is(':checked') && $('#check2').is(':checked') && $('#check3').is(':checked')){
+            $('#agree_check').prop('checked', true);
+        }
+    });
+    // 제출 검증
+    $('#memberAgreeForm').on('submit', function(e){
+        if(!$('#check1').is(':checked')){
+            alert('이용약관동의를 읽고 동의해주세요');
+            e.preventDefault();
+            return false;
+        }
+        if(!$('#check2').is(':checked')){
+            alert('개인정보 수집 및 이용에 대한 안내를 읽고 동의해주세요');
+            e.preventDefault();
+            return false;
+        }
+    });
+});
+</script>
+
+<footer class="mb-footer">
+    &copy; <span class="user-point">웰다잉뉴스</span> All rights reserved.
+</footer>
+
+</div>
+</div>
+</body>
+</html>

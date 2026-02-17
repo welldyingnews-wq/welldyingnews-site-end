@@ -680,8 +680,32 @@ def poll_vote():
 
 # ─── 회원가입/로그인 ──────────────────────────────────────────
 
+@public_bp.route('/member/')
+def member_index():
+    """회원가입 1단계: 회원 유형 선택"""
+    return render_template('public/member_index.html')
+
+
+@public_bp.route('/member/memberAgree.html', methods=['GET', 'POST'])
+def member_agree():
+    """회원가입 2단계: 이용약관 동의"""
+    if request.method == 'POST':
+        check1 = request.form.get('check1')
+        check2 = request.form.get('check2')
+        if check1 != 'Y' or check2 != 'Y':
+            flash('필수 약관에 동의해주세요.', 'error')
+            return redirect(url_for('public.member_agree', kind='member'))
+        session['member_agree'] = True
+        return redirect(url_for('public.member_register'))
+    return render_template('public/member_agree.html')
+
+
 @public_bp.route('/member/register.html', methods=['GET', 'POST'])
 def member_register():
+    """회원가입 3단계: 회원정보 입력"""
+    if not session.get('member_agree'):
+        return redirect(url_for('public.member_index'))
+
     if request.method == 'POST':
         user_id = request.form.get('user_id', '').strip()
         password = request.form.get('password', '').strip()
@@ -712,6 +736,7 @@ def member_register():
         )
         db.session.add(member)
         db.session.commit()
+        session.pop('member_agree', None)
 
         flash('회원가입이 완료되었습니다. 로그인해주세요.', 'success')
         return redirect(url_for('public.member_login'))

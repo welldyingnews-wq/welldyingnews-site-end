@@ -265,7 +265,7 @@
                     <li><a href="{{ url_for('public.member_logout') }}">로그아웃</a></li>
                     {% else %}
                     <li><a href="{{ url_for('public.member_login') }}" class="user-point">로그인</a></li>
-                    <li><a href="{{ url_for('public.member_register') }}">회원가입</a></li>
+                    <li><a href="{{ url_for('public.member_index') }}">회원가입</a></li>
                     {% endif %}
                 </ul>
                 <div class="user-intro">UPDATED. {{ updated_time }}</div>
@@ -345,7 +345,7 @@
             <li><a href="{{ url_for('public.member_logout') }}">로그아웃</a></li>
             {% else %}
             <li><a href="{{ url_for('public.member_login') }}">로그인</a></li>
-            <li><a href="{{ url_for('public.member_register') }}">회원가입</a></li>
+            <li><a href="{{ url_for('public.member_index') }}">회원가입</a></li>
             {% endif %}
         </ul>
         <ul class="sidenav-bt">

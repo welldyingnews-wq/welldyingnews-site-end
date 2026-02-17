@@ -29,7 +29,7 @@ python run.py
 
 - 서비스 사이트: http://localhost:5001/
 - 관리자 CMS: http://localhost:5001/admin/login
-- 관리자 계정: `welldyingnews` / `rkatkgo1`
+- 관리자 계정: `.env` 파일의 `ADMIN_USER_ID` / `ADMIN_PASSWORD` 참고
 
 ## Architecture
 

@@ -66,7 +66,7 @@ def dashboard():
     comment_count = ArticleComment.query.count()
     post_count = BoardPost.query.count()
     post_reply_count = BoardReply.query.count()
-    member_count = AdminUser.query.count()
+    member_count = Member.query.count()
     dormant_count = AdminUser.query.filter_by(is_dormant=True).count()
 
     # 미승인 기사
@@ -606,112 +606,6 @@ def article_set_level(article_id):
 def member_list():
     stype = request.args.get('stype', '')
     sword = request.args.get('sword', '').strip()
-    admin_level = request.args.get('admin_level', '')
-    user_state = request.args.get('user_state', '')
-
-    query = AdminUser.query
-    # 검색
-    if sword:
-        if stype == 'I':
-            query = query.filter(AdminUser.user_id.contains(sword))
-        elif stype == 'N':
-            query = query.filter(AdminUser.name.contains(sword))
-        elif stype == 'E':
-            query = query.filter(AdminUser.email.contains(sword))
-        else:
-            query = query.filter(db.or_(
-                AdminUser.user_id.contains(sword),
-                AdminUser.name.contains(sword),
-                AdminUser.email.contains(sword)
-            ))
-    # 관리등급
-    if admin_level:
-        query = query.filter_by(level=admin_level)
-    # 상태
-    if user_state == 'A':
-        query = query.filter_by(is_active=True, is_dormant=False)
-    elif user_state == 'H':
-        query = query.filter_by(is_dormant=True)
-
-    members = query.order_by(AdminUser.created_at.desc()).all()
-    return render_template('admin/member_list.html', members=members,
-                           stype=stype, sword=sword, admin_level=admin_level,
-                           user_state=user_state, member_count=len(members))
-
-
-@admin_bp.route('/member/new', methods=['GET', 'POST'])
-@admin_required
-def member_new():
-    if request.method == 'POST':
-        return _save_member(None)
-    return render_template('admin/member_form.html', member=None)
-
-
-@admin_bp.route('/member/<int:member_id>/edit', methods=['GET', 'POST'])
-@admin_required
-def member_edit(member_id):
-    member = AdminUser.query.get_or_404(member_id)
-    if request.method == 'POST':
-        return _save_member(member)
-    return render_template('admin/member_form.html', member=member)
-
-
-def _save_member(member):
-    is_new = member is None
-    if is_new:
-        member = AdminUser()
-
-    member.user_id = request.form.get('user_id', '').strip()
-    if not member.user_id:
-        flash('아이디를 입력하세요.', 'error')
-        return render_template('admin/member_form.html', member=member)
-
-    if is_new:
-        existing = AdminUser.query.filter_by(user_id=member.user_id).first()
-        if existing:
-            flash('이미 존재하는 아이디입니다.', 'error')
-            return render_template('admin/member_form.html', member=member)
-
-    member.name = request.form.get('name', '').strip()
-    member.email = request.form.get('email', '')
-    member.department = request.form.get('department', '')
-    member.level = request.form.get('level', 'reporter')
-
-    password = request.form.get('password', '').strip()
-    if password:
-        member.password_hash = generate_password_hash(password)
-    elif is_new:
-        flash('비밀번호를 입력하세요.', 'error')
-        return render_template('admin/member_form.html', member=member)
-
-    if is_new:
-        db.session.add(member)
-
-    db.session.commit()
-    flash('회원 정보가 저장되었습니다.', 'success')
-    return redirect(url_for('admin.member_list'))
-
-
-@admin_bp.route('/member/<int:member_id>/delete', methods=['POST'])
-@admin_required
-def member_delete(member_id):
-    member = AdminUser.query.get_or_404(member_id)
-    if member.id == current_user.id:
-        flash('자기 자신은 삭제할 수 없습니다.', 'error')
-        return redirect(url_for('admin.member_list'))
-    db.session.delete(member)
-    db.session.commit()
-    flash('회원이 삭제되었습니다.', 'success')
-    return redirect(url_for('admin.member_list'))
-
-
-# ── 일반회원 관리 ──
-
-@admin_bp.route('/public-members')
-@admin_required
-def public_member_list():
-    stype = request.args.get('stype', '')
-    sword = request.args.get('sword', '').strip()
     user_state = request.args.get('user_state', '')
 
     query = Member.query
@@ -734,29 +628,81 @@ def public_member_list():
         query = query.filter_by(is_active=False)
 
     members = query.order_by(Member.created_at.desc()).all()
-    return render_template('admin/public_member_list.html', members=members,
+    return render_template('admin/member_list.html', members=members,
                            stype=stype, sword=sword,
                            user_state=user_state, member_count=len(members))
 
 
-@admin_bp.route('/public-member/<int:member_id>/toggle-active', methods=['POST'])
+@admin_bp.route('/member/new', methods=['GET', 'POST'])
 @admin_required
-def public_member_toggle_active(member_id):
+def member_new():
+    if request.method == 'POST':
+        return _save_member(None)
+    return render_template('admin/member_form.html', member=None)
+
+
+@admin_bp.route('/member/<int:member_id>/edit', methods=['GET', 'POST'])
+@admin_required
+def member_edit(member_id):
+    member = Member.query.get_or_404(member_id)
+    if request.method == 'POST':
+        return _save_member(member)
+    return render_template('admin/member_form.html', member=member)
+
+
+def _save_member(member):
+    is_new = member is None
+    if is_new:
+        member = Member()
+
+    member.user_id = request.form.get('user_id', '').strip()
+    if not member.user_id:
+        flash('아이디를 입력하세요.', 'error')
+        return render_template('admin/member_form.html', member=member)
+
+    if is_new:
+        existing = Member.query.filter_by(user_id=member.user_id).first()
+        if existing:
+            flash('이미 존재하는 아이디입니다.', 'error')
+            return render_template('admin/member_form.html', member=member)
+
+    member.name = request.form.get('name', '').strip()
+    member.email = request.form.get('email', '')
+    member.phone = request.form.get('phone', '')
+
+    password = request.form.get('password', '').strip()
+    if password:
+        member.password_hash = generate_password_hash(password)
+    elif is_new:
+        flash('비밀번호를 입력하세요.', 'error')
+        return render_template('admin/member_form.html', member=member)
+
+    if is_new:
+        db.session.add(member)
+
+    db.session.commit()
+    flash('회원 정보가 저장되었습니다.', 'success')
+    return redirect(url_for('admin.member_list'))
+
+
+@admin_bp.route('/member/<int:member_id>/delete', methods=['POST'])
+@admin_required
+def member_delete(member_id):
+    member = Member.query.get_or_404(member_id)
+    db.session.delete(member)
+    db.session.commit()
+    flash('회원이 삭제되었습니다.', 'success')
+    return redirect(url_for('admin.member_list'))
+
+
+@admin_bp.route('/member/<int:member_id>/toggle-active', methods=['POST'])
+@admin_required
+def member_toggle_active(member_id):
     member = Member.query.get_or_404(member_id)
     member.is_active = not member.is_active
     db.session.commit()
     flash(f'회원 "{member.user_id}" 상태가 {"활성" if member.is_active else "비활성"}으로 변경되었습니다.', 'success')
-    return redirect(url_for('admin.public_member_list'))
-
-
-@admin_bp.route('/public-member/<int:member_id>/delete', methods=['POST'])
-@admin_required
-def public_member_delete(member_id):
-    member = Member.query.get_or_404(member_id)
-    db.session.delete(member)
-    db.session.commit()
-    flash('일반회원이 삭제되었습니다.', 'success')
-    return redirect(url_for('admin.public_member_list'))
+    return redirect(url_for('admin.member_list'))
 
 
 # ── 통계 ──

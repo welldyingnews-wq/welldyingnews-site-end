@@ -20,20 +20,11 @@
                 </select>
             </div>
             <div class="col-md-2">
-                <label class="form-label small mb-1">관리등급</label>
-                <select name="admin_level" class="form-select form-select-sm">
-                    <option value="">전체</option>
-                    <option value="admin" {% if admin_level == 'admin' %}selected{% endif %}>관리자</option>
-                    <option value="editor" {% if admin_level == 'editor' %}selected{% endif %}>편집기자</option>
-                    <option value="reporter" {% if admin_level == 'reporter' %}selected{% endif %}>기자</option>
-                </select>
-            </div>
-            <div class="col-md-2">
                 <label class="form-label small mb-1">회원상태</label>
                 <select name="user_state" class="form-select form-select-sm">
                     <option value="">전체</option>
-                    <option value="A" {% if user_state == 'A' %}selected{% endif %}>활동</option>
-                    <option value="H" {% if user_state == 'H' %}selected{% endif %}>휴면</option>
+                    <option value="A" {% if user_state == 'A' %}selected{% endif %}>활성</option>
+                    <option value="D" {% if user_state == 'D' %}selected{% endif %}>비활성</option>
                 </select>
             </div>
             <div class="col-md-3">
@@ -56,10 +47,10 @@
                     <th>아이디</th>
                     <th>이름</th>
                     <th>이메일</th>
-                    <th width="80">관리등급</th>
+                    <th>연락처</th>
                     <th width="70">상태</th>
-                    <th width="100">등록일</th>
-                    <th width="150">관리</th>
+                    <th width="100">가입일</th>
+                    <th width="200">관리</th>
                 </tr>
             </thead>
             <tbody>
@@ -68,21 +59,9 @@
                     <td>{{ member.user_id }}</td>
                     <td><strong>{{ member.name }}</strong></td>
                     <td class="small">{{ member.email or '-' }}</td>
+                    <td class="small">{{ member.phone or '-' }}</td>
                     <td>
-                        {% if member.level == 'admin' %}
-                        <span class="badge bg-danger">관리자</span>
-                        {% elif member.level == 'editor' %}
-                        <span class="badge bg-primary">편집기자</span>
-                        {% elif member.level == 'reporter' %}
-                        <span class="badge bg-success">기자</span>
-                        {% else %}
-                        <span class="text-muted">-</span>
-                        {% endif %}
-                    </td>
-                    <td>
-                        {% if member.is_dormant %}
-                        <span class="badge bg-secondary">휴면</span>
-                        {% elif member.is_active %}
+                        {% if member.is_active %}
                         <span class="text-success">정상</span>
                         {% else %}
                         <span class="text-danger">비활성</span>
@@ -93,13 +72,16 @@
                         <a href="{{ url_for('admin.member_edit', member_id=member.id) }}" class="btn btn-sm btn-outline-primary">
                             <i class="bi bi-pencil"></i> 수정
                         </a>
-                        {% if member.id != current_user.id %}
-                        <form method="post" action="{{ url_for('admin.member_delete', member_id=member.id) }}" class="d-inline" onsubmit="return confirm('정말 삭제하시겠습니까?')">
-                            <button type="submit" class="btn btn-sm btn-outline-danger">
-                                <i class="bi bi-trash"></i> 삭제
+                        <form method="post" action="{{ url_for('admin.member_toggle_active', member_id=member.id) }}" class="d-inline">
+                            <button type="submit" class="btn btn-sm btn-outline-{{ 'warning' if member.is_active else 'success' }}" title="{{ '비활성화' if member.is_active else '활성화' }}">
+                                <i class="bi bi-{{ 'pause-circle' if member.is_active else 'play-circle' }}"></i>
                             </button>
                         </form>
-                        {% endif %}
+                        <form method="post" action="{{ url_for('admin.member_delete', member_id=member.id) }}" class="d-inline" onsubmit="return confirm('정말 삭제하시겠습니까?')">
+                            <button type="submit" class="btn btn-sm btn-outline-danger">
+                                <i class="bi bi-trash"></i>
+                            </button>
+                        </form>
                     </td>
                 </tr>
                 {% else %}

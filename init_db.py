@@ -1,4 +1,6 @@
 """DB 초기화 및 시드 데이터 삽입"""
+import os
+
 from werkzeug.security import generate_password_hash
 
 from app import create_app
@@ -10,12 +12,12 @@ with app.app_context():
     db.drop_all()
     db.create_all()
 
-    # 관리자 계정
+    # 관리자 계정 (.env에서 읽음)
     admin = AdminUser(
-        user_id='welldyingnews',
-        password_hash=generate_password_hash('rkatkgo1'),
-        name='웰다잉뉴스',
-        email='welldyingnews@naver.com',
+        user_id=os.environ.get('ADMIN_USER_ID', 'admin'),
+        password_hash=generate_password_hash(os.environ.get('ADMIN_PASSWORD', 'admin')),
+        name=os.environ.get('ADMIN_NAME', '관리자'),
+        email=os.environ.get('ADMIN_EMAIL', ''),
     )
     db.session.add(admin)
 
@@ -73,7 +75,7 @@ with app.app_context():
         ('editor_name', '김동하', '편집인'),
         ('company_name', '웰다잉미디어', '법인명'),
         ('address', '서울특별시 송파구 송파대로 345', '주소'),
-        ('email', 'welldyingnews@naver.com', '이메일'),
+        ('email', os.environ.get('ADMIN_EMAIL', ''), '이메일'),
         ('tel', '', '전화번호'),
         ('registration_no', '', '등록번호'),
         ('registration_date', '', '등록일'),

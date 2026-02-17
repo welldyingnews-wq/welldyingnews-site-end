@@ -1,0 +1,61 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>회원가입 - 웰다잉뉴스</title>
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/foundation-sites@6.7.5/dist/css/foundation.min.css">
+<link href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@300;400;500;700&display=swap" rel="stylesheet">
+<style>
+*{box-sizing:border-box}
+body{margin:0;font-family:'Noto Sans KR','Apple SD Gothic Neo',sans-serif;background:#f5f5f5;color:#333}
+.user-point{color:#5e1985!important}
+.user-bg{background-color:#5e1985!important}
+#user-wrap{min-height:100vh;display:flex;flex-direction:column}
+.mb-header{text-align:center;padding:60px 0 30px}
+.mb-header .logo img{height:45px}
+.mb-container{max-width:480px;margin:0 auto;padding:0 15px 40px}
+.join-header{text-align:center;margin-bottom:30px}
+.join-header-title{font-size:1.625rem;font-weight:700;color:#222;margin-bottom:8px}
+.join-header-guide{font-size:.875rem;color:#888;margin:0}
+.join-type{margin-top:10px}
+.join-type .join-helper{display:block;font-size:.9375rem;font-weight:500;color:#333;margin-bottom:15px;text-align:center}
+.join-type .button{display:block;width:100%;padding:14px;font-size:.9375rem;font-weight:500;text-align:center;margin-bottom:10px;border-radius:3px;text-decoration:none}
+.nd-gray{background:#f0f0f0;color:#333;border:1px solid #ddd}
+.nd-gray:hover{background:#e5e5e5;color:#333}
+.mb-footer{text-align:center;padding:30px 0;font-size:.75rem;color:#aaa;margin-top:auto}
+</style>
+</head>
+<body>
+<div id="user-wrap" class="for-members">
+<div class="row expanded">
+
+<header class="mb-header">
+    <h1 class="logo">
+        <a href="{{ url_for('public.index') }}">
+            <img src="{{ url_for('static', filename='images/logo.png') }}" alt="웰다잉뉴스">
+        </a>
+    </h1>
+</header>
+
+<div class="mb-container">
+    <header class="join-header text-center">
+        <h1 class="join-header-title">회원가입</h1>
+        <p class="join-header-guide">다음 중 어디에 해당되는지 선택해 주시기 바랍니다.</p>
+    </header>
+
+    <div class="join-type">
+        <span class="join-helper">만 14세 이상 입니까?</span>
+        <a href="{{ url_for('public.member_agree', kind='member') }}" class="button expanded nd-gray">예, 일반회원 입니다</a>
+        <a href="{{ url_for('public.member_agree', kind='member') }}" class="button expanded nd-gray">아니요, 어린이회원 입니다</a>
+    </div>
+</div>
+
+<footer class="mb-footer">
+    &copy; <span class="user-point">웰다잉뉴스</span> All rights reserved.
+</footer>
+
+</div>
+</div>
+</body>
+</html>

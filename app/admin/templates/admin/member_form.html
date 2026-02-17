@@ -28,16 +28,8 @@
                         <input type="email" name="email" class="form-control" value="{{ member.email if member else '' }}">
                     </div>
                     <div class="mb-3">
-                        <label class="form-label fw-bold">부서</label>
-                        <input type="text" name="department" class="form-control" value="{{ member.department if member else '' }}">
-                    </div>
-                    <div class="mb-3">
-                        <label class="form-label fw-bold">관리등급</label>
-                        <select name="level" class="form-select">
-                            <option value="admin" {% if member and member.level == 'admin' %}selected{% endif %}>관리자</option>
-                            <option value="editor" {% if member and member.level == 'editor' %}selected{% endif %}>편집기자</option>
-                            <option value="reporter" {% if (not member) or (member and member.level == 'reporter') %}selected{% endif %}>기자</option>
-                        </select>
+                        <label class="form-label fw-bold">연락처</label>
+                        <input type="tel" name="phone" class="form-control" value="{{ member.phone if member else '' }}">
                     </div>
                     <div class="d-grid">
                         <button type="submit" class="btn btn-primary"><i class="bi bi-save"></i> 저장</button>

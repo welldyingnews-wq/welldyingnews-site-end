@@ -9,3 +9,5 @@ dist/
 build/
 .idea/
 .claude/
+.env
+welldying.db
