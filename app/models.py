@@ -31,6 +31,7 @@ class Member(db.Model):
     phone = db.Column(db.String(20), default='')
     level = db.Column(db.String(20), default='일반')  # 일반/시민기자/기자/데스크
     is_active = db.Column(db.Boolean, default=True)
+    is_dormant = db.Column(db.Boolean, default=False)  # 휴면회원
     created_at = db.Column(db.DateTime, default=datetime.now)
 
 

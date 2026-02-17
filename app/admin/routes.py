@@ -393,6 +393,14 @@ def api_subsections(section_id):
     return jsonify([{'id': s.id, 'code': s.code, 'name': s.name} for s in subs])
 
 
+@admin_bp.route('/api/reporters')
+@admin_required
+def api_reporters():
+    """기자 목록 API (기자 선택 팝업)"""
+    users = AdminUser.query.filter_by(is_active=True).order_by(AdminUser.name).all()
+    return jsonify([{'user_id': u.user_id, 'name': u.name, 'email': u.email or '', 'level': u.level} for u in users])
+
+
 @admin_bp.route('/api/search-articles')
 @admin_required
 def api_search_articles():
@@ -604,11 +612,19 @@ def article_set_level(article_id):
 @admin_bp.route('/members')
 @admin_required
 def member_list():
+    tab = request.args.get('tab', 'all')  # all, inactive, dormant
     stype = request.args.get('stype', '')
     sword = request.args.get('sword', '').strip()
     user_state = request.args.get('user_state', '')
 
     query = Member.query
+
+    # 탭 필터
+    if tab == 'inactive':
+        query = query.filter_by(is_active=False)
+    elif tab == 'dormant':
+        query = query.filter_by(is_dormant=True)
+
     if sword:
         if stype == 'I':
             query = query.filter(Member.user_id.contains(sword))
@@ -628,9 +644,17 @@ def member_list():
         query = query.filter_by(is_active=False)
 
     members = query.order_by(Member.created_at.desc()).all()
+
+    # 탭 카운트
+    all_count = Member.query.count()
+    inactive_count = Member.query.filter_by(is_active=False).count()
+    dormant_count = Member.query.filter_by(is_dormant=True).count()
+
     return render_template('admin/member_list.html', members=members,
-                           stype=stype, sword=sword,
-                           user_state=user_state, member_count=len(members))
+                           stype=stype, sword=sword, tab=tab,
+                           user_state=user_state, member_count=len(members),
+                           all_count=all_count, inactive_count=inactive_count,
+                           dormant_count=dormant_count)
 
 
 @admin_bp.route('/member/new', methods=['GET', 'POST'])

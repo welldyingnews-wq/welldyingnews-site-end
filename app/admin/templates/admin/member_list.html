@@ -3,8 +3,21 @@
 
 {% block content %}
 <div class="d-flex justify-content-between align-items-center mb-3">
-    <h5 class="mb-0">회원목록 <span class="badge bg-secondary">회원수: {{ member_count }}명</span></h5>
+    <h5 class="mb-0">회원목록 <span class="badge bg-secondary">{{ member_count }}명</span></h5>
 </div>
+
+<!-- 탭 -->
+<ul class="nav nav-tabs mb-3">
+    <li class="nav-item">
+        <a class="nav-link {% if tab == 'all' %}active{% endif %}" href="{{ url_for('admin.member_list', tab='all') }}">전체회원 <span class="badge bg-secondary">{{ all_count }}</span></a>
+    </li>
+    <li class="nav-item">
+        <a class="nav-link {% if tab == 'inactive' %}active{% endif %}" href="{{ url_for('admin.member_list', tab='inactive') }}">탈퇴아이디 <span class="badge bg-danger">{{ inactive_count }}</span></a>
+    </li>
+    <li class="nav-item">
+        <a class="nav-link {% if tab == 'dormant' %}active{% endif %}" href="{{ url_for('admin.member_list', tab='dormant') }}">휴면회원 <span class="badge bg-warning text-dark">{{ dormant_count }}</span></a>
+    </li>
+</ul>
 
 <!-- 검색 필터 -->
 <div class="card mb-3">
