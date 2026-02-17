@@ -29,6 +29,7 @@ class Member(db.Model):
     name = db.Column(db.String(50), nullable=False)
     email = db.Column(db.String(100), default='')
     phone = db.Column(db.String(20), default='')
+    level = db.Column(db.String(20), default='일반')  # 일반/시민기자/기자/데스크
     is_active = db.Column(db.Boolean, default=True)
     created_at = db.Column(db.DateTime, default=datetime.now)
 
@@ -194,6 +195,7 @@ class BoardPost(db.Model):
     __tablename__ = 'board_post'
     id = db.Column(db.Integer, primary_key=True)
     board_id = db.Column(db.Integer, db.ForeignKey('board.id'), nullable=False)
+    parent_post_id = db.Column(db.Integer, db.ForeignKey('board_post.id'), nullable=True)
     title = db.Column(db.String(500), nullable=False)
     content = db.Column(db.Text, default='')
     author_name = db.Column(db.String(50), default='')
@@ -203,6 +205,7 @@ class BoardPost(db.Model):
     is_secret = db.Column(db.Boolean, default=False)
     created_at = db.Column(db.DateTime, default=datetime.now)
     board = db.relationship('Board', backref=db.backref('posts', lazy='dynamic'))
+    parent_post = db.relationship('BoardPost', remote_side='BoardPost.id', backref='child_posts')
 
 
 class BoardReply(db.Model):
@@ -210,12 +213,30 @@ class BoardReply(db.Model):
     __tablename__ = 'board_reply'
     id = db.Column(db.Integer, primary_key=True)
     post_id = db.Column(db.Integer, db.ForeignKey('board_post.id'), nullable=False)
+    parent_id = db.Column(db.Integer, db.ForeignKey('board_reply.id'), nullable=True)
     author_name = db.Column(db.String(50), default='')
     password = db.Column(db.String(200), default='')
     content = db.Column(db.Text, nullable=False)
+    ip_address = db.Column(db.String(50), default='')
+    member_id = db.Column(db.Integer, db.ForeignKey('member.id'), nullable=True)
+    like_count = db.Column(db.Integer, default=0)
+    dislike_count = db.Column(db.Integer, default=0)
     is_hidden = db.Column(db.Boolean, default=False)
     created_at = db.Column(db.DateTime, default=datetime.now)
     post = db.relationship('BoardPost', backref=db.backref('replies', lazy='dynamic'))
+    children = db.relationship('BoardReply', backref=db.backref('parent', remote_side='BoardReply.id'),
+                               lazy='dynamic', order_by='BoardReply.created_at.asc()')
+
+
+class BoardReplyVote(db.Model):
+    """게시판 댓글 추천/비추천"""
+    __tablename__ = 'board_reply_vote'
+    id = db.Column(db.Integer, primary_key=True)
+    reply_id = db.Column(db.Integer, db.ForeignKey('board_reply.id'), nullable=False)
+    ip_address = db.Column(db.String(50), default='')
+    member_id = db.Column(db.Integer, nullable=True)
+    vote_type = db.Column(db.String(10), nullable=False)  # like / dislike
+    created_at = db.Column(db.DateTime, default=datetime.now)
 
 
 class EventRequest(db.Model):

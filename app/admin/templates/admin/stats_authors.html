@@ -106,6 +106,9 @@
         </table>
     </div>
     <div class="card-footer d-flex justify-content-end gap-2 py-2">
+        <a href="{{ url_for('admin.stats_authors_csv', sc_date=sc_date, start_date=start_date, end_date=end_date, order_by=order_by) }}" class="btn btn-sm btn-outline-success">
+            <i class="bi bi-file-earmark-spreadsheet"></i> 엑셀 다운로드
+        </a>
         <button type="button" class="btn btn-sm btn-outline-secondary" onclick="window.print()">
             <i class="bi bi-printer"></i> 인쇄
         </button>

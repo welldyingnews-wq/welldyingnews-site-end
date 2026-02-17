@@ -669,6 +669,7 @@ def _save_member(member):
     member.name = request.form.get('name', '').strip()
     member.email = request.form.get('email', '')
     member.phone = request.form.get('phone', '')
+    member.level = request.form.get('level', '일반')
 
     password = request.form.get('password', '').strip()
     if password:
@@ -970,6 +971,170 @@ def subsection_delete(sub_id):
     db.session.commit()
     flash('2차 섹션이 삭제되었습니다.', 'success')
     return redirect(url_for('admin.settings_sections'))
+
+
+@admin_bp.route('/settings/sections/reorder', methods=['POST'])
+@admin_required
+def sections_reorder():
+    """드래그앤드롭 순서 변경 AJAX"""
+    data = request.get_json(silent=True) or {}
+    ids = data.get('ids', [])
+    target = data.get('target', 'section')  # section or subsection
+    Model = Section if target == 'section' else SubSection
+    for idx, item_id in enumerate(ids):
+        item = Model.query.get(int(item_id))
+        if item:
+            item.sort_order = idx
+    db.session.commit()
+    return jsonify({'ok': True})
+
+
+@admin_bp.route('/stats/authors/csv')
+@admin_required
+def stats_authors_csv():
+    """기자별 통계 CSV 다운로드"""
+    import csv
+    import io
+    from datetime import timedelta
+    import calendar
+    from flask import Response
+
+    sc_date = request.args.get('sc_date', 'M1')
+    start_date = request.args.get('start_date', '')
+    end_date = request.args.get('end_date', '')
+    order_by = request.args.get('order_by', 'total')
+    today = datetime.now()
+
+    if sc_date == 'M1':
+        sd = today.replace(day=1)
+        _, last_day = calendar.monthrange(today.year, today.month)
+        ed = today.replace(day=last_day)
+    elif sc_date == 'M-1':
+        first = today.replace(day=1)
+        last_month = first - timedelta(days=1)
+        sd = last_month.replace(day=1)
+        ed = last_month
+    elif sc_date == 'M-2':
+        first = today.replace(day=1)
+        last_month = first - timedelta(days=1)
+        two_months = last_month.replace(day=1) - timedelta(days=1)
+        sd = two_months.replace(day=1)
+        ed = two_months
+    elif sc_date == 'S' and start_date:
+        try:
+            sd = datetime.strptime(start_date, '%Y-%m-%d')
+        except ValueError:
+            sd = today.replace(day=1)
+        try:
+            ed = datetime.strptime(end_date, '%Y-%m-%d') if end_date else today
+        except ValueError:
+            ed = today
+    else:
+        sd = today.replace(day=1)
+        _, last_day = calendar.monthrange(today.year, today.month)
+        ed = today.replace(day=last_day)
+
+    stats = db.session.query(
+        Article.author_name,
+        db.func.count(Article.id).label('article_count'),
+        db.func.count(db.case((Article.recognition == 'E', 1))).label('approved_count'),
+        db.func.count(db.case((Article.level == 'T', 1))).label('headline_count'),
+        db.func.count(db.case((Article.level == 'I', 1))).label('important_count'),
+        db.func.count(db.case((Article.level == 'B', 1))).label('normal_count'),
+        db.func.sum(Article.view_count).label('total_views')
+    ).filter(
+        Article.is_deleted == False,
+        Article.created_at >= sd,
+        Article.created_at < ed + timedelta(days=1)
+    ).group_by(Article.author_name)
+
+    if order_by == 'total_pv':
+        stats = stats.order_by(db.func.sum(Article.view_count).desc())
+    elif order_by == 'total_recognition_e':
+        stats = stats.order_by(db.func.count(db.case((Article.recognition == 'E', 1))).desc())
+    else:
+        stats = stats.order_by(db.func.count(Article.id).desc())
+
+    results = stats.all()
+
+    output = io.StringIO()
+    output.write('\ufeff')  # BOM for Excel
+    writer = csv.writer(output)
+    writer.writerow(['순위', '기자명', '기사수', '승인', '헤드라인', '중요', '일반', '기사뷰'])
+    for i, row in enumerate(results, 1):
+        writer.writerow([i, row.author_name, row.article_count, row.approved_count,
+                         row.headline_count, row.important_count, row.normal_count,
+                         row.total_views or 0])
+
+    filename = f'기자별통계_{sd.strftime("%Y%m%d")}_{ed.strftime("%Y%m%d")}.csv'
+    return Response(
+        output.getvalue(),
+        mimetype='text/csv',
+        headers={'Content-Disposition': f'attachment; filename*=UTF-8\'\'{filename}'}
+    )
+
+
+@admin_bp.route('/stats/ranking/csv')
+@admin_required
+def stats_ranking_csv():
+    """기사 랭킹 CSV 다운로드"""
+    import csv
+    import io
+    from datetime import timedelta
+    from flask import Response
+
+    opt_section = request.args.get('opt_section', '')
+    opt_limit = request.args.get('opt_limit', 50, type=int)
+    start_date = request.args.get('start_date', '')
+    end_date = request.args.get('end_date', '')
+    sc_date = request.args.get('sc_date', '30')
+    today = datetime.now()
+
+    if sc_date and sc_date != 'S':
+        days = int(sc_date) if sc_date not in ('', 'S') else 30
+        if days > 0:
+            sd = today - timedelta(days=days - 1)
+            ed = today
+        elif days < 0:
+            sd = ed = today - timedelta(days=1)
+        else:
+            sd = ed = today
+    elif start_date:
+        try:
+            sd = datetime.strptime(start_date, '%Y-%m-%d')
+        except ValueError:
+            sd = today
+        try:
+            ed = datetime.strptime(end_date, '%Y-%m-%d') if end_date else today
+        except ValueError:
+            ed = today
+    else:
+        sd = today - timedelta(days=29)
+        ed = today
+
+    query = Article.query.filter(
+        Article.is_deleted == False,
+        Article.created_at >= sd,
+        Article.created_at < ed + timedelta(days=1)
+    )
+    if opt_section:
+        query = query.filter_by(section_id=int(opt_section))
+
+    articles = query.order_by(Article.view_count.desc()).limit(opt_limit).all()
+
+    output = io.StringIO()
+    output.write('\ufeff')
+    writer = csv.writer(output)
+    writer.writerow(['순위', '기사제목', '기자명', '기사노출일', '조회수'])
+    for i, a in enumerate(articles, 1):
+        writer.writerow([i, a.title, a.author_name, a.created_at.strftime('%Y-%m-%d'), a.view_count])
+
+    filename = f'기사랭킹_{sd.strftime("%Y%m%d")}_{ed.strftime("%Y%m%d")}.csv'
+    return Response(
+        output.getvalue(),
+        mimetype='text/csv',
+        headers={'Content-Disposition': f'attachment; filename*=UTF-8\'\'{filename}'}
+    )
 
 
 # ── 기사댓글 ──
@@ -1678,7 +1843,11 @@ def authority_update(member_id):
 def settings_comment():
     if request.method == 'POST':
         keys = ['comment_use', 'comment_login_required', 'comment_approval_required',
-                'comment_max_length', 'comment_block_words']
+                'comment_max_length', 'comment_block_words',
+                'comment_best_threshold', 'comment_best_count',
+                'comment_show_name', 'comment_show_ip', 'comment_show_id',
+                'comment_admin_name',
+                'bbs_comment_use', 'bbs_comment_login_required']
         for key in keys:
             setting = SiteSetting.query.filter_by(key=key).first()
             if not setting:

@@ -7,7 +7,8 @@ from werkzeug.security import generate_password_hash, check_password_hash
 
 import json
 from app.models import (db, Section, SubSection, Article, ArticleRelation, ArticleComment,
-                        CommentVote, SiteSetting, Board, BoardPost, BoardReply, Banner,
+                        CommentVote, SiteSetting, Board, BoardPost, BoardReply,
+                        BoardReplyVote, Banner,
                         EventRequest, Popup, Poll, PollOption, Member)
 from app.public import public_bp
 
@@ -633,7 +634,24 @@ def bbs_view():
     post.view_count += 1
     db.session.commit()
 
-    replies = post.replies.filter_by(is_hidden=False).order_by(BoardReply.created_at.asc()).all()
+    # 댓글 정렬
+    reply_sort = request.args.get('reply_sort', 'newest')
+    if reply_sort == 'oldest':
+        order = BoardReply.created_at.asc()
+    else:
+        order = BoardReply.created_at.desc()
+
+    # 상위 댓글만 (parent_id IS NULL)
+    replies = post.replies.filter_by(is_hidden=False, parent_id=None).order_by(order).all()
+
+    # BEST 댓글 (좋아요 3개 이상, 상위 3개)
+    best_replies = post.replies.filter(
+        BoardReply.is_hidden == False,
+        BoardReply.parent_id == None,
+        BoardReply.like_count >= 3
+    ).order_by(BoardReply.like_count.desc()).limit(3).all()
+
+    reply_count = post.replies.filter_by(is_hidden=False).count()
 
     # 이전/다음 글
     prev_post = BoardPost.query.filter(
@@ -647,10 +665,20 @@ def bbs_view():
         BoardPost.id > post.id
     ).order_by(BoardPost.id.asc()).first()
 
+    # 로그인 회원 정보
+    member = None
+    member_id = session.get('member_id')
+    if member_id:
+        member = Member.query.get(member_id)
+
     return render_template('public/bbs_view.html',
                            board=post.board,
                            post=post,
                            replies=replies,
+                           best_replies=best_replies,
+                           reply_count=reply_count,
+                           reply_sort=reply_sort,
+                           member=member,
                            prev_post=prev_post,
                            next_post=next_post)
 
@@ -661,7 +689,10 @@ def bbs_write_form():
     board = Board.query.filter_by(code=table, is_active=True).first()
     if not board:
         abort(404)
-    return render_template('public/bbs_write.html', board=board)
+    # 답글 모드
+    reply_to = request.args.get('reply_to', 0, type=int)
+    parent_post = BoardPost.query.get(reply_to) if reply_to else None
+    return render_template('public/bbs_write.html', board=board, parent_post=parent_post)
 
 
 @public_bp.route('/bbs/write', methods=['POST'])
@@ -681,9 +712,11 @@ def bbs_write():
         return redirect(url_for('public.bbs_write_form', table=table))
 
     is_secret = request.form.get('is_secret') == '1'
+    parent_post_id = request.form.get('parent_post_id', 0, type=int) or None
 
     post = BoardPost(
         board_id=board.id,
+        parent_post_id=parent_post_id,
         title=title,
         content=content,
         author_name=author_name or '익명',
@@ -788,6 +821,7 @@ def bbs_edit(post_id):
 @public_bp.route('/bbs/reply/write', methods=['POST'])
 def bbs_reply_write():
     post_id = request.form.get('post_id', 0, type=int)
+    parent_id = request.form.get('parent_id', 0, type=int) or None
     author_name = request.form.get('author_name', '').strip()
     password = request.form.get('password', '').strip()
     content = request.form.get('content', '').strip()
@@ -798,11 +832,18 @@ def bbs_reply_write():
         flash('댓글 내용을 입력해주세요.', 'error')
         return redirect(url_for('public.bbs_view', idxno=post_id) + '#replies')
 
+    # 로그인 회원
+    member_id = session.get('member_id')
+    member = Member.query.get(member_id) if member_id else None
+
     reply = BoardReply(
         post_id=post_id,
-        author_name=author_name or '익명',
-        password=generate_password_hash(password) if password else '',
-        content=content
+        parent_id=parent_id,
+        author_name=member.name if member else (author_name or '익명'),
+        password=generate_password_hash(password) if password and not member else '',
+        content=content,
+        ip_address=request.remote_addr,
+        member_id=member.id if member else None
     )
     db.session.add(reply)
     db.session.commit()
@@ -818,14 +859,82 @@ def bbs_reply_delete():
 
     reply = BoardReply.query.get_or_404(reply_id)
 
-    if not reply.password or not check_password_hash(reply.password, password):
+    # 회원 본인 삭제
+    member_id = session.get('member_id')
+    if reply.member_id and member_id and reply.member_id == member_id:
+        pass  # OK
+    elif reply.password and check_password_hash(reply.password, password):
+        pass  # OK
+    else:
         flash('비밀번호가 일치하지 않습니다.', 'error')
         return redirect(url_for('public.bbs_view', idxno=post_id) + '#replies')
 
+    # 자식 댓글 + 투표 삭제
+    for child in reply.children.all():
+        BoardReplyVote.query.filter_by(reply_id=child.id).delete()
+        db.session.delete(child)
+    BoardReplyVote.query.filter_by(reply_id=reply.id).delete()
     db.session.delete(reply)
     db.session.commit()
 
     return redirect(url_for('public.bbs_view', idxno=post_id) + '#replies')
+
+
+@public_bp.route('/bbs/reply/vote', methods=['POST'])
+def bbs_reply_vote():
+    from flask import jsonify
+    reply_id = request.form.get('reply_id', 0, type=int)
+    vote_type = request.form.get('vote_type', '')
+    if vote_type not in ('like', 'dislike'):
+        return jsonify({'error': 'invalid'}), 400
+
+    reply = BoardReply.query.get_or_404(reply_id)
+    ip = request.remote_addr
+    member_id = session.get('member_id')
+
+    existing = BoardReplyVote.query.filter_by(reply_id=reply_id, vote_type=vote_type)
+    if member_id:
+        existing = existing.filter_by(member_id=member_id)
+    else:
+        existing = existing.filter_by(ip_address=ip)
+    if existing.first():
+        return jsonify({'error': 'already_voted', 'like': reply.like_count, 'dislike': reply.dislike_count})
+
+    vote = BoardReplyVote(reply_id=reply_id, ip_address=ip,
+                          member_id=member_id, vote_type=vote_type)
+    db.session.add(vote)
+    if vote_type == 'like':
+        reply.like_count = (reply.like_count or 0) + 1
+    else:
+        reply.dislike_count = (reply.dislike_count or 0) + 1
+    db.session.commit()
+    return jsonify({'like': reply.like_count, 'dislike': reply.dislike_count})
+
+
+@public_bp.route('/bbs/reply/edit', methods=['POST'])
+def bbs_reply_edit():
+    from flask import jsonify
+    reply_id = request.form.get('reply_id', 0, type=int)
+    content = request.form.get('content', '').strip()
+    password = request.form.get('password', '').strip()
+
+    reply = BoardReply.query.get_or_404(reply_id)
+
+    # 권한 확인
+    member_id = session.get('member_id')
+    if reply.member_id and member_id and reply.member_id == member_id:
+        pass  # OK
+    elif reply.password and check_password_hash(reply.password, password):
+        pass  # OK
+    else:
+        return jsonify({'error': '비밀번호가 일치하지 않습니다.'}), 403
+
+    if not content:
+        return jsonify({'error': '내용을 입력하세요.'}), 400
+
+    reply.content = content
+    db.session.commit()
+    return jsonify({'ok': True, 'content': content})
 
 
 # ─── 설문조사 ───────────────────────────────────────────────

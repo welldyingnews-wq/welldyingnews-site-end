@@ -2,69 +2,202 @@
 {% block nav_title %}댓글설정{% endblock %}
 
 {% macro setting_val(key) %}{{ settings[key].value if key in settings else '' }}{% endmacro %}
+{% macro sv(key) %}{{ settings[key].value if key in settings else '' }}{% endmacro %}
 
 {% block content %}
 <div class="row justify-content-center">
     <div class="col-lg-8">
-        <div class="card">
-            <div class="card-header"><strong>댓글 설정</strong></div>
-            <div class="card-body">
-                <form method="post">
-                    <div class="mb-3">
-                        <label class="form-label fw-bold">댓글 사용</label>
-                        <div>
-                            <div class="form-check form-check-inline">
-                                <input class="form-check-input" type="radio" name="comment_use" id="comment_use_y" value="Y" {% if setting_val('comment_use') != 'N' %}checked{% endif %}>
-                                <label class="form-check-label" for="comment_use_y">사용</label>
+        <!-- 탭 -->
+        <ul class="nav nav-tabs mb-3" id="commentTab">
+            <li class="nav-item"><a class="nav-link active" data-bs-toggle="tab" href="#tab-basic">기본설정</a></li>
+            <li class="nav-item"><a class="nav-link" data-bs-toggle="tab" href="#tab-article">기사댓글</a></li>
+            <li class="nav-item"><a class="nav-link" data-bs-toggle="tab" href="#tab-bbs">게시판댓글</a></li>
+        </ul>
+
+        <form method="post">
+        <div class="tab-content">
+            <!-- 기본설정 -->
+            <div class="tab-pane fade show active" id="tab-basic">
+                <div class="card mb-3">
+                    <div class="card-header py-2"><strong>기본 댓글 설정</strong></div>
+                    <div class="card-body">
+                        <div class="mb-3">
+                            <label class="form-label fw-bold">댓글 사용</label>
+                            <div>
+                                <div class="form-check form-check-inline">
+                                    <input class="form-check-input" type="radio" name="comment_use" id="comment_use_y" value="Y" {% if sv('comment_use') != 'N' %}checked{% endif %}>
+                                    <label class="form-check-label" for="comment_use_y">사용</label>
+                                </div>
+                                <div class="form-check form-check-inline">
+                                    <input class="form-check-input" type="radio" name="comment_use" id="comment_use_n" value="N" {% if sv('comment_use') == 'N' %}checked{% endif %}>
+                                    <label class="form-check-label" for="comment_use_n">사용안함</label>
+                                </div>
                             </div>
-                            <div class="form-check form-check-inline">
-                                <input class="form-check-input" type="radio" name="comment_use" id="comment_use_n" value="N" {% if setting_val('comment_use') == 'N' %}checked{% endif %}>
-                                <label class="form-check-label" for="comment_use_n">사용안함</label>
+                        </div>
+                        <div class="mb-3">
+                            <label class="form-label fw-bold">로그인 필수</label>
+                            <div>
+                                <div class="form-check form-check-inline">
+                                    <input class="form-check-input" type="radio" name="comment_login_required" id="login_y" value="Y" {% if sv('comment_login_required') == 'Y' %}checked{% endif %}>
+                                    <label class="form-check-label" for="login_y">필수</label>
+                                </div>
+                                <div class="form-check form-check-inline">
+                                    <input class="form-check-input" type="radio" name="comment_login_required" id="login_n" value="N" {% if sv('comment_login_required') != 'Y' %}checked{% endif %}>
+                                    <label class="form-check-label" for="login_n">비필수</label>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="mb-3">
+                            <label class="form-label fw-bold">승인 후 노출</label>
+                            <div>
+                                <div class="form-check form-check-inline">
+                                    <input class="form-check-input" type="radio" name="comment_approval_required" id="approval_y" value="Y" {% if sv('comment_approval_required') == 'Y' %}checked{% endif %}>
+                                    <label class="form-check-label" for="approval_y">사용</label>
+                                </div>
+                                <div class="form-check form-check-inline">
+                                    <input class="form-check-input" type="radio" name="comment_approval_required" id="approval_n" value="N" {% if sv('comment_approval_required') != 'Y' %}checked{% endif %}>
+                                    <label class="form-check-label" for="approval_n">사용안함</label>
+                                </div>
+                            </div>
+                            <small class="text-muted">사용 시 관리자가 승인한 댓글만 서비스에 노출됩니다.</small>
+                        </div>
+                        <div class="mb-3">
+                            <label class="form-label fw-bold">댓글 최대 글자 수</label>
+                            <input type="number" name="comment_max_length" class="form-control" style="width:200px" value="{{ sv('comment_max_length') or '500' }}">
+                        </div>
+                        <div class="mb-3">
+                            <label class="form-label fw-bold">금칙어</label>
+                            <textarea name="comment_block_words" class="form-control" rows="3" placeholder="쉼표로 구분하여 입력">{{ sv('comment_block_words') }}</textarea>
+                            <small class="text-muted">금칙어가 포함된 댓글은 등록이 차단됩니다. (쉼표 구분)</small>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="card mb-3">
+                    <div class="card-header py-2"><strong>BEST 댓글 설정</strong></div>
+                    <div class="card-body">
+                        <div class="row g-3">
+                            <div class="col-md-6">
+                                <label class="form-label fw-bold">BEST 기준 추천수</label>
+                                <input type="number" name="comment_best_threshold" class="form-control" value="{{ sv('comment_best_threshold') or '3' }}" min="1">
+                                <small class="text-muted">이 수 이상 추천받은 댓글이 BEST로 표시됩니다.</small>
+                            </div>
+                            <div class="col-md-6">
+                                <label class="form-label fw-bold">BEST 노출 수</label>
+                                <input type="number" name="comment_best_count" class="form-control" value="{{ sv('comment_best_count') or '3' }}" min="1" max="10">
+                                <small class="text-muted">상단에 노출되는 BEST 댓글 최대 개수</small>
                             </div>
                         </div>
                     </div>
-                    <div class="mb-3">
-                        <label class="form-label fw-bold">로그인 필수</label>
-                        <div>
-                            <div class="form-check form-check-inline">
-                                <input class="form-check-input" type="radio" name="comment_login_required" id="login_y" value="Y" {% if setting_val('comment_login_required') == 'Y' %}checked{% endif %}>
-                                <label class="form-check-label" for="login_y">필수</label>
-                            </div>
-                            <div class="form-check form-check-inline">
-                                <input class="form-check-input" type="radio" name="comment_login_required" id="login_n" value="N" {% if setting_val('comment_login_required') != 'Y' %}checked{% endif %}>
-                                <label class="form-check-label" for="login_n">비필수</label>
-                            </div>
-                        </div>
-                    </div>
-                    <div class="mb-3">
-                        <label class="form-label fw-bold">승인 후 노출</label>
-                        <div>
-                            <div class="form-check form-check-inline">
-                                <input class="form-check-input" type="radio" name="comment_approval_required" id="approval_y" value="Y" {% if setting_val('comment_approval_required') == 'Y' %}checked{% endif %}>
-                                <label class="form-check-label" for="approval_y">사용</label>
-                            </div>
-                            <div class="form-check form-check-inline">
-                                <input class="form-check-input" type="radio" name="comment_approval_required" id="approval_n" value="N" {% if setting_val('comment_approval_required') != 'Y' %}checked{% endif %}>
-                                <label class="form-check-label" for="approval_n">사용안함</label>
+                </div>
+
+                <div class="card mb-3">
+                    <div class="card-header py-2"><strong>작성자 표시 설정</strong></div>
+                    <div class="card-body">
+                        <div class="mb-3">
+                            <label class="form-label fw-bold">작성자 이름 표시</label>
+                            <div>
+                                <div class="form-check form-check-inline">
+                                    <input class="form-check-input" type="radio" name="comment_show_name" value="Y" {% if sv('comment_show_name') != 'N' %}checked{% endif %}>
+                                    <label class="form-check-label">표시</label>
+                                </div>
+                                <div class="form-check form-check-inline">
+                                    <input class="form-check-input" type="radio" name="comment_show_name" value="N" {% if sv('comment_show_name') == 'N' %}checked{% endif %}>
+                                    <label class="form-check-label">숨김</label>
+                                </div>
                             </div>
                         </div>
-                        <small class="text-muted">사용 시 관리자가 승인한 댓글만 서비스에 노출됩니다.</small>
+                        <div class="mb-3">
+                            <label class="form-label fw-bold">IP 주소 표시</label>
+                            <div>
+                                <div class="form-check form-check-inline">
+                                    <input class="form-check-input" type="radio" name="comment_show_ip" value="Y" {% if sv('comment_show_ip') != 'N' %}checked{% endif %}>
+                                    <label class="form-check-label">표시 (부분 마스킹)</label>
+                                </div>
+                                <div class="form-check form-check-inline">
+                                    <input class="form-check-input" type="radio" name="comment_show_ip" value="N" {% if sv('comment_show_ip') == 'N' %}checked{% endif %}>
+                                    <label class="form-check-label">숨김</label>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="mb-3">
+                            <label class="form-label fw-bold">아이디 표시</label>
+                            <div>
+                                <div class="form-check form-check-inline">
+                                    <input class="form-check-input" type="radio" name="comment_show_id" value="Y" {% if sv('comment_show_id') == 'Y' %}checked{% endif %}>
+                                    <label class="form-check-label">표시</label>
+                                </div>
+                                <div class="form-check form-check-inline">
+                                    <input class="form-check-input" type="radio" name="comment_show_id" value="N" {% if sv('comment_show_id') != 'Y' %}checked{% endif %}>
+                                    <label class="form-check-label">숨김</label>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="mb-3">
+                            <label class="form-label fw-bold">관리자 표기 이름</label>
+                            <input type="text" name="comment_admin_name" class="form-control" style="width:300px" value="{{ sv('comment_admin_name') }}" placeholder="관리자">
+                            <small class="text-muted">관리자가 작성한 댓글에 표시될 이름 (비워두면 '관리자')</small>
+                        </div>
                     </div>
-                    <div class="mb-3">
-                        <label class="form-label fw-bold">댓글 최대 글자 수</label>
-                        <input type="number" name="comment_max_length" class="form-control" style="width:200px" value="{{ setting_val('comment_max_length') or '500' }}">
+                </div>
+            </div>
+
+            <!-- 기사댓글 탭 -->
+            <div class="tab-pane fade" id="tab-article">
+                <div class="card">
+                    <div class="card-header py-2"><strong>기사 댓글 설정</strong></div>
+                    <div class="card-body">
+                        <p class="text-muted">기사 댓글은 기본설정 탭의 설정값을 공유합니다.</p>
+                        <ul class="list-unstyled small text-muted">
+                            <li>- 댓글 사용여부, 로그인 필수, 승인 후 노출, 글자수 제한, 금칙어 등은 기본설정에서 관리됩니다.</li>
+                            <li>- BEST 댓글 기준수/노출수도 기본설정에서 관리됩니다.</li>
+                            <li>- 기사별 댓글 차단은 기사 수정 페이지에서 설정할 수 있습니다.</li>
+                        </ul>
                     </div>
-                    <div class="mb-3">
-                        <label class="form-label fw-bold">금칙어</label>
-                        <textarea name="comment_block_words" class="form-control" rows="3" placeholder="쉼표로 구분하여 입력">{{ setting_val('comment_block_words') }}</textarea>
-                        <small class="text-muted">금칙어가 포함된 댓글은 등록이 차단됩니다. (쉼표 구분)</small>
+                </div>
+            </div>
+
+            <!-- 게시판댓글 탭 -->
+            <div class="tab-pane fade" id="tab-bbs">
+                <div class="card">
+                    <div class="card-header py-2"><strong>게시판 댓글 설정</strong></div>
+                    <div class="card-body">
+                        <div class="mb-3">
+                            <label class="form-label fw-bold">게시판 댓글 사용</label>
+                            <div>
+                                <div class="form-check form-check-inline">
+                                    <input class="form-check-input" type="radio" name="bbs_comment_use" value="Y" {% if sv('bbs_comment_use') != 'N' %}checked{% endif %}>
+                                    <label class="form-check-label">사용</label>
+                                </div>
+                                <div class="form-check form-check-inline">
+                                    <input class="form-check-input" type="radio" name="bbs_comment_use" value="N" {% if sv('bbs_comment_use') == 'N' %}checked{% endif %}>
+                                    <label class="form-check-label">사용안함</label>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="mb-3">
+                            <label class="form-label fw-bold">게시판 댓글 로그인 필수</label>
+                            <div>
+                                <div class="form-check form-check-inline">
+                                    <input class="form-check-input" type="radio" name="bbs_comment_login_required" value="Y" {% if sv('bbs_comment_login_required') == 'Y' %}checked{% endif %}>
+                                    <label class="form-check-label">필수</label>
+                                </div>
+                                <div class="form-check form-check-inline">
+                                    <input class="form-check-input" type="radio" name="bbs_comment_login_required" value="N" {% if sv('bbs_comment_login_required') != 'Y' %}checked{% endif %}>
+                                    <label class="form-check-label">비필수</label>
+                                </div>
+                            </div>
+                        </div>
+                        <p class="text-muted small mt-3">그 외 설정 (글자수, 금칙어, BEST 기준 등)은 기본설정 탭의 값을 공유합니다.</p>
                     </div>
-                    <div class="d-grid">
-                        <button type="submit" class="btn btn-primary"><i class="bi bi-save"></i> 설정 저장</button>
-                    </div>
-                </form>
+                </div>
             </div>
         </div>
+
+        <div class="d-grid mt-3">
+            <button type="submit" class="btn btn-primary"><i class="bi bi-save"></i> 설정 저장</button>
+        </div>
+        </form>
     </div>
 </div>
 {% endblock %}

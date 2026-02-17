@@ -42,14 +42,16 @@
                 <table class="table table-hover table-sm mb-0">
                     <thead class="table-light">
                         <tr>
+                            <th width="30"></th>
                             <th>섹션명</th>
                             <th width="100">코드</th>
                             <th width="140">명령</th>
                         </tr>
                     </thead>
-                    <tbody>
+                    <tbody id="sortable-sub" data-target="subsection">
                         {% for sub in parent.subsections %}
-                        <tr>
+                        <tr data-id="{{ sub.id }}">
+                            <td class="drag-handle text-center text-muted" style="cursor:grab"><i class="bi bi-grip-vertical"></i></td>
                             <td>{{ sub.name }}</td>
                             <td><code>{{ sub.code }}</code></td>
                             <td>
@@ -77,7 +79,7 @@
                             </td>
                         </tr>
                         {% else %}
-                        <tr><td colspan="3" class="text-center text-muted py-3">2차 섹션이 없습니다.</td></tr>
+                        <tr><td colspan="4" class="text-center text-muted py-3">2차 섹션이 없습니다.</td></tr>
                         {% endfor %}
                     </tbody>
                 </table>
@@ -115,14 +117,16 @@
                 <table class="table table-hover table-sm mb-0">
                     <thead class="table-light">
                         <tr>
+                            <th width="30"></th>
                             <th>섹션명 (코드)</th>
                             <th width="60" class="text-center">하위</th>
                             <th width="140">명령</th>
                         </tr>
                     </thead>
-                    <tbody>
+                    <tbody id="sortable-section" data-target="section">
                         {% for sec in sections %}
-                        <tr>
+                        <tr data-id="{{ sec.id }}">
+                            <td class="drag-handle text-center text-muted" style="cursor:grab"><i class="bi bi-grip-vertical"></i></td>
                             <td>
                                 <strong>{{ sec.name }}</strong>
                                 <code class="ms-2">{{ sec.code }}</code>
@@ -182,4 +186,29 @@
         {% endif %}
     </div>
 </div>
+{% endblock %}
+
+{% block extra_scripts %}
+<script src="https://cdn.jsdelivr.net/npm/sortablejs@1.15.0/Sortable.min.js"></script>
+<script>
+document.querySelectorAll('#sortable-section, #sortable-sub').forEach(function(tbody) {
+    if (!tbody) return;
+    Sortable.create(tbody, {
+        handle: '.drag-handle',
+        animation: 150,
+        ghostClass: 'table-warning',
+        onEnd: function() {
+            var ids = [];
+            tbody.querySelectorAll('tr[data-id]').forEach(function(tr) {
+                ids.push(tr.getAttribute('data-id'));
+            });
+            fetch('{{ url_for("admin.sections_reorder") }}', {
+                method: 'POST',
+                headers: {'Content-Type': 'application/json'},
+                body: JSON.stringify({ids: ids, target: tbody.getAttribute('data-target')})
+            });
+        }
+    });
+});
+</script>
 {% endblock %}

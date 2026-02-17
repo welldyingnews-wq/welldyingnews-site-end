@@ -24,6 +24,14 @@
                         <input type="text" name="name" class="form-control" value="{{ member.name if member else '' }}" required>
                     </div>
                     <div class="mb-3">
+                        <label class="form-label fw-bold">회원등급</label>
+                        <select name="level" class="form-select">
+                            {% for lv in ['일반', '시민기자', '기자', '데스크'] %}
+                            <option value="{{ lv }}" {% if member and member.level == lv %}selected{% endif %}>{{ lv }}</option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                    <div class="mb-3">
                         <label class="form-label fw-bold">이메일</label>
                         <input type="email" name="email" class="form-control" value="{{ member.email if member else '' }}">
                     </div>

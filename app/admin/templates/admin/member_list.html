@@ -46,6 +46,7 @@
                 <tr>
                     <th>아이디</th>
                     <th>이름</th>
+                    <th width="80">등급</th>
                     <th>이메일</th>
                     <th>연락처</th>
                     <th width="70">상태</th>
@@ -58,6 +59,7 @@
                 <tr>
                     <td>{{ member.user_id }}</td>
                     <td><strong>{{ member.name }}</strong></td>
+                    <td><span class="badge bg-{{ 'primary' if member.level == '데스크' else 'info' if member.level == '기자' else 'success' if member.level == '시민기자' else 'secondary' }}">{{ member.level or '일반' }}</span></td>
                     <td class="small">{{ member.email or '-' }}</td>
                     <td class="small">{{ member.phone or '-' }}</td>
                     <td>
@@ -85,7 +87,7 @@
                     </td>
                 </tr>
                 {% else %}
-                <tr><td colspan="7" class="text-center text-muted py-4">회원이 없습니다.</td></tr>
+                <tr><td colspan="8" class="text-center text-muted py-4">회원이 없습니다.</td></tr>
                 {% endfor %}
             </tbody>
         </table>

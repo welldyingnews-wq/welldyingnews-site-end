@@ -34,7 +34,7 @@
 <div class="bbs-write-wrap">
 
 <header class="bbs-user-page">
-    <h3 class="titles">{{ board.name }} {% if edit_post %}글수정{% else %}글쓰기{% endif %}</h3>
+    <h3 class="titles">{{ board.name }} {% if edit_post %}글수정{% elif parent_post %}답글쓰기{% else %}글쓰기{% endif %}</h3>
 </header>
 
 {% with messages = get_flashed_messages(with_categories=true) %}
@@ -47,8 +47,17 @@
 
 <form method="POST" action="{% if edit_post %}{{ url_for('public.bbs_edit', post_id=edit_post.id) }}{% else %}{{ url_for('public.bbs_write') }}{% endif %}" onsubmit="return validateForm()">
     <input type="hidden" name="table" value="{{ board.code }}" />
+    {% if parent_post %}<input type="hidden" name="parent_post_id" value="{{ parent_post.id }}" />{% endif %}
 
     <div class="bbs-write-form">
+        {% if parent_post %}
+        <div class="form-row">
+            <div class="label-cell">원글</div>
+            <div class="input-cell" style="display:flex;align-items:center;height:38px;font-size:14px;color:#666">
+                <i class="icon-back-arrow" style="margin-right:5px"></i> {{ parent_post.title }}
+            </div>
+        </div>
+        {% endif %}
         {% if not edit_post %}
         <div class="form-row">
             <div class="label-cell">닉네임</div>
@@ -66,7 +75,7 @@
         <div class="form-row">
             <div class="label-cell">제목</div>
             <div class="input-cell">
-                <input type="text" name="title" class="full-width" placeholder="제목을 입력하세요" maxlength="500" required value="{{ edit_post.title if edit_post else '' }}" />
+                <input type="text" name="title" class="full-width" placeholder="제목을 입력하세요" maxlength="500" required value="{% if edit_post %}{{ edit_post.title }}{% elif parent_post %}Re: {{ parent_post.title }}{% endif %}" />
             </div>
         </div>
         <div class="form-row">
@@ -89,7 +98,7 @@
 
     <div class="bbs-write-actions">
         <a href="{% if edit_post %}{{ url_for('public.bbs_view', idxno=edit_post.id) }}{% else %}{{ url_for('public.bbs_list', table=board.code) }}{% endif %}" class="btn">취소</a>
-        <button type="submit" class="btn btn-primary">{% if edit_post %}수정{% else %}등록{% endif %}</button>
+        <button type="submit" class="btn btn-primary">{% if edit_post %}수정{% elif parent_post %}답글 등록{% else %}등록{% endif %}</button>
     </div>
 </form>
 

@@ -30,23 +30,46 @@
 
 /* 댓글 */
 #replies {margin-top:30px;padding:0 15px}
-#replies .reply-header {font-size:16px;font-weight:700;margin-bottom:15px;padding-bottom:10px;border-bottom:2px solid #333}
+#replies .reply-header {font-size:16px;font-weight:700;margin-bottom:15px;padding-bottom:10px;border-bottom:2px solid #333;display:flex;justify-content:space-between;align-items:center}
 #replies .reply-header span {color:#5e1985}
+.reply-sort {display:flex;gap:5px}
+.reply-sort a {font-size:12px;padding:4px 10px;border:1px solid #ddd;border-radius:3px;color:#999;text-decoration:none}
+.reply-sort a.active {color:#5e1985;border-color:#5e1985;font-weight:700}
 .reply-write {margin-bottom:20px;padding:15px;background:#f9f9f9;border:1px solid #eee;border-radius:4px}
 .reply-write .reply-inputs {display:flex;gap:8px;margin-bottom:8px}
 .reply-write .reply-inputs input {flex:1;height:36px;padding:0 10px;border:1px solid #ddd;border-radius:3px;font-size:13px}
 .reply-write textarea {width:100%;height:80px;padding:10px;border:1px solid #ddd;border-radius:3px;font-size:14px;resize:vertical}
-.reply-write .reply-submit {display:flex;justify-content:flex-end;margin-top:8px}
+.reply-write .reply-submit {display:flex;justify-content:space-between;align-items:center;margin-top:8px}
+.reply-write .reply-submit .char-count {font-size:12px;color:#999}
 .reply-write .reply-submit button {padding:8px 20px;font-size:13px;background:#5e1985;color:#fff;border:none;border-radius:3px;cursor:pointer}
 .reply-write .reply-submit button:hover {background:#4a1369}
 .reply-item {padding:12px 0;border-bottom:1px solid #f0f0f0}
 .reply-item:first-child {border-top:1px solid #f0f0f0}
+.reply-item.is-child {padding-left:30px;background:#fafafa}
 .reply-item .reply-meta {display:flex;justify-content:space-between;align-items:center;margin-bottom:5px}
 .reply-item .reply-meta .author {font-size:14px;font-weight:500;color:#333}
+.reply-item .reply-meta .ip-addr {font-size:11px;color:#bbb;margin-left:5px}
 .reply-item .reply-meta .date {font-size:12px;color:#999}
-.reply-item .reply-meta .btn-del {font-size:12px;color:#999;cursor:pointer;background:none;border:none;text-decoration:underline;margin-left:10px}
-.reply-item .reply-meta .btn-del:hover {color:#e74c3c}
+.reply-item .reply-meta .btn-action {font-size:12px;color:#999;cursor:pointer;background:none;border:none;text-decoration:underline;margin-left:8px}
+.reply-item .reply-meta .btn-action:hover {color:#5e1985}
+.reply-item .reply-meta .btn-action.del:hover {color:#e74c3c}
 .reply-item .reply-text {font-size:14px;color:#555;line-height:1.6;white-space:pre-wrap}
+.reply-vote {display:flex;gap:10px;margin-top:6px}
+.reply-vote button {background:none;border:1px solid #ddd;border-radius:3px;padding:2px 10px;font-size:12px;color:#999;cursor:pointer;display:flex;align-items:center;gap:3px}
+.reply-vote button:hover {border-color:#5e1985;color:#5e1985}
+.reply-vote button.dislike:hover {border-color:#e74c3c;color:#e74c3c}
+.reply-actions-row {display:flex;gap:8px;margin-top:6px}
+.reply-actions-row .btn-reply-toggle {font-size:12px;color:#5e1985;cursor:pointer;background:none;border:none}
+.child-write {margin:10px 0 10px 30px;padding:10px;background:#f5f5f5;border:1px solid #eee;border-radius:4px;display:none}
+.child-write textarea {width:100%;height:60px;padding:8px;border:1px solid #ddd;border-radius:3px;font-size:13px;resize:vertical}
+.child-write .cw-footer {display:flex;justify-content:flex-end;margin-top:5px;gap:5px}
+.child-write .cw-footer button {padding:5px 14px;font-size:12px;border:none;border-radius:3px;cursor:pointer}
+.child-write .cw-footer .btn-cancel {background:#eee;color:#666}
+.child-write .cw-footer .btn-submit {background:#5e1985;color:#fff}
+.best-badge {display:inline-block;font-size:10px;font-weight:700;color:#fff;background:#e74c3c;padding:1px 6px;border-radius:3px;margin-right:5px;vertical-align:middle}
+.reply-edit-form textarea {width:100%;height:60px;padding:8px;border:1px solid #ddd;border-radius:3px;font-size:13px;resize:vertical;margin-top:5px}
+.reply-edit-form .ef-footer {display:flex;justify-content:flex-end;margin-top:5px;gap:5px}
+.reply-edit-form .ef-footer button {padding:5px 14px;font-size:12px;border:none;border-radius:3px;cursor:pointer}
 .reply-empty {padding:30px 0;text-align:center;color:#999;font-size:14px}
 .flash-msg {padding:10px 15px;margin-bottom:10px;border-radius:3px;font-size:14px}
 .flash-msg.error {background:#fdf0f0;color:#e74c3c;border:1px solid #f5c6cb}
@@ -71,7 +94,7 @@
 
 <!-- 글 헤더 -->
 <div class="bbs-view-header">
-    <h2 class="title">{{ post.title }}</h2>
+    <h2 class="title">{% if post.parent_post_id %}<span style="color:#5e1985;font-size:14px;margin-right:5px">[답글]</span>{% endif %}{{ post.title }}</h2>
     <div class="meta">
         <span>{{ post.author_name }}</span>
         <span>{{ post.created_at.strftime('%Y-%m-%d %H:%M') }}</span>
@@ -114,43 +137,107 @@
         <button type="button" class="btn" onclick="editPost()">수정</button>
         <button type="button" class="btn btn-danger" onclick="deletePost()">삭제</button>
         {% endif %}
+        <a href="{{ url_for('public.bbs_write_form', table=board.code, reply_to=post.id) }}" class="btn">답글</a>
         <a href="{{ url_for('public.bbs_write_form', table=board.code) }}" class="btn btn-primary">글쓰기</a>
     </div>
 </div>
 
+<!-- 댓글 매크로 -->
+{% macro render_reply(r, is_child=false) %}
+{% set ip_masked = r.ip_address[:r.ip_address.rfind('.')] ~ '.*' if r.ip_address and '.' in r.ip_address else '' %}
+<div class="reply-item{% if is_child %} is-child{% endif %}" id="rpl-{{ r.id }}">
+    <div class="reply-meta">
+        <div>
+            <span class="author">{{ r.author_name }}</span>
+            {% if ip_masked %}<span class="ip-addr">({{ ip_masked }})</span>{% endif %}
+            <span class="date">{{ r.created_at.strftime('%Y-%m-%d %H:%M') }}</span>
+        </div>
+        <div>
+            <button type="button" class="btn-action" onclick="editReply({{ r.id }}, {{ r.member_id or 0 }})">수정</button>
+            <button type="button" class="btn-action del" onclick="deleteReply({{ r.id }}, {{ r.member_id or 0 }})">삭제</button>
+        </div>
+    </div>
+    <div class="reply-text" id="rpl-text-{{ r.id }}">{{ r.content }}</div>
+    <div class="reply-vote">
+        <button onclick="voteReply({{ r.id }},'like')">👍 <span id="rpl-like-{{ r.id }}">{{ r.like_count or 0 }}</span></button>
+        <button class="dislike" onclick="voteReply({{ r.id }},'dislike')">👎 <span id="rpl-dislike-{{ r.id }}">{{ r.dislike_count or 0 }}</span></button>
+    </div>
+    {% if not is_child %}
+    <div class="reply-actions-row">
+        <button type="button" class="btn-reply-toggle" onclick="toggleChildWrite({{ r.id }})">답글</button>
+    </div>
+    <div class="child-write" id="cw-{{ r.id }}">
+        <form method="POST" action="{{ url_for('public.bbs_reply_write') }}">
+            <input type="hidden" name="post_id" value="{{ post.id }}" />
+            <input type="hidden" name="parent_id" value="{{ r.id }}" />
+            {% if not member %}
+            <div class="reply-inputs" style="margin-bottom:5px">
+                <input type="text" name="author_name" placeholder="닉네임" maxlength="50" />
+                <input type="password" name="password" placeholder="비밀번호" maxlength="50" />
+            </div>
+            {% endif %}
+            <textarea name="content" placeholder="답글을 입력하세요..." maxlength="500"></textarea>
+            <div class="cw-footer">
+                <button type="button" class="btn-cancel" onclick="toggleChildWrite({{ r.id }})">취소</button>
+                <button type="submit" class="btn-submit">등록</button>
+            </div>
+        </form>
+    </div>
+    {% for child in r.children.filter_by(is_hidden=False).all() %}
+    {{ render_reply(child, true) }}
+    {% endfor %}
+    {% endif %}
+</div>
+{% endmacro %}
+
 <!-- 댓글 -->
 <section id="replies">
-    <div class="reply-header">댓글 <span>{{ replies|length }}</span>개</div>
+    <div class="reply-header">
+        <div>댓글 <span>{{ reply_count }}</span>개</div>
+        <div class="reply-sort">
+            <a href="{{ url_for('public.bbs_view', idxno=post.id, reply_sort='newest') }}" class="{% if reply_sort == 'newest' %}active{% endif %}">최신순</a>
+            <a href="{{ url_for('public.bbs_view', idxno=post.id, reply_sort='oldest') }}" class="{% if reply_sort == 'oldest' %}active{% endif %}">등록순</a>
+        </div>
+    </div>
 
     <!-- 댓글 작성 -->
     <div class="reply-write">
         <form method="POST" action="{{ url_for('public.bbs_reply_write') }}">
             <input type="hidden" name="post_id" value="{{ post.id }}" />
+            {% if member %}
+            <div style="margin-bottom:8px;font-size:13px;color:#333"><strong>{{ member.name }}</strong>으로 작성</div>
+            {% else %}
             <div class="reply-inputs">
                 <input type="text" name="author_name" placeholder="닉네임" maxlength="50" />
                 <input type="password" name="password" placeholder="비밀번호" maxlength="50" />
             </div>
-            <textarea name="content" placeholder="댓글을 입력하세요..." maxlength="500"></textarea>
+            {% endif %}
+            <textarea name="content" placeholder="댓글을 입력하세요..." maxlength="500" id="mainReplyTA"></textarea>
             <div class="reply-submit">
+                <span class="char-count"><strong id="mainCharCnt">0</strong> / 500</span>
                 <button type="submit">등록</button>
             </div>
         </form>
     </div>
 
+    <!-- BEST 댓글 -->
+    {% if best_replies %}
+    <div style="margin-bottom:15px">
+        {% for br in best_replies %}
+        <div class="reply-item" style="border-left:3px solid #e74c3c;padding-left:12px">
+            <div class="reply-meta">
+                <div><span class="best-badge">BEST</span><span class="author">{{ br.author_name }}</span><span class="date" style="margin-left:8px">{{ br.created_at.strftime('%Y-%m-%d %H:%M') }}</span></div>
+                <div style="font-size:12px;color:#e74c3c">👍 {{ br.like_count }}</div>
+            </div>
+            <div class="reply-text">{{ br.content }}</div>
+        </div>
+        {% endfor %}
+    </div>
+    {% endif %}
+
     <!-- 댓글 목록 -->
     {% for reply in replies %}
-    <div class="reply-item">
-        <div class="reply-meta">
-            <div>
-                <span class="author">{{ reply.author_name }}</span>
-                <span class="date">{{ reply.created_at.strftime('%Y-%m-%d %H:%M') }}</span>
-            </div>
-            {% if reply.password %}
-            <button type="button" class="btn-del" onclick="deleteReply({{ reply.id }})">삭제</button>
-            {% endif %}
-        </div>
-        <div class="reply-text">{{ reply.content }}</div>
-    </div>
+    {{ render_reply(reply) }}
     {% else %}
     <div class="reply-empty">등록된 댓글이 없습니다.</div>
     {% endfor %}
@@ -180,6 +267,8 @@
 
 {% block extra_scripts %}
 <script>
+var isMember = {{ 'true' if member else 'false' }};
+
 function deletePost() {
     var pw = prompt('글 작성 시 입력한 비밀번호를 입력하세요.');
     if (pw !== null && pw !== '') {
@@ -194,13 +283,64 @@ function editPost() {
         document.getElementById('editPostForm').submit();
     }
 }
-function deleteReply(replyId) {
-    var pw = prompt('댓글 작성 시 입력한 비밀번호를 입력하세요.');
-    if (pw !== null && pw !== '') {
+function deleteReply(replyId, memberId) {
+    if (isMember && memberId) {
+        if (!confirm('댓글을 삭제하시겠습니까?')) return;
         document.getElementById('deleteReplyId').value = replyId;
-        document.getElementById('deleteReplyPw').value = pw;
+        document.getElementById('deleteReplyPw').value = '';
         document.getElementById('deleteReplyForm').submit();
+    } else {
+        var pw = prompt('댓글 작성 시 입력한 비밀번호를 입력하세요.');
+        if (pw !== null && pw !== '') {
+            document.getElementById('deleteReplyId').value = replyId;
+            document.getElementById('deleteReplyPw').value = pw;
+            document.getElementById('deleteReplyForm').submit();
+        }
     }
+}
+function toggleChildWrite(id) {
+    var el = document.getElementById('cw-' + id);
+    el.style.display = el.style.display === 'none' || !el.style.display ? 'block' : 'none';
+}
+function voteReply(id, type) {
+    $.post('{{ url_for("public.bbs_reply_vote") }}', {reply_id: id, vote_type: type}, function(data) {
+        if (data.error === 'already_voted') { alert('이미 투표하셨습니다.'); return; }
+        $('#rpl-like-' + id).text(data.like);
+        $('#rpl-dislike-' + id).text(data.dislike);
+    });
+}
+function editReply(id, memberId) {
+    var textEl = document.getElementById('rpl-text-' + id);
+    if (textEl.querySelector('.reply-edit-form')) return;
+    var oldText = textEl.textContent.trim();
+
+    if (!isMember || !memberId) {
+        var pw = prompt('비밀번호를 입력하세요.');
+        if (!pw) return;
+    }
+
+    var html = '<div class="reply-edit-form"><textarea>' + oldText + '</textarea><div class="ef-footer">'
+        + '<button type="button" onclick="cancelEdit(' + id + ',\'' + oldText.replace(/'/g, "\\'") + '\')" style="background:#eee;color:#666">취소</button>'
+        + '<button type="button" onclick="submitEdit(' + id + ',\'' + (pw || '') + '\')" style="background:#5e1985;color:#fff">저장</button></div></div>';
+    textEl.innerHTML = html;
+}
+function cancelEdit(id, oldText) {
+    document.getElementById('rpl-text-' + id).textContent = oldText;
+}
+function submitEdit(id, pw) {
+    var ta = document.querySelector('#rpl-text-' + id + ' textarea');
+    $.post('{{ url_for("public.bbs_reply_edit") }}', {reply_id: id, content: ta.value, password: pw}, function(data) {
+        if (data.error) { alert(data.error); return; }
+        document.getElementById('rpl-text-' + id).textContent = data.content;
+    });
+}
+
+// 글자수 카운트
+var ta = document.getElementById('mainReplyTA');
+if (ta) {
+    ta.addEventListener('input', function() {
+        document.getElementById('mainCharCnt').textContent = this.value.length;
+    });
 }
 </script>
 {% endblock %}
