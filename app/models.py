@@ -150,6 +150,7 @@ class ArticleComment(db.Model):
     __tablename__ = 'article_comment'
     id = db.Column(db.Integer, primary_key=True)
     article_id = db.Column(db.Integer, db.ForeignKey('article.id'), nullable=False)
+    member_id = db.Column(db.Integer, db.ForeignKey('member.id'), nullable=True)
     author_name = db.Column(db.String(50), default='')
     content = db.Column(db.Text, nullable=False)
     password = db.Column(db.String(200), default='')
@@ -157,6 +158,7 @@ class ArticleComment(db.Model):
     is_hidden = db.Column(db.Boolean, default=False)
     created_at = db.Column(db.DateTime, default=datetime.now)
     article = db.relationship('Article', backref=db.backref('comments', lazy='dynamic'))
+    member = db.relationship('Member', backref='comments')
 
 
 class Board(db.Model):

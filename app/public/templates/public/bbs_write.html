@@ -1,5 +1,5 @@
 {% extends "public/base.html" %}
-{% block title %}글쓰기 - {{ board.name }} - 웰다잉뉴스{% endblock %}
+{% block title %}{% if edit_post %}글수정{% else %}글쓰기{% endif %} - {{ board.name }} - 웰다잉뉴스{% endblock %}
 
 {% block extra_head %}
 <style type="text/css">
@@ -34,7 +34,7 @@
 <div class="bbs-write-wrap">
 
 <header class="bbs-user-page">
-    <h3 class="titles">{{ board.name }} 글쓰기</h3>
+    <h3 class="titles">{{ board.name }} {% if edit_post %}글수정{% else %}글쓰기{% endif %}</h3>
 </header>
 
 {% with messages = get_flashed_messages(with_categories=true) %}
@@ -45,10 +45,11 @@
 {% endif %}
 {% endwith %}
 
-<form method="POST" action="{{ url_for('public.bbs_write') }}" onsubmit="return validateForm()">
+<form method="POST" action="{% if edit_post %}{{ url_for('public.bbs_edit', post_id=edit_post.id) }}{% else %}{{ url_for('public.bbs_write') }}{% endif %}" onsubmit="return validateForm()">
     <input type="hidden" name="table" value="{{ board.code }}" />
 
     <div class="bbs-write-form">
+        {% if not edit_post %}
         <div class="form-row">
             <div class="label-cell">닉네임</div>
             <div class="input-cell">
@@ -61,23 +62,24 @@
                 <input type="password" name="password" placeholder="글 삭제 시 필요합니다" maxlength="50" />
             </div>
         </div>
+        {% endif %}
         <div class="form-row">
             <div class="label-cell">제목</div>
             <div class="input-cell">
-                <input type="text" name="title" class="full-width" placeholder="제목을 입력하세요" maxlength="500" required />
+                <input type="text" name="title" class="full-width" placeholder="제목을 입력하세요" maxlength="500" required value="{{ edit_post.title if edit_post else '' }}" />
             </div>
         </div>
         <div class="form-row">
             <div class="label-cell">내용</div>
             <div class="input-cell">
-                <textarea name="content" placeholder="내용을 입력하세요" required></textarea>
+                <textarea name="content" placeholder="내용을 입력하세요" required>{{ edit_post.content if edit_post else '' }}</textarea>
             </div>
         </div>
     </div>
 
     <div class="bbs-write-actions">
-        <a href="{{ url_for('public.bbs_list', table=board.code) }}" class="btn">취소</a>
-        <button type="submit" class="btn btn-primary">등록</button>
+        <a href="{% if edit_post %}{{ url_for('public.bbs_view', idxno=edit_post.id) }}{% else %}{{ url_for('public.bbs_list', table=board.code) }}{% endif %}" class="btn">취소</a>
+        <button type="submit" class="btn btn-primary">{% if edit_post %}수정{% else %}등록{% endif %}</button>
     </div>
 </form>
 

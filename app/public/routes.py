@@ -249,12 +249,16 @@ def article_view():
     # 댓글
     comment_use = _get_setting('comment_use', 'Y')
     comment_max_length = int(_get_setting('comment_max_length', '500') or 500)
+    comment_sort = request.args.get('csort', 'newest')  # newest / oldest
     comments = []
     comment_count = 0
     if comment_use != 'N':
-        comments = article.comments.filter_by(is_hidden=False).order_by(
-            ArticleComment.created_at.desc()
-        ).all()
+        q = article.comments.filter_by(is_hidden=False)
+        if comment_sort == 'oldest':
+            q = q.order_by(ArticleComment.created_at.asc())
+        else:
+            q = q.order_by(ArticleComment.created_at.desc())
+        comments = q.all()
         comment_count = len(comments)
 
     return render_template('public/article_view.html',
@@ -269,7 +273,8 @@ def article_view():
                            comments=comments,
                            comment_count=comment_count,
                            comment_use=comment_use,
-                           comment_max_length=comment_max_length)
+                           comment_max_length=comment_max_length,
+                           comment_sort=comment_sort)
 
 
 def _get_setting(key, default=''):
@@ -307,8 +312,16 @@ def comment_write():
                 flash('금칙어가 포함되어 있습니다.', 'error')
                 return redirect(url_for('public.article_view', idxno=article_id) + '#comment')
 
+    # 로그인 회원이면 회원 정보 사용
+    member_id = session.get('member_id')
+    if member_id:
+        member = Member.query.get(member_id)
+        if member:
+            author_name = member.name
+
     comment = ArticleComment(
         article_id=article_id,
+        member_id=member_id if member_id else None,
         author_name=author_name or '익명',
         content=content,
         password=generate_password_hash(password) if password else '',
@@ -327,6 +340,13 @@ def comment_delete():
     article_id = request.form.get('article_id', 0, type=int)
 
     comment = ArticleComment.query.get_or_404(comment_id)
+
+    # 로그인 회원 본인 댓글이면 비밀번호 없이 삭제
+    member_id = session.get('member_id')
+    if comment.member_id and comment.member_id == member_id:
+        db.session.delete(comment)
+        db.session.commit()
+        return redirect(url_for('public.article_view', idxno=article_id) + '#comment')
 
     if not comment.password or not check_password_hash(comment.password, password):
         flash('비밀번호가 일치하지 않습니다.', 'error')
@@ -586,6 +606,59 @@ def bbs_delete():
     db.session.commit()
 
     return redirect(url_for('public.bbs_list', table=table))
+
+
+@public_bp.route('/bbs/edit/verify', methods=['POST'])
+def bbs_edit_verify():
+    """글 수정 비밀번호 확인 → 수정 폼으로 이동"""
+    post_id = request.form.get('post_id', 0, type=int)
+    password = request.form.get('password', '').strip()
+
+    post = BoardPost.query.get_or_404(post_id)
+
+    if not post.password or not check_password_hash(post.password, password):
+        flash('비밀번호가 일치하지 않습니다.', 'error')
+        return redirect(url_for('public.bbs_view', idxno=post_id))
+
+    # 비밀번호 확인 완료 → 세션에 수정 허가 저장
+    session[f'bbs_edit_{post_id}'] = True
+    return redirect(url_for('public.bbs_edit_form', post_id=post_id))
+
+
+@public_bp.route('/bbs/editForm.html')
+def bbs_edit_form():
+    post_id = request.args.get('post_id', 0, type=int)
+    post = BoardPost.query.get_or_404(post_id)
+
+    if not session.get(f'bbs_edit_{post_id}'):
+        flash('수정 권한이 없습니다.', 'error')
+        return redirect(url_for('public.bbs_view', idxno=post_id))
+
+    return render_template('public/bbs_write.html', board=post.board, edit_post=post)
+
+
+@public_bp.route('/bbs/edit/<int:post_id>', methods=['POST'])
+def bbs_edit(post_id):
+    post = BoardPost.query.get_or_404(post_id)
+
+    if not session.pop(f'bbs_edit_{post_id}', None):
+        flash('수정 권한이 없습니다.', 'error')
+        return redirect(url_for('public.bbs_view', idxno=post_id))
+
+    title = request.form.get('title', '').strip()
+    content = request.form.get('content', '').strip()
+
+    if not title or not content:
+        flash('제목과 내용을 입력해주세요.', 'error')
+        session[f'bbs_edit_{post_id}'] = True
+        return redirect(url_for('public.bbs_edit_form', post_id=post_id))
+
+    post.title = title
+    post.content = content
+    db.session.commit()
+
+    flash('글이 수정되었습니다.', 'success')
+    return redirect(url_for('public.bbs_view', idxno=post_id))
 
 
 @public_bp.route('/bbs/reply/write', methods=['POST'])

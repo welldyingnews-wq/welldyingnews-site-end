@@ -4,14 +4,16 @@
 {% block extra_head %}
 <style type="text/css">
 /* 히어로 비주얼 */
-.com-visual {position:relative;height:220px;margin:-1px -9999px 0;padding:0 9999px;background:url("{{ url_for('static', filename='images/company_visual03.jpg') }}") 50% 50% no-repeat;background-size:cover;display:flex;align-items:center;justify-content:center}
-.com-visual::before {content:'';position:absolute;z-index:1;left:0;top:0;width:100%;height:100%;background-color:rgba(0,0,0,.5)}
-.com-visual .com-titles {position:relative;z-index:2;font-size:2rem;font-weight:700;color:#fff;text-align:center;letter-spacing:-.025em}
+.com-visual {display:block;overflow:hidden;position:relative;height:250px;margin-left:-1.25rem;margin-right:-1.25rem;margin-bottom:3.125rem;background:url("{{ url_for('static', filename='images/company_visual03.jpg') }}") 50% 50% no-repeat;background-size:cover;transition:height .3s}
+.com-visual::before {content:'';position:absolute;z-index:1;left:0;top:0;width:100%;height:100%;background-color:#000;opacity:.5}
+.com-visual .com-titles {position:absolute;z-index:5;left:0;top:50%;width:100%;margin:0;padding:0;font-size:45px;font-weight:bolder;color:#fff;text-shadow:0 2px 1px rgba(0,0,0,.5);transform:translateY(-50%);text-align:center;transition:font .3s}
 {% if page.group == '약관 및 정책' %}
 .com-visual {background-image:url("{{ url_for('static', filename='images/company_visual04.jpg') }}")}
 {% elif page.group == '고객센터' %}
 .com-visual {background-image:url("{{ url_for('static', filename='images/company_visual04.jpg') }}")}
 {% endif %}
+@media screen and (min-width:1240px) {.com-visual {margin-left:0;margin-right:0}}
+@media screen and (max-width:63.9375em) {.com-visual {height:165px} .com-visual .com-titles {font-size:2.5rem;font-weight:normal}}
 
 /* 레이아웃 */
 {% if is_mobile %}
@@ -19,7 +21,7 @@
 .com-wrapper > .com-sidebar {display:none}
 .com-wrapper > .com-content {display:block;padding-left:0}
 .com-visual {height:140px !important}
-.com-visual .com-titles, .com-visual h2 {font-size:1.5rem !important;line-height:140px !important}
+.com-visual .com-titles {font-size:1.5rem !important;font-weight:normal !important}
 {% else %}
 .com-wrapper {display:table;width:100%;table-layout:fixed;margin-top:40px}
 .com-wrapper > .com-sidebar {display:table-cell;width:195px;vertical-align:top}
@@ -123,12 +125,8 @@
 <div style="max-width:{% if is_mobile %}728{% else %}1240{% endif %}px;margin:0 auto">
 
     <!-- 히어로 비주얼 -->
-    <div class="com-visual" style="margin:0 auto;height:220px;position:relative;overflow:hidden;background-size:cover;background-position:center;border-radius:0;
-        {% if page.group == '매체소개' %}background-image:url('{{ url_for('static', filename='images/company_visual03.jpg') }}')
-        {% elif page.group == '고객센터' %}background-image:url('{{ url_for('static', filename='images/company_visual04.jpg') }}')
-        {% else %}background-image:url('{{ url_for('static', filename='images/company_visual04.jpg') }}'){% endif %}">
-        <div style="position:absolute;left:0;top:0;width:100%;height:100%;background:rgba(0,0,0,.5)"></div>
-        <h2 class="com-titles" style="position:relative;z-index:2;text-align:center;width:100%;font-size:2rem;font-weight:700;color:#fff;line-height:220px;margin:0">{{ page.title }}</h2>
+    <div class="com-visual">
+        <h2 class="com-titles">{{ page.title }}</h2>
     </div>
 
     <!-- 본문 -->
