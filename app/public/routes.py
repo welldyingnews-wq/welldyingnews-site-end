@@ -635,6 +635,7 @@ def bbs_reply_delete():
 
 @public_bp.route('/poll/pollView.html')
 def poll_view():
+    from datetime import datetime
     poll_id = request.args.get('id', 0, type=int)
     if poll_id:
         poll = Poll.query.get_or_404(poll_id)
@@ -645,9 +646,12 @@ def poll_view():
     options = poll.options.order_by(PollOption.sort_order).all()
     total_votes = sum(o.vote_count for o in options)
     voted = request.cookies.get(f'poll_voted_{poll.id}')
+    show_result = request.args.get('result', 0, type=int)
     return render_template('public/poll.html',
                            poll=poll, options=options,
-                           total_votes=total_votes, voted=voted)
+                           total_votes=total_votes,
+                           voted=voted or show_result,
+                           now=datetime.now())
 
 
 @public_bp.route('/poll/vote', methods=['POST'])

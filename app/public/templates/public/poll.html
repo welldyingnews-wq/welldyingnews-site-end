@@ -6,25 +6,62 @@
 .poll-wrap {max-width:{% if is_mobile %}728{% else %}800{% endif %}px;margin:0 auto;padding:30px 0}
 .poll-header {border-bottom:2px solid #333;padding-bottom:15px;margin-bottom:25px}
 .poll-header .titles {font-size:1.5rem;font-weight:700;color:#222;letter-spacing:-.025em}
-.poll-header .sub {font-size:13px;color:#999;margin-top:5px}
-.poll-question {font-size:1.125rem;font-weight:500;color:#333;margin-bottom:20px;padding:20px;background:#f9f9f9;border:1px solid #eee;border-radius:4px}
-.poll-view .poll-radio {list-style:none;margin:0;padding:0}
-.poll-view .poll-radio li {padding:10px 0;border-bottom:1px solid #f0f0f0}
-.poll-view .poll-radio label {display:flex;align-items:center;cursor:pointer;font-size:15px;color:#333}
-.poll-view .poll-radio label input {margin-right:10px;accent-color:#5e1985}
-.poll-view .poll-radio label strong {flex:1}
-.poll-buttons {margin-top:20px;text-align:center}
-.poll-buttons .button {padding:10px 40px;font-size:15px}
-/* 결과 */
-.poll-result {list-style:none;margin:0;padding:0}
-.poll-result li {padding:12px 0;border-bottom:1px solid #f0f0f0}
-.poll-result .opt-text {font-size:15px;color:#333;margin-bottom:6px;display:flex;justify-content:space-between}
-.poll-result .opt-text .pct {font-weight:700;color:#5e1985}
-.poll-result .bar-bg {height:20px;background:#eee;border-radius:10px;overflow:hidden}
-.poll-result .bar-fill {height:100%;background:#5e1985;border-radius:10px;transition:width .5s ease}
-.poll-total {margin-top:15px;text-align:right;font-size:13px;color:#999}
 .poll-flash {padding:10px 15px;margin-bottom:15px;border-radius:4px;font-size:13px}
 .poll-flash.error {background:#fff0f0;color:#c00;border:1px solid #fdd}
+/* poll-view 원본 스타일 */
+.poll-view {border:1px solid rgba(0,0,0,.08)}
+.poll-view .poll-view-header {padding:1.5rem 1.25rem;border-bottom:1px solid rgba(0,0,0,.08)}
+.poll-view .poll-view-header::after {content:'';display:table;clear:both}
+.poll-view .poll-view-state {float:left;margin-right:1.25rem;padding:.625rem .9375rem;font-size:.75rem;font-weight:300;line-height:1;color:#fff;background:rgba(0,0,0,.25);text-align:center}
+.poll-view .poll-view-state.going {background:#5e1985}
+.poll-view .poll-view-state .quest {display:block;font-size:1.5rem;font-weight:700;line-height:1;margin-bottom:.25rem}
+.poll-view .poll-view-titles {font-size:1.25rem;font-weight:700;line-height:1.4;color:#000;overflow:hidden}
+.poll-view .poll-view-dated {font-size:.9rem;color:rgba(0,0,0,.45);margin-top:.375rem;overflow:hidden}
+/* 투표 폼 */
+.poll-view .poll-view-content {padding:1.25rem;background:#f4f4f5}
+.poll-view .poll-view-msg {font-size:.875rem;color:rgba(0,0,0,.55);margin-bottom:.75rem}
+.poll-view .poll-radio {margin:0;padding:0;list-style:none}
+.poll-view .poll-radio input[type=radio],
+.poll-view .poll-radio input[type=checkbox] {display:none}
+.poll-view .poll-radio input[type=radio]+label,
+.poll-view .poll-radio input[type=checkbox]+label {display:block;position:relative;padding:1rem 1.25rem;margin:0;font-size:1rem;font-weight:500;line-height:1;background:#fff;border:1px solid rgba(0,0,0,.08);border-top:none;cursor:pointer}
+.poll-view .poll-radio li:first-child label {border-top:1px solid rgba(0,0,0,.08)}
+.poll-view .poll-radio input[type=radio]+label::before,
+.poll-view .poll-radio input[type=checkbox]+label::before {content:"\e928";float:right;width:35px;height:35px;padding-top:.5rem;font-family:fontello;font-size:1.25rem;text-align:center;color:#bebebe;border:1px solid #bebebe;border-radius:50%}
+.poll-view .poll-radio input[type=radio]:checked+label::before,
+.poll-view .poll-radio input[type=checkbox]:checked+label::before {color:#fff;border-color:transparent;background:#5e1985}
+.poll-view .poll-radio input[type=radio]+label:hover,
+.poll-view .poll-radio input[type=checkbox]+label:hover {background:#fafafa}
+.poll-view .poll-radio input[type=radio]+label strong::before,
+.poll-view .poll-radio input[type=checkbox]+label strong::before {content:'';visibility:hidden;position:absolute;z-index:1;left:-1px;top:-1px;right:-1px;bottom:-1px;border:2px solid #5e1985;pointer-events:none}
+.poll-view .poll-radio input[type=radio]+label:hover strong::before,
+.poll-view .poll-radio input[type=radio]:checked+label strong::before,
+.poll-view .poll-radio input[type=checkbox]+label:hover strong::before,
+.poll-view .poll-radio input[type=checkbox]:checked+label strong::before {visibility:visible}
+/* 버튼 */
+.poll-view .poll-view-footer {margin-top:1.25rem;text-align:center}
+.poll-view .poll-view-footer .button {margin-bottom:0;padding:.75rem 2rem;font-size:.9375rem}
+/* 결과 */
+.poll-view .poll-result {list-style:none;margin:0;padding:0}
+.poll-view .poll-result li {display:block;position:relative;margin:0;background:#fff;border:1px solid rgba(0,0,0,.08);border-top:none}
+.poll-view .poll-result li:first-child {border-top:1px solid rgba(0,0,0,.08)}
+.poll-view .poll-result .inner {float:left;width:calc(100% - 100px);height:75px;position:relative;z-index:1}
+.poll-view .poll-result .inner .titles {position:absolute;z-index:3;padding:1.5rem 1.25rem;font-size:.9375rem;font-weight:500;color:#333;white-space:nowrap}
+.poll-view .poll-result .inner .graph {overflow:hidden;position:absolute;z-index:2;left:0;top:-1px;bottom:-1px;padding:1.5rem 1.25rem;font-weight:500;color:#fff;background-color:#727d92;white-space:nowrap;transition:width .5s ease}
+.poll-view .poll-result .inner .graph.user-bg {background-color:#5e1985!important}
+.poll-view .poll-result .inner .graph .graph-titles {visibility:hidden}
+.poll-view .poll-result .result-more {overflow:hidden;float:right;width:100px;height:75px;text-align:center;padding:1rem 1.25rem}
+.poll-view .poll-result .result-more .numbers {font-size:1.5rem;line-height:1;letter-spacing:-.025em}
+.poll-view .poll-result .result-more .counts {font-size:.75rem;font-weight:300;color:rgba(0,0,0,.45)}
+.poll-view .poll-result::after {content:'';display:table;clear:both}
+.poll-view .poll-total {margin-top:15px;text-align:right;font-size:13px;color:#999}
+{% if is_mobile %}
+.poll-view .poll-result .inner {width:calc(100% - 80px);height:60px}
+.poll-view .poll-result .inner .titles {padding:1.25rem 1rem;font-size:.8125rem}
+.poll-view .poll-result .inner .graph {padding:1.25rem 1rem}
+.poll-view .poll-result .result-more {width:80px;height:60px;padding:.75rem .5rem}
+.poll-view .poll-result .result-more .numbers {font-size:1.125rem}
+{% endif %}
 </style>
 {% endblock %}
 
@@ -43,49 +80,70 @@
 {% endif %}
 {% endwith %}
 
-<div class="poll-question">{{ poll.title }}</div>
+<div class="poll-view">
+    <!-- 헤더: 상태 + 제목 + 기간 -->
+    <div class="poll-view-header">
+        {% set is_ongoing = poll.is_active and (not poll.end_date or poll.end_date > now) %}
+        <div class="poll-view-state{{ ' going' if is_ongoing }}">
+            <div class="quest">Q</div>
+            {{ '진행중' if is_ongoing else '완료' }}
+        </div>
+        <div class="poll-view-titles">{{ poll.title }}</div>
+        <div class="poll-view-dated">
+            {% if poll.start_date %}{{ poll.start_date.strftime('%Y.%m.%d') }}{% endif %}
+            {% if poll.start_date and poll.end_date %} ~ {% endif %}
+            {% if poll.end_date %}{{ poll.end_date.strftime('%Y.%m.%d') }}{% endif %}
+        </div>
+    </div>
 
-{% if voted %}
-<!-- 결과 표시 -->
-<ul class="poll-result">
-    {% for opt in options %}
-    <li>
-        <div class="opt-text">
-            <span>{{ opt.text }}</span>
-            <span class="pct">{{ '%d' % ((opt.vote_count / total_votes * 100) if total_votes > 0 else 0) }}% ({{ opt.vote_count }}표)</span>
-        </div>
-        <div class="bar-bg">
-            <div class="bar-fill" style="width:{{ (opt.vote_count / total_votes * 100) if total_votes > 0 else 0 }}%"></div>
-        </div>
-    </li>
-    {% endfor %}
-</ul>
-<div class="poll-total">총 {{ total_votes }}명 참여</div>
-{% else %}
-<!-- 투표 폼 -->
-<form method="POST" action="{{ url_for('public.poll_vote') }}">
-    <input type="hidden" name="poll_id" value="{{ poll.id }}">
-    <div class="poll-view">
-        <ul class="poll-radio">
-            {% for opt in options %}
-            <li>
-                <label>
+    {% if voted %}
+    <!-- 결과 표시 -->
+    {% set max_votes = options|map(attribute='vote_count')|max if options else 0 %}
+    <ul class="poll-result">
+        {% for opt in options %}
+        {% set pct = (opt.vote_count / total_votes * 100) if total_votes > 0 else 0 %}
+        <li>
+            <div class="inner">
+                <div class="titles"><span class="contents">{{ opt.text }}</span></div>
+                <div class="graph{{ ' user-bg' if opt.vote_count == max_votes and max_votes > 0 }}" style="width:{{ '%.1f'|format(pct) }}%">
+                    <span class="graph-titles">{{ opt.text }}</span>
+                </div>
+            </div>
+            <div class="result-more">
+                <div class="numbers">{{ '%.1f'|format(pct) }}%</div>
+                <div class="counts">{{ opt.vote_count }}명</div>
+            </div>
+        </li>
+        {% endfor %}
+    </ul>
+    <div class="poll-total">총 {{ total_votes }}명 참여</div>
+
+    {% else %}
+    <!-- 투표 폼 -->
+    <form method="POST" action="{{ url_for('public.poll_vote') }}">
+        <input type="hidden" name="poll_id" value="{{ poll.id }}">
+        <div class="poll-view-content">
+            <div class="poll-view-msg">아래에서 {{ '하나 이상을' if poll.is_multiple else '하나를' }} 선택해 주세요</div>
+            <div class="poll-radio">
+                {% for opt in options %}
+                <li>
                     {% if poll.is_multiple %}
-                    <input type="checkbox" name="option_id" value="{{ opt.id }}">
+                    <input type="checkbox" name="option_id" id="poll_{{ opt.id }}" value="{{ opt.id }}">
                     {% else %}
-                    <input type="radio" name="option_id" value="{{ opt.id }}" required>
+                    <input type="radio" name="option_id" id="poll_{{ opt.id }}" value="{{ opt.id }}" required>
                     {% endif %}
-                    <strong>{{ opt.text }}</strong>
-                </label>
-            </li>
-            {% endfor %}
-        </ul>
-    </div>
-    <div class="poll-buttons">
-        <button type="submit" class="button user-bg">투표하기</button>
-    </div>
-</form>
-{% endif %}
+                    <label for="poll_{{ opt.id }}"><strong>{{ opt.text }}</strong></label>
+                </li>
+                {% endfor %}
+            </div>
+        </div>
+        <div class="poll-view-footer">
+            <button type="submit" class="button user-bg">투표하기</button>
+            <a href="{{ url_for('public.poll_view', id=poll.id, result=1) }}" class="button">결과보기</a>
+        </div>
+    </form>
+    {% endif %}
+</div>
 
 </div>
 {% endblock %}

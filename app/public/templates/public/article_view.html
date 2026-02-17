@@ -138,6 +138,11 @@
 #sticky-header .aht-btn {display:none}
 #sticky-header .aht-wrapper {padding:10px 15px}
 {% endif %}
+/* 다른 공유 모달 */
+.social-group.for-other {font-size:0;text-align:left}
+.social-group.for-other::after {content:'';display:table;clear:both}
+.social-group.for-other .sns {float:left;width:calc(20% - 10px);height:auto;margin:5px;padding:1.125rem 0;font-size:1.375rem;text-align:center;cursor:pointer;transition:background-color .25s ease-in-out}
+.social-group.for-other .sns:hover {background-color:rgba(0,0,0,.5)}
 </style>
 {% endblock %}
 
@@ -208,6 +213,12 @@
                 </button>
                 <button type="button" class="sns mail right" title="이메일" onclick="location.href='mailto:?subject='+encodeURIComponent('{{ article.title }}')+'&body='+encodeURIComponent(window.location.href)">
                     <i class="icon-mail"><span class="show-for-sr">이메일 보내기</span></i>
+                </button>
+                <button type="button" class="sns share right" title="다른 공유" data-open="article-sns">
+                    <i class="icon-share-alt"><span class="show-for-sr">다른 공유 찾기</span></i>
+                </button>
+                <button type="button" class="sns bookmark scrap-btn user-bg right" title="기사스크랩" onclick="alert('스크랩 되었습니다.')">
+                    <i class="icon-bookmark"><span class="show-for-sr">기사스크랩하기</span></i>
                 </button>
             </div>
 
@@ -502,6 +513,29 @@
 
 <div class="clearfix"></div>
 </div>
+</div>
+
+<!-- 다른 공유 모달 -->
+<div class="reveal" id="article-sns" data-reveal data-v-offset="50">
+    <div class="reveal-header">
+        <div class="reveal-title">이 기사를 공유합니다</div>
+    </div>
+    <section class="reveal-container">
+        <div class="social-group for-other">
+            <button type="button" class="sns facebook" title="페이스북" onclick="window.open('https://www.facebook.com/sharer/sharer.php?u='+encodeURIComponent(window.location.href),'_blank','width=600,height=400')">
+                <i class="icon-facebook"><span class="show-for-sr">페이스북</span></i>
+            </button>
+            <button type="button" class="sns twitter" title="트위터" onclick="window.open('https://twitter.com/intent/tweet?text='+encodeURIComponent('{{ article.title }}')+'&url='+encodeURIComponent(window.location.href),'_blank','width=600,height=400')">
+                <i class="icon-twitter"><span class="show-for-sr">트위터</span></i>
+            </button>
+            <button type="button" class="sns link" title="URL복사" onclick="navigator.clipboard.writeText(window.location.href).then(function(){alert('URL이 복사되었습니다.')})">
+                <i class="icon-link"><span class="show-for-sr">URL복사</span></i>
+            </button>
+        </div>
+    </section>
+    <button class="close-button" data-close aria-label="Close modal" type="button">
+        <i class="icon-close-thin"><span class="show-for-sr">닫기</span></i>
+    </button>
 </div>
 
 <script>
