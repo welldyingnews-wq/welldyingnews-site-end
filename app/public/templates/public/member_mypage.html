@@ -3,69 +3,98 @@
 
 {% block extra_head %}
 <style type="text/css">
-.member-wrap {max-width:500px;margin:60px auto;padding:0 15px}
-.member-header {text-align:center;margin-bottom:30px}
-.member-header .titles {font-size:1.5rem;font-weight:700;color:#222}
-.member-info {padding:20px;background:#f9f9f9;border:1px solid #eee;border-radius:4px;margin-bottom:25px}
-.member-info .row {display:flex;padding:8px 0;border-bottom:1px solid #eee;font-size:14px}
-.member-info .row:last-child {border-bottom:none}
-.member-info .row .label {width:100px;color:#999;flex-shrink:0}
-.member-info .row .value {color:#333;font-weight:500}
-.member-form .form-group {margin-bottom:15px}
-.member-form label {display:block;font-size:14px;font-weight:600;color:#333;margin-bottom:5px}
-.member-form input[type="text"], .member-form input[type="password"], .member-form input[type="email"], .member-form input[type="tel"] {width:100%;height:42px;padding:0 12px;border:1px solid #ddd;border-radius:3px;font-size:14px}
-.member-form input:focus {border-color:#5e1985;outline:none}
-.member-form .help {font-size:12px;color:#999;margin-top:3px}
-.member-form .btn-submit {display:block;width:100%;height:44px;background:#5e1985;color:#fff;border:none;border-radius:3px;font-size:16px;font-weight:500;cursor:pointer;margin-top:25px}
-.member-form .btn-submit:hover {background:#4a1369}
-.flash-msg {padding:10px 15px;margin-bottom:15px;border-radius:3px;font-size:14px}
-.flash-msg.error {background:#fff0f0;color:#c00;border:1px solid #fdd}
-.flash-msg.success {background:#f0fff0;color:#2a7a2a;border:1px solid #b2e6b2}
+.mb-mypage{max-width:600px;margin:40px auto;padding:0 15px}
+.mb-mypage .join-header{text-align:center;margin-bottom:30px}
+.mb-mypage .join-header-title{font-size:1.5rem;font-weight:700;color:#222}
+.mb-mypage .join-subject{font-size:1.0625rem;font-weight:700;color:#222;margin-bottom:15px;padding-bottom:10px;border-bottom:2px solid #222}
+.mb-mypage .mb-content{margin-bottom:30px}
+.mb-mypage .info-row{display:flex;padding:10px 0;border-bottom:1px solid #eee;font-size:.875rem}
+.mb-mypage .info-row:last-child{border-bottom:none}
+.mb-mypage .info-row .label{width:100px;color:#888;flex-shrink:0;font-weight:500}
+.mb-mypage .info-row .value{color:#333}
+.mb-mypage fieldset{margin:0;padding:10px 0;border:none}
+.mb-mypage fieldset .medium-4{display:flex;align-items:center}
+.mb-mypage label strong{font-size:.875rem;font-weight:600}
+.mb-mypage input[type="text"],.mb-mypage input[type="password"],.mb-mypage input[type="email"],.mb-mypage input[type="tel"]{height:42px;font-size:.875rem;border:1px solid #ccc;border-radius:3px;margin-bottom:0}
+.mb-mypage input:focus{border-color:#5e1985;box-shadow:none}
+.mb-mypage .help-text{font-size:.75rem;color:#999;margin-top:4px}
+.mb-mypage .button.user-bg{background-color:#5e1985!important;color:#fff}
+.mb-mypage .button.user-bg:hover{background-color:#4a1369!important}
+.callout.alert{background:#fff0f0;color:#c00;border:1px solid #fdd}
+.callout.success{background:#f0fff0;color:#2a7a2a;border:1px solid #b2e6b2}
 </style>
 {% endblock %}
 
 {% block content %}
-<div class="member-wrap">
-    <header class="member-header">
-        <h3 class="titles">마이페이지</h3>
+<div class="mb-mypage">
+    <header class="join-header">
+        <h1 class="join-header-title">마이페이지</h1>
     </header>
 
     {% with messages = get_flashed_messages(with_categories=true) %}
     {% if messages %}
     {% for category, message in messages %}
-    <div class="flash-msg {{ category }}">{{ message }}</div>
+    <div class="callout {{ 'alert' if category == 'error' else category }}">
+        <p style="margin:0">{{ message }}</p>
+    </div>
     {% endfor %}
     {% endif %}
     {% endwith %}
 
-    <div class="member-info">
-        <div class="row"><span class="label">아이디</span><span class="value">{{ member.user_id }}</span></div>
-        <div class="row"><span class="label">이름</span><span class="value">{{ member.name }}</span></div>
-        <div class="row"><span class="label">이메일</span><span class="value">{{ member.email or '-' }}</span></div>
-        <div class="row"><span class="label">연락처</span><span class="value">{{ member.phone or '-' }}</span></div>
-        <div class="row"><span class="label">가입일</span><span class="value">{{ member.created_at.strftime('%Y-%m-%d') }}</span></div>
-    </div>
+    <!-- 회원 정보 -->
+    <article class="mb-content">
+        <h3 class="join-subject">회원정보</h3>
+        <div class="info-row"><span class="label">아이디</span><span class="value">{{ member.user_id }}</span></div>
+        <div class="info-row"><span class="label">이름</span><span class="value">{{ member.name }}</span></div>
+        <div class="info-row"><span class="label">이메일</span><span class="value">{{ member.email or '-' }}</span></div>
+        <div class="info-row"><span class="label">연락처</span><span class="value">{{ member.phone or '-' }}</span></div>
+        <div class="info-row"><span class="label">가입일</span><span class="value">{{ member.created_at.strftime('%Y-%m-%d') }}</span></div>
+    </article>
 
-    <h4 style="font-size:1.125rem;font-weight:700;margin-bottom:15px">회원정보 수정</h4>
-    <form class="member-form" method="POST" action="{{ url_for('public.member_update') }}">
-        <div class="form-group">
-            <label for="name">이름</label>
-            <input type="text" id="name" name="name" value="{{ member.name }}" maxlength="50">
-        </div>
-        <div class="form-group">
-            <label for="email">이메일</label>
-            <input type="email" id="email" name="email" value="{{ member.email }}">
-        </div>
-        <div class="form-group">
-            <label for="phone">연락처</label>
-            <input type="tel" id="phone" name="phone" value="{{ member.phone }}">
-        </div>
-        <div class="form-group">
-            <label for="new_password">새 비밀번호</label>
-            <input type="password" id="new_password" name="new_password" placeholder="변경 시에만 입력">
-            <div class="help">비밀번호를 변경하려면 입력하세요. 비우면 변경되지 않습니다.</div>
-        </div>
-        <button type="submit" class="btn-submit">수정하기</button>
+    <!-- 정보 수정 -->
+    <form method="POST" action="{{ url_for('public.member_update') }}">
+        <article class="mb-content">
+            <h3 class="join-subject">회원정보 수정</h3>
+
+            <fieldset class="row expanded small-collapse medium-uncollapse">
+                <div class="medium-4 columns">
+                    <label for="name" class="text-left medium-middle"><strong>이름</strong></label>
+                </div>
+                <div class="medium-8 columns">
+                    <input type="text" id="name" name="name" value="{{ member.name }}" maxlength="50">
+                </div>
+            </fieldset>
+
+            <fieldset class="row expanded small-collapse medium-uncollapse">
+                <div class="medium-4 columns">
+                    <label for="email" class="text-left medium-middle"><strong>이메일</strong></label>
+                </div>
+                <div class="medium-8 columns">
+                    <input type="email" id="email" name="email" value="{{ member.email }}">
+                </div>
+            </fieldset>
+
+            <fieldset class="row expanded small-collapse medium-uncollapse">
+                <div class="medium-4 columns">
+                    <label for="phone" class="text-left medium-middle"><strong>연락처</strong></label>
+                </div>
+                <div class="medium-8 columns">
+                    <input type="tel" id="phone" name="phone" value="{{ member.phone }}">
+                </div>
+            </fieldset>
+
+            <fieldset class="row expanded small-collapse medium-uncollapse">
+                <div class="medium-4 columns">
+                    <label for="new_password" class="text-left medium-middle"><strong>새 비밀번호</strong></label>
+                </div>
+                <div class="medium-8 columns">
+                    <input type="password" id="new_password" name="new_password" placeholder="변경 시에만 입력">
+                    <span class="help-text">비밀번호를 변경하려면 입력하세요. 비우면 변경되지 않습니다.</span>
+                </div>
+            </fieldset>
+        </article>
+
+        <button type="submit" class="button user-bg large expanded">수정하기</button>
     </form>
 </div>
 {% endblock %}

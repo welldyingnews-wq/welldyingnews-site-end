@@ -13,7 +13,7 @@ from app.admin import admin_bp
 from app.models import (db, AdminUser, Section, SubSection, Article, ArticleRelation,
                         SiteSetting, ArticleComment, Board, BoardPost, BoardReply,
                         EventRequest, Banner, Popup, Poll, PollOption, SerialCode,
-                        Department, MemberDivision, EtcLevel, LayoutBlock)
+                        Department, MemberDivision, EtcLevel, LayoutBlock, Member)
 
 
 def admin_required(f):
@@ -703,6 +703,60 @@ def member_delete(member_id):
     db.session.commit()
     flash('회원이 삭제되었습니다.', 'success')
     return redirect(url_for('admin.member_list'))
+
+
+# ── 일반회원 관리 ──
+
+@admin_bp.route('/public-members')
+@admin_required
+def public_member_list():
+    stype = request.args.get('stype', '')
+    sword = request.args.get('sword', '').strip()
+    user_state = request.args.get('user_state', '')
+
+    query = Member.query
+    if sword:
+        if stype == 'I':
+            query = query.filter(Member.user_id.contains(sword))
+        elif stype == 'N':
+            query = query.filter(Member.name.contains(sword))
+        elif stype == 'E':
+            query = query.filter(Member.email.contains(sword))
+        else:
+            query = query.filter(db.or_(
+                Member.user_id.contains(sword),
+                Member.name.contains(sword),
+                Member.email.contains(sword)
+            ))
+    if user_state == 'A':
+        query = query.filter_by(is_active=True)
+    elif user_state == 'D':
+        query = query.filter_by(is_active=False)
+
+    members = query.order_by(Member.created_at.desc()).all()
+    return render_template('admin/public_member_list.html', members=members,
+                           stype=stype, sword=sword,
+                           user_state=user_state, member_count=len(members))
+
+
+@admin_bp.route('/public-member/<int:member_id>/toggle-active', methods=['POST'])
+@admin_required
+def public_member_toggle_active(member_id):
+    member = Member.query.get_or_404(member_id)
+    member.is_active = not member.is_active
+    db.session.commit()
+    flash(f'회원 "{member.user_id}" 상태가 {"활성" if member.is_active else "비활성"}으로 변경되었습니다.', 'success')
+    return redirect(url_for('admin.public_member_list'))
+
+
+@admin_bp.route('/public-member/<int:member_id>/delete', methods=['POST'])
+@admin_required
+def public_member_delete(member_id):
+    member = Member.query.get_or_404(member_id)
+    db.session.delete(member)
+    db.session.commit()
+    flash('일반회원이 삭제되었습니다.', 'success')
+    return redirect(url_for('admin.public_member_list'))
 
 
 # ── 통계 ──

@@ -1,53 +1,106 @@
-{% extends "public/base.html" %}
-{% block title %}로그인 - 웰다잉뉴스{% endblock %}
-
-{% block extra_head %}
-<style type="text/css">
-.member-wrap {max-width:400px;margin:60px auto;padding:0 15px}
-.member-header {text-align:center;margin-bottom:30px}
-.member-header .titles {font-size:1.5rem;font-weight:700;color:#222}
-.member-form .form-group {margin-bottom:15px}
-.member-form label {display:block;font-size:14px;font-weight:600;color:#333;margin-bottom:5px}
-.member-form input[type="text"], .member-form input[type="password"] {width:100%;height:42px;padding:0 12px;border:1px solid #ddd;border-radius:3px;font-size:14px}
-.member-form input:focus {border-color:#5e1985;outline:none}
-.member-form .btn-submit {display:block;width:100%;height:44px;background:#5e1985;color:#fff;border:none;border-radius:3px;font-size:16px;font-weight:500;cursor:pointer;margin-top:20px}
-.member-form .btn-submit:hover {background:#4a1369}
-.member-links {text-align:center;margin-top:20px;font-size:13px;color:#999}
-.member-links a {color:#5e1985}
-.flash-msg {padding:10px 15px;margin-bottom:15px;border-radius:3px;font-size:14px}
-.flash-msg.error {background:#fff0f0;color:#c00;border:1px solid #fdd}
-.flash-msg.success {background:#f0fff0;color:#2a7a2a;border:1px solid #b2e6b2}
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>로그인 - 웰다잉뉴스</title>
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/foundation-sites@6.7.5/dist/css/foundation.min.css">
+<link href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@300;400;500;700&display=swap" rel="stylesheet">
+<style>
+*{box-sizing:border-box}
+body{margin:0;font-family:'Noto Sans KR','Apple SD Gothic Neo',sans-serif;background:#f5f5f5;color:#333}
+.user-bg{background-color:#5e1985!important}
+.user-point{color:#5e1985!important}
+#user-wrap{min-height:100vh;display:flex;flex-direction:column}
+.mb-header{text-align:center;padding:60px 0 30px}
+.mb-header .logo img{height:45px}
+.mb-container{max-width:420px;margin:0 auto;padding:0 15px 40px}
+.mb-titles{font-size:1.5rem;font-weight:700;color:#222;text-align:center;margin-bottom:30px}
+input[type="text"].xlarge,input[type="password"].xlarge{width:100%;height:48px;font-size:.9375rem;border:1px solid #ccc;border-radius:3px;padding:0 14px;margin-bottom:0}
+.marbtm-5{margin-bottom:5px!important}
+input:focus{border-color:#5e1985;box-shadow:none;outline:none}
+.button.expanded.large.user-bg{background-color:#5e1985!important;color:#fff;height:48px;font-size:1rem;font-weight:500;border:none;border-radius:3px}
+.button.expanded.large.user-bg:hover{background-color:#4a1369!important}
+.mary-25{margin-top:25px!important;margin-bottom:25px!important}
+.mary-15{margin-top:15px!important;margin-bottom:15px!important}
+.nd-checkbox{display:inline-block;cursor:pointer;font-size:.875rem;color:#555}
+.nd-checkbox input[type="checkbox"]{margin-right:5px;vertical-align:middle}
+.nd-checked{vertical-align:middle}
+.member-links{text-align:right;font-size:.8125rem}
+.member-links a{color:#888;margin-left:10px}
+.member-links a:hover{color:#5e1985}
+.mb-joins-link{display:block;text-align:center;margin-top:20px;font-size:.8125rem;color:#888;text-decoration:none}
+.mb-joins-link span{color:#5e1985;font-weight:500}
+.mb-footer{text-align:center;padding:30px 0;font-size:.75rem;color:#aaa;margin-top:auto}
+.callout{margin-bottom:15px;font-size:.875rem}
+.callout.alert{background:#fff0f0;color:#c00;border:1px solid #fdd}
+.callout.success{background:#f0fff0;color:#2a7a2a;border:1px solid #b2e6b2}
+@media (max-width:639px){
+    .mb-header{padding:40px 0 20px}
+    .mb-container{padding:0 20px 40px}
+}
 </style>
-{% endblock %}
+</head>
+<body>
+<div id="user-wrap" class="for-members login-page">
+<div class="row expanded">
 
-{% block content %}
-<div class="member-wrap">
-    <header class="member-header">
-        <h3 class="titles">로그인</h3>
-    </header>
+<header class="mb-header">
+    <h1 class="logo">
+        <a href="{{ url_for('public.index') }}">
+            <img src="{{ url_for('static', filename='images/logo.png') }}" alt="웰다잉뉴스">
+        </a>
+    </h1>
+</header>
+
+<div class="mb-container">
+    <h1 class="mb-titles">회원로그인</h1>
 
     {% with messages = get_flashed_messages(with_categories=true) %}
     {% if messages %}
     {% for category, message in messages %}
-    <div class="flash-msg {{ category }}">{{ message }}</div>
+    <div class="callout {{ 'alert' if category == 'error' else category }}" data-closable>
+        <p style="margin:0">{{ message }}</p>
+    </div>
     {% endfor %}
     {% endif %}
     {% endwith %}
 
-    <form class="member-form" method="POST" action="{{ url_for('public.member_login') }}">
-        <div class="form-group">
-            <label for="user_id">아이디</label>
-            <input type="text" id="user_id" name="user_id" placeholder="아이디를 입력하세요" required>
+    <form name="loginForm" id="loginForm" method="POST" action="{{ url_for('public.member_login') }}">
+        <fieldset style="border:none;margin:0;padding:0">
+            <label for="user_id" class="show-for-sr">아이디</label>
+            <input type="text" name="user_id" id="user_id" class="xlarge marbtm-5" tabindex="1" placeholder="아이디" title="아이디" required>
+        </fieldset>
+        <fieldset style="border:none;margin:0;padding:0">
+            <label for="password" class="show-for-sr">비밀번호</label>
+            <input type="password" name="password" id="password" class="xlarge marbtm-5" tabindex="2" placeholder="비밀번호" title="비밀번호" required>
+        </fieldset>
+
+        <div class="row collapse small-up-1 medium-up-2 mary-15">
+            <div class="columns">
+                <label class="nd-checkbox">
+                    <input type="checkbox" name="id_save" id="id_save">
+                    <span class="nd-checked">아이디 저장</span>
+                </label>
+            </div>
+            <div class="columns">
+                <div class="member-links">
+                    <!-- 아이디/비밀번호 찾기 기능은 미구현 -->
+                </div>
+            </div>
         </div>
-        <div class="form-group">
-            <label for="password">비밀번호</label>
-            <input type="password" id="password" name="password" placeholder="비밀번호를 입력하세요" required>
-        </div>
-        <button type="submit" class="btn-submit">로그인</button>
+
+        <button type="submit" class="button expanded large user-bg mary-25" tabindex="3">로그인</button>
     </form>
 
-    <div class="member-links">
-        아직 회원이 아니신가요? <a href="{{ url_for('public.member_register') }}">회원가입</a>
-    </div>
+    <a href="{{ url_for('public.member_register') }}" class="mb-joins-link">아직 웰다잉뉴스 회원이 아닌가요? <span class="user-point">회원가입</span></a>
 </div>
-{% endblock %}
+
+<footer class="mb-footer">
+    &copy; welldyingnews.com
+</footer>
+
+</div>
+</div>
+</body>
+</html>

@@ -72,10 +72,11 @@
                 </li>
 
                 <!-- 회원 -->
-                <li class="nav-group {% if 'member' in ep or 'dormant' in ep or 'etc_level' in ep or 'division' in ep or 'department' in ep %}open{% endif %}">
+                <li class="nav-group {% if 'member' in ep or 'dormant' in ep or 'public_member' in ep or 'etc_level' in ep or 'division' in ep or 'department' in ep %}open{% endif %}">
                     <a href="#" class="nav-group-toggle"><i class="bi bi-people"></i> 회원 <i class="bi bi-chevron-down ms-auto"></i></a>
                     <ul class="nav-sub">
                         <li class="{% if ep == 'admin.member_list' %}active{% endif %}"><a href="{{ url_for('admin.member_list') }}">회원목록</a></li>
+                        <li class="{% if ep == 'admin.public_member_list' %}active{% endif %}"><a href="{{ url_for('admin.public_member_list') }}">일반회원목록</a></li>
                         <li class="{% if ep == 'admin.dormant_list' %}active{% endif %}"><a href="{{ url_for('admin.dormant_list') }}">휴면회원목록</a></li>
                         <li class="{% if ep == 'admin.etc_level_list' %}active{% endif %}"><a href="{{ url_for('admin.etc_level_list') }}">기타등급관리</a></li>
                         <li class="{% if ep == 'admin.division_list' %}active{% endif %}"><a href="{{ url_for('admin.division_list') }}">필자표시관리</a></li>
