@@ -276,11 +276,11 @@
     {% if popular_today or popular_week %}
     <div class="tabs-wrap type-E">
         <header class="tabs-header">많이 본 뉴스</header>
-        <ul class="tabs" data-tabs style="margin:0;border:none;border-bottom:1px solid #eee">
-            <li class="tabs-title is-active"><a href="#" data-tab="today" style="font-size:13px;padding:8px 15px">오늘</a></li>
-            <li class="tabs-title"><a href="#" data-tab="week" style="font-size:13px;padding:8px 15px">주간</a></li>
+        <ul class="tabs">
+            <li class="tabs-title is-active"><a href="#" data-tab="today">오늘</a></li>
+            <li class="tabs-title"><a href="#" data-tab="week">주간</a></li>
         </ul>
-        <div class="tabs-panel-today tabs-popular active" style="padding-top:10px">
+        <div class="tabs-panel-today tabs-popular active">
             <div class="auto-article">
                 {% for art in popular_today %}
                 <div class="item{% if not loop.first %} martop-8{% endif %}">
@@ -294,7 +294,7 @@
                 {% endfor %}
             </div>
         </div>
-        <div class="tabs-panel-week tabs-popular" style="padding-top:10px;display:none">
+        <div class="tabs-panel-week tabs-popular" style="display:none">
             <div class="auto-article">
                 {% for art in popular_week %}
                 <div class="item{% if not loop.first %} martop-8{% endif %}">

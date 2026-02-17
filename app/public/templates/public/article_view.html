@@ -166,10 +166,10 @@
 /* flash 메시지 */
 .comment-flash {padding:10px 15px;margin-bottom:15px;border-radius:4px;font-size:13px}
 .comment-flash.error {background:#fff0f0;color:#c00;border:1px solid #fdd}
-/* 이전/다음 기사 */
+/* 이전/다음 기사 — Foundation .label 오버라이드 */
 .article-navigate {border-top:2px solid #333;margin-top:30px}
 .article-navigate .item {display:block;padding:12px 0;border-bottom:1px solid #eee;overflow:hidden}
-.article-navigate .item .label {display:inline-block;width:70px;font-size:13px;font-weight:700;color:#5e1985}
+.article-navigate .item .label {display:inline-block;width:70px;font-size:13px;font-weight:700;color:#5e1985;background:none;padding:0;border-radius:0;line-height:inherit;white-space:normal;cursor:default}
 .article-navigate .item a {font-size:14px;color:#333}
 .article-navigate .item a:hover {color:#5e1985}
 /* sticky 스크롤 헤더 */
@@ -607,11 +607,11 @@
                 {% if popular_today or popular_week %}
                 <div class="tabs-wrap type-E">
                     <header class="tabs-header">많이 본 뉴스</header>
-                    <ul class="tabs" data-tabs style="margin:0;border:none;border-bottom:1px solid #eee">
-                        <li class="tabs-title is-active"><a href="#" data-tab="today" style="font-size:13px;padding:8px 15px">오늘</a></li>
-                        <li class="tabs-title"><a href="#" data-tab="week" style="font-size:13px;padding:8px 15px">주간</a></li>
+                    <ul class="tabs">
+                        <li class="tabs-title is-active"><a href="#" data-tab="today">오늘</a></li>
+                        <li class="tabs-title"><a href="#" data-tab="week">주간</a></li>
                     </ul>
-                    <div class="tabs-panel-today tabs-popular active" style="padding-top:10px">
+                    <div class="tabs-panel-today tabs-popular active">
                         <div class="auto-article">
                             {% for art in popular_today %}
                             <div class="item{% if not loop.first %} martop-8{% endif %}">
@@ -625,7 +625,7 @@
                             {% endfor %}
                         </div>
                     </div>
-                    <div class="tabs-panel-week tabs-popular" style="padding-top:10px;display:none">
+                    <div class="tabs-panel-week tabs-popular" style="display:none">
                         <div class="auto-article">
                             {% for art in popular_week %}
                             <div class="item{% if not loop.first %} martop-8{% endif %}">

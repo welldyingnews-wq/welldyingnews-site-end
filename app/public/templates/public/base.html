@@ -43,7 +43,7 @@
 .user-point,a.user-point,
 .poll-columns .poll-state.going
 {color:#5e1985 !important}
-.user-bg,.user-bg:hover,.user-bg:active,.user-bg:focus,li[id*="slick-"].slick-active button[data-role],.tabs .is-active a
+.user-bg,.user-bg:hover,.user-bg:active,.user-bg:focus,li[id*="slick-"].slick-active button[data-role],.tabs .is-active a:not([data-tab])
 {background-color:#5e1985 !important}
 .user-border{border-color:#5e1985 !important}
 .user-border-top {border-top-color:#5e1985 !important}
@@ -87,6 +87,32 @@
 #user-footer.type-31 .user-address ul li.copy {margin-top:1.375rem;font-size:.813rem;color:rgba(0,0,0,.4)}
 #user-footer.type-31 .user-address ul li a {color:inherit;text-decoration:none}
 {% endif %}
+
+/* 사이드바 많이 본 뉴스 탭 — Foundation 오버라이드 */
+.tabs-wrap.type-E {text-align:left}
+.tabs-wrap.type-E .tabs-header {display:block;margin-bottom:1rem;font-size:1.25rem;font-weight:700;line-height:1;letter-spacing:-.025em;color:#000}
+.tabs-wrap.type-E .tabs {margin:0;padding:0;border:none;border-bottom:1px solid #eee;background:none;list-style:none;display:flex}
+.tabs-wrap.type-E .tabs .tabs-title {float:none;flex:none}
+.tabs-wrap.type-E .tabs .tabs-title > a {display:block;padding:8px 15px;font-size:13px;line-height:1;color:#666;background:none !important;border:none}
+.tabs-wrap.type-E .tabs .tabs-title > a:hover {color:#333;background:none !important}
+.tabs-wrap.type-E .tabs .tabs-title.is-active > a {color:#000;font-weight:700;background:none !important;border-bottom:2px solid #5e1985;margin-bottom:-1px}
+.tabs-wrap.type-E .tabs-popular {padding-top:10px}
+.tabs-wrap.type-E .tabs-popular .item:not(:first-child) {margin-top:12px;padding-top:12px;border-top:1px solid rgba(0,0,0,.06)}
+/* 사이드바 box-skin */
+.box-skin .header {font-weight:700;letter-spacing:-.025em}
+.box-skin .header > a {display:block;margin-bottom:1rem;font-size:1.25rem;line-height:1;text-decoration:none;color:#000}
+.box-skin .header > a:hover {color:#292728}
+.box-skin .content {display:block}
+#skin-11 > .item:not(:first-child) {margin-top:15px;padding-top:15px;border-top:1px solid rgba(0,0,0,.05)}
+#skin-11 .auto-valign {display:flex;align-items:flex-start}
+#skin-11 .frame {width:65px;flex-shrink:0;overflow:hidden;border-radius:4px}
+#skin-11 .frame .auto-images {display:block;width:65px;height:65px;background-size:cover;background-position:center;background-color:#e0d5ea;border-radius:4px;transition:transform .2s ease}
+#skin-11 a:hover .auto-images {transform:scale(1.05)}
+#skin-11 .frame + .content {display:inline-block;width:calc(100% - 65px);padding-left:16px}
+#skin-11 .auto-titles {display:block;font-size:15px;line-height:1.25;font-weight:400;color:#1e1e1e;overflow:hidden;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;max-height:2.5em}
+#skin-11 .auto-name {display:block;margin-top:5px;font-size:12px;font-weight:300;color:#999;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.box-margins.box-solid {display:block;border-top:1px solid rgba(0,0,0,.12)}
+.box-margins.height-50 {height:50px}
 </style>
 {% block extra_head %}{% endblock %}
 </head>

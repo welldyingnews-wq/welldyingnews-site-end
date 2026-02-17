@@ -160,3 +160,19 @@
 - [x] 회원 로그인/로그아웃/마이페이지
 - [x] 모바일 뷰 (UA 감지 + 전용 레이아웃)
 - [x] 편집 레이아웃 (드래그앤드롭 블록 편집기)
+
+---
+
+## 9. 이미지 Cloudinary 전환 (최후순위)
+
+> **우선순위: 가장 나중에 진행할 것.** 다른 모든 TODO 항목 완료 후 작업.
+
+- [ ] Cloudinary SDK 연동 (cloudinary python SDK 설치, 환경변수 설정: CLOUD_NAME, API_KEY, API_SECRET)
+- [ ] 기사 본문 이미지 업로드 → Cloudinary (관리자 기사 작성 Dropzone 업로드 경로 변경)
+- [ ] 기사 대표 이미지(thumbnail) 업로드 → Cloudinary
+- [ ] 배너/팝업 이미지 업로드 → Cloudinary
+- [ ] 회원 프로필 이미지 업로드 → Cloudinary
+- [ ] 댓글 작성자 프로필 이미지 → Cloudinary URL 참조
+- [ ] 기사제보 첨부파일 업로드 → Cloudinary
+- [ ] 기존 로컬 저장 이미지(`static/uploads/`) → Cloudinary 마이그레이션 스크립트 작성
+- [ ] 모든 템플릿에서 로컬 이미지 경로를 Cloudinary URL로 교체
