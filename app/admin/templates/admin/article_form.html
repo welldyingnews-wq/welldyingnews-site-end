@@ -3,8 +3,13 @@
 
 {% block extra_head %}
 <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/dropzone@5.9.3/dist/min/dropzone.min.css">
+<link rel="stylesheet" href="https://cdn.ckeditor.com/ckeditor5/43.3.1/ckeditor5.css">
 <style>
 .ck-editor__editable { min-height: 400px; }
+.ck-editor__editable.ck-focused { border-color: #5e1985 !important; }
+/* 전체화면 모드 */
+.ck-editor-fullscreen { position:fixed !important; top:0; left:0; right:0; bottom:0; z-index:9999; background:#fff; }
+.ck-editor-fullscreen .ck-editor__editable { min-height:calc(100vh - 80px) !important; max-height:calc(100vh - 80px) !important; }
 .dz-area { border:2px dashed #ccc; border-radius:8px; padding:15px; min-height:100px; background:#fafafa; cursor:pointer; }
 .dz-area:hover { border-color:#5e1985; background:#f5f0fa; }
 .dz-area .dz-message { text-align:center; color:#999; font-size:14px; margin:10px 0; }
@@ -84,6 +89,14 @@
                 <div class="card-body">
                     <label class="form-label fw-bold">부제목</label>
                     <textarea name="subtitle" class="form-control" rows="2" placeholder="부제목을 입력하세요">{{ article.subtitle if article else '' }}</textarea>
+                </div>
+            </div>
+
+            <!-- 리드문(요약문) -->
+            <div class="card mb-3">
+                <div class="card-body">
+                    <label class="form-label fw-bold">리드문 <small class="text-muted fw-normal">(요약문 — 목록/OG/검색에 노출)</small></label>
+                    <textarea name="summary" class="form-control" rows="3" placeholder="기사 요약문을 입력하세요 (미입력 시 본문에서 자동 추출)">{{ article.summary if article else '' }}</textarea>
                 </div>
             </div>
 
@@ -209,6 +222,27 @@
                 </div>
             </div>
 
+            <!-- 출처 -->
+            <div class="card mb-3">
+                <div class="card-header"><strong>출처</strong></div>
+                <div class="card-body">
+                    <input type="text" name="source" class="form-control form-control-sm" value="{{ article.source if article else '' }}" placeholder="기사 출처 (예: 연합뉴스)">
+                </div>
+            </div>
+
+            <!-- 연재 -->
+            <div class="card mb-3">
+                <div class="card-header"><strong>연재</strong></div>
+                <div class="card-body">
+                    <select name="serial_code_id" class="form-select form-select-sm">
+                        <option value="">연재 선택 (없음)</option>
+                        {% for sc in serial_codes %}
+                        <option value="{{ sc.id }}" {% if article and article.serial_code_id == sc.id %}selected{% endif %}>{{ sc.name }}</option>
+                        {% endfor %}
+                    </select>
+                </div>
+            </div>
+
             <!-- 노출시간 -->
             <div class="card mb-3">
                 <div class="card-header"><strong>노출시간</strong></div>
@@ -260,7 +294,139 @@
 
 {% block extra_scripts %}
 <script src="https://cdn.jsdelivr.net/npm/dropzone@5.9.3/dist/min/dropzone.min.js"></script>
-<script src="https://cdn.ckeditor.com/ckeditor5/41.4.2/classic/ckeditor.js"></script>
+<script type="importmap">
+{
+    "imports": {
+        "ckeditor5": "https://cdn.ckeditor.com/ckeditor5/43.3.1/ckeditor5.js",
+        "ckeditor5/": "https://cdn.ckeditor.com/ckeditor5/43.3.1/"
+    }
+}
+</script>
+<script type="module">
+import {
+    ClassicEditor,
+    Essentials, Paragraph, Heading, Undo,
+    Bold, Italic, Underline, Strikethrough,
+    Font,
+    Alignment,
+    Link, AutoLink,
+    Image, ImageCaption, ImageStyle, ImageToolbar, ImageUpload, ImageResize, ImageInsert,
+    BlockQuote,
+    List,
+    Indent, IndentBlock,
+    Table, TableToolbar, TableCaption,
+    MediaEmbed,
+    HorizontalLine,
+    SpecialCharacters, SpecialCharactersEssentials, SpecialCharactersArrows, SpecialCharactersCurrency, SpecialCharactersLatin, SpecialCharactersMathematical, SpecialCharactersText,
+    RemoveFormat,
+    FindAndReplace,
+    SourceEditing,
+    PasteFromOffice,
+    FileRepository,
+    GeneralHtmlSupport
+} from 'ckeditor5';
+import koTranslations from 'ckeditor5/translations/ko.js';
+
+// Custom Upload Adapter
+class MyUploadAdapter {
+    constructor(loader) { this.loader = loader; }
+    upload() {
+        return this.loader.file.then(file => {
+            const data = new FormData();
+            data.append('upload', file);
+            return fetch('{{ url_for("admin.upload_image") }}', { method: 'POST', body: data })
+                .then(res => res.json())
+                .then(result => ({ default: result.url }));
+        });
+    }
+    abort() {}
+}
+function MyUploadAdapterPlugin(editor) {
+    editor.plugins.get('FileRepository').createUploadAdapter = (loader) => new MyUploadAdapter(loader);
+}
+
+ClassicEditor.create(document.querySelector('#editor'), {
+    plugins: [
+        Essentials, Paragraph, Heading, Undo,
+        Bold, Italic, Underline, Strikethrough,
+        Font,
+        Alignment,
+        Link, AutoLink,
+        Image, ImageCaption, ImageStyle, ImageToolbar, ImageUpload, ImageResize, ImageInsert,
+        BlockQuote,
+        List,
+        Indent, IndentBlock,
+        Table, TableToolbar, TableCaption,
+        MediaEmbed,
+        HorizontalLine,
+        SpecialCharacters, SpecialCharactersEssentials, SpecialCharactersArrows, SpecialCharactersCurrency, SpecialCharactersLatin, SpecialCharactersMathematical, SpecialCharactersText,
+        RemoveFormat,
+        FindAndReplace,
+        SourceEditing,
+        PasteFromOffice,
+        FileRepository,
+        GeneralHtmlSupport,
+        MyUploadAdapterPlugin
+    ],
+    language: koTranslations,
+    toolbar: {
+        items: [
+            'heading', '|',
+            'bold', 'italic', 'underline', 'strikethrough', '|',
+            'fontSize', 'fontColor', 'fontBackgroundColor', '|',
+            'alignment', '|',
+            'link', 'uploadImage', 'mediaEmbed', 'insertTable', 'blockQuote', 'horizontalLine', '|',
+            'bulletedList', 'numberedList', '|',
+            'outdent', 'indent', '|',
+            'specialCharacters', 'removeFormat', 'findAndReplace', '|',
+            'sourceEditing', '|',
+            'undo', 'redo'
+        ],
+        shouldNotGroupWhenFull: true
+    },
+    fontSize: {
+        options: [9, 10, 11, 12, 'default', 14, 16, 18, 20, 24, 28, 32, 36]
+    },
+    heading: {
+        options: [
+            { model: 'paragraph', title: '본문', class: 'ck-heading_paragraph' },
+            { model: 'heading1', view: 'h1', title: '제목 1', class: 'ck-heading_heading1' },
+            { model: 'heading2', view: 'h2', title: '제목 2', class: 'ck-heading_heading2' },
+            { model: 'heading3', view: 'h3', title: '제목 3', class: 'ck-heading_heading3' },
+            { model: 'heading4', view: 'h4', title: '제목 4', class: 'ck-heading_heading4' }
+        ]
+    },
+    image: {
+        toolbar: ['imageStyle:inline', 'imageStyle:block', 'imageStyle:side', '|',
+                  'toggleImageCaption', 'imageTextAlternative', '|',
+                  'resizeImage:25', 'resizeImage:50', 'resizeImage:75', 'resizeImage:original'],
+        resizeOptions: [
+            { name: 'resizeImage:original', value: null, label: '원본' },
+            { name: 'resizeImage:25', value: '25', label: '25%' },
+            { name: 'resizeImage:50', value: '50', label: '50%' },
+            { name: 'resizeImage:75', value: '75', label: '75%' }
+        ]
+    },
+    table: {
+        contentToolbar: ['tableColumn', 'tableRow', 'mergeTableCells', 'toggleTableCaption']
+    },
+    mediaEmbed: {
+        previewsInData: true
+    },
+    htmlSupport: {
+        allow: [{ name: /.*/, attributes: true, classes: true, styles: true }]
+    }
+}).then(editor => {
+    window.editorInstance = editor;
+}).catch(error => console.error('CKEditor error:', error));
+
+// form submit 시 CKEditor 내용을 textarea로 동기화
+document.querySelector('form').addEventListener('submit', function() {
+    if (window.editorInstance) {
+        document.querySelector('#editor').value = window.editorInstance.getData();
+    }
+});
+</script>
 <script>
 // Dropzone 초기화
 Dropzone.autoDiscover = false;
@@ -286,61 +452,23 @@ var mediaDropzone = new Dropzone('#mediaDropzone', {
                 div.innerHTML = '<div style="width:80px;height:80px;background:#eee;border-radius:4px;display:flex;align-items:center;justify-content:center;font-size:10px;text-align:center;border:2px solid #ddd">' + ext.toUpperCase() + '</div><div class="dz-label">' + file.name + '</div>';
             }
             div.addEventListener('click', function() {
-                if (editorInstance) {
+                if (window.editorInstance) {
                     if (isImage) {
-                        editorInstance.model.change(writer => {
+                        window.editorInstance.model.change(function(writer) {
                             var imageElement = writer.createElement('imageBlock', { src: response.url });
-                            editorInstance.model.insertContent(imageElement);
+                            window.editorInstance.model.insertContent(imageElement);
                         });
                     } else {
                         var linkHtml = '<p><a href="' + response.url + '">' + file.name + '</a></p>';
-                        var viewFragment = editorInstance.data.processor.toView(linkHtml);
-                        var modelFragment = editorInstance.data.toModel(viewFragment);
-                        editorInstance.model.insertContent(modelFragment);
+                        var viewFragment = window.editorInstance.data.processor.toView(linkHtml);
+                        var modelFragment = window.editorInstance.data.toModel(viewFragment);
+                        window.editorInstance.model.insertContent(modelFragment);
                     }
                 }
             });
             container.appendChild(div);
         }
         this.removeFile(file);
-    }
-});
-
-// Custom Upload Adapter (CDN Classic 빌드에 SimpleUploadAdapter 미포함 대응)
-class MyUploadAdapter {
-    constructor(loader) { this.loader = loader; }
-    upload() {
-        return this.loader.file.then(file => {
-            const data = new FormData();
-            data.append('upload', file);
-            return fetch('{{ url_for("admin.upload_image") }}', { method: 'POST', body: data })
-                .then(res => res.json())
-                .then(result => ({ default: result.url }));
-        });
-    }
-    abort() {}
-}
-function MyUploadAdapterPlugin(editor) {
-    editor.plugins.get('FileRepository').createUploadAdapter = (loader) => new MyUploadAdapter(loader);
-}
-
-// CKEditor 초기화
-let editorInstance;
-ClassicEditor.create(document.querySelector('#editor'), {
-    language: 'ko',
-    extraPlugins: [MyUploadAdapterPlugin],
-    toolbar: ['heading', '|', 'bold', 'italic', 'underline', 'strikethrough', '|',
-              'link', 'uploadImage', 'blockQuote', 'insertTable', '|',
-              'bulletedList', 'numberedList', '|', 'outdent', 'indent', '|',
-              'undo', 'redo']
-}).then(editor => {
-    editorInstance = editor;
-}).catch(error => console.error(error));
-
-// form submit 시 CKEditor 내용을 textarea로 동기화
-document.querySelector('form').addEventListener('submit', function() {
-    if (editorInstance) {
-        document.querySelector('#editor').value = editorInstance.getData();
     }
 });
 
@@ -440,8 +568,8 @@ fetch('/admin/draft/' + draftId + '/load')
     .then(r => r.json())
     .then(data => {
         if (data.title) document.querySelector('input[name="title"]').value = data.title;
-        if (data.content && editorInstance) {
-            editorInstance.setData(data.content);
+        if (data.content && window.editorInstance) {
+            window.editorInstance.setData(data.content);
         } else if (data.content) {
             document.querySelector('#editor').value = data.content;
         }
@@ -454,7 +582,7 @@ fetch('/admin/draft/' + draftId + '/load')
 
 function autoSaveDraft() {
     var title = document.querySelector('input[name="title"]').value;
-    var content = editorInstance ? editorInstance.getData() : '';
+    var content = window.editorInstance ? window.editorInstance.getData() : '';
     if (!title && !content) return;  // 빈 내용은 저장 안함
 
     fetch('{{ url_for("admin.draft_save") }}', {

@@ -136,6 +136,65 @@
 
 ---
 
+## 9. 기사 등록 화면 개선 (에디터 도구 원본 일치)
+
+> 현재 CKEditor 5 Classic 기본 빌드 사용 중. 원본 사이트(NPC CMS)의 글쓰기 도구와 동일하게 맞춰야 함.
+
+### CKEditor 빌드 전환
+- [x] CKEditor 5 CDN Classic → importmap 기반 모듈 방식 전환 (v43.3.1, 플러그인 개별 import)
+
+### 에디터 툴바 확장
+- [x] 글자 크기 조절 (fontSize — 9pt~36pt 드롭다운)
+- [x] 글자 색상 (fontColor — 컬러피커)
+- [x] 글자 배경색 (fontBackgroundColor — 하이라이트)
+- [x] 텍스트 정렬 (alignment — 좌/중/우/양쪽 정렬)
+- [ ] 줄간격/문단 간격 조절 (lineHeight — CKEditor 5 미지원, 별도 플러그인 필요)
+- [x] 수평선 삽입 (horizontalLine)
+- [x] 특수문자 삽입 (specialCharacters)
+- [x] 서식 제거 (removeFormat)
+- [x] 찾기 및 바꾸기 (findAndReplace)
+- [x] HTML 소스 편집 모드 (sourceEditing)
+- [x] YouTube/동영상 임베드 (mediaEmbed)
+- [x] 이미지 캡션/정렬/리사이즈 (imageResize, imageStyle — 25%/50%/75%/원본 + 좌/우/중앙)
+- [ ] 전체화면 편집 모드 (fullscreen — CKEditor 5 미지원, 커스텀 구현 필요)
+
+### 기사 작성 폼 필드 보강
+- [x] 리드문(요약문) 입력 필드 (summary — 부제목 아래 별도 요약문 입력란)
+- [x] 연재(SerialCode) 선택 드롭다운 (기사 옵션 사이드바에 추가, serial_code_id 필드)
+- [x] 출처(source) 입력 필드 (기사 옵션 사이드바에 추가)
+- [ ] SNS 자동발행 옵션 체크박스 (페이스북/트위터 — UI만 구현, 실제 발행은 미구현)
+
+---
+
+## 10. 이미지 Cloudinary 전환
+
+> 이미지 파일(기사 본문/썸네일/배너/팝업/프로필)은 Cloudinary를 통해 업로드/서빙.
+
+- [ ] Cloudinary SDK 연동 (cloudinary python SDK 설치, 환경변수 설정: CLOUD_NAME, API_KEY, API_SECRET)
+- [ ] 기사 본문 이미지 업로드 → Cloudinary (admin upload_image 라우트 변경)
+- [ ] 기사 대표 이미지(thumbnail) 업로드 → Cloudinary
+- [ ] Dropzone 이미지 업로드 → Cloudinary (업로드 후 Cloudinary URL 반환)
+- [ ] 배너/팝업 이미지 업로드 → Cloudinary
+- [ ] 회원 프로필 이미지 업로드 → Cloudinary
+- [ ] 댓글 작성자 프로필 이미지 → Cloudinary URL 참조
+- [ ] 기존 로컬 이미지(`static/uploads/`) → Cloudinary 마이그레이션 스크립트 작성
+- [ ] 모든 템플릿에서 로컬 이미지 경로를 Cloudinary URL로 교체
+
+---
+
+## 11. 첨부파일 Google Drive 전환
+
+> 이미지가 아닌 첨부파일(문서, PDF, HWP 등)은 Google Drive를 통해 업로드/서빙.
+
+- [ ] Google Drive API 연동 (google-api-python-client SDK 설치, 서비스 계정 키 설정)
+- [ ] 공유 폴더 설정 (업로드 대상 폴더 ID 환경변수)
+- [ ] 기사제보 첨부파일(.doc/.hwp/.pdf 등) 업로드 → Google Drive
+- [ ] Dropzone 비이미지 파일 업로드 → Google Drive (업로드 후 공유 링크 반환)
+- [ ] 첨부파일 다운로드 링크를 Google Drive 공유 URL로 변경
+- [ ] 기존 로컬 첨부파일 → Google Drive 마이그레이션 스크립트 작성
+
+---
+
 ## 완료된 항목
 
 - [x] 메인(홈) 페이지 원본 복제
@@ -161,18 +220,3 @@
 - [x] 모바일 뷰 (UA 감지 + 전용 레이아웃)
 - [x] 편집 레이아웃 (드래그앤드롭 블록 편집기)
 
----
-
-## 9. 이미지 Cloudinary 전환 (최후순위)
-
-> **우선순위: 가장 나중에 진행할 것.** 다른 모든 TODO 항목 완료 후 작업.
-
-- [ ] Cloudinary SDK 연동 (cloudinary python SDK 설치, 환경변수 설정: CLOUD_NAME, API_KEY, API_SECRET)
-- [ ] 기사 본문 이미지 업로드 → Cloudinary (관리자 기사 작성 Dropzone 업로드 경로 변경)
-- [ ] 기사 대표 이미지(thumbnail) 업로드 → Cloudinary
-- [ ] 배너/팝업 이미지 업로드 → Cloudinary
-- [ ] 회원 프로필 이미지 업로드 → Cloudinary
-- [ ] 댓글 작성자 프로필 이미지 → Cloudinary URL 참조
-- [ ] 기사제보 첨부파일 업로드 → Cloudinary
-- [ ] 기존 로컬 저장 이미지(`static/uploads/`) → Cloudinary 마이그레이션 스크립트 작성
-- [ ] 모든 템플릿에서 로컬 이미지 경로를 Cloudinary URL로 교체

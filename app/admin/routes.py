@@ -205,8 +205,10 @@ def article_new():
         return _save_article(None)
 
     sections = Section.query.order_by(Section.sort_order).all()
+    serial_codes = SerialCode.query.filter_by(is_active=True).all()
     draft_id = request.args.get('draft_id', 0, type=int)
-    return render_template('admin/article_form.html', article=None, sections=sections, draft_id=draft_id)
+    return render_template('admin/article_form.html', article=None, sections=sections,
+                           serial_codes=serial_codes, draft_id=draft_id)
 
 
 @admin_bp.route('/article/<int:article_id>/edit', methods=['GET', 'POST'])
@@ -218,11 +220,13 @@ def article_edit(article_id):
         return _save_article(article)
 
     sections = Section.query.order_by(Section.sort_order).all()
+    serial_codes = SerialCode.query.filter_by(is_active=True).all()
     related_articles = ArticleRelation.query.filter_by(
         article_id=article.id
     ).order_by(ArticleRelation.sort_order).all()
     return render_template('admin/article_form.html', article=article,
-                           sections=sections, related_articles=related_articles)
+                           sections=sections, serial_codes=serial_codes,
+                           related_articles=related_articles)
 
 
 def _save_article(article):
@@ -245,6 +249,10 @@ def _save_article(article):
     article.level = request.form.get('level', 'B')
     article.recognition = request.form.get('recognition', 'E')
     article.article_type = request.form.get('article_type', 'B')
+    article.source = request.form.get('source', '')
+
+    serial_code_id = request.form.get('serial_code_id')
+    article.serial_code_id = int(serial_code_id) if serial_code_id else None
 
     section_id = request.form.get('section_id')
     subsection_id = request.form.get('subsection_id')

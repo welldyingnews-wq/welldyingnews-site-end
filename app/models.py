@@ -168,6 +168,7 @@ class Article(db.Model):
     recognition = db.Column(db.String(1), default='E')  # C=미승인, E=승인, R=반려
     article_type = db.Column(db.String(1), default='B')  # B=일반, P=카드뉴스, G=갤러리
     thumbnail_path = db.Column(db.String(500), default='')
+    serial_code_id = db.Column(db.Integer, db.ForeignKey('serial_code.id'), nullable=True)
     keyword = db.Column(db.String(500), default='')
     view_count = db.Column(db.Integer, default=0)
     created_at = db.Column(db.DateTime, default=datetime.now)
@@ -177,6 +178,7 @@ class Article(db.Model):
 
     section = db.relationship('Section', backref='articles')
     subsection = db.relationship('SubSection', backref='articles')
+    serial_code = db.relationship('SerialCode', backref='articles')
     article_relations = db.relationship('ArticleRelation', foreign_keys='ArticleRelation.article_id',
                                         backref='article', lazy='dynamic', cascade='all, delete-orphan')
 
