@@ -2,13 +2,13 @@ from datetime import datetime, timedelta
 
 import re
 
-from flask import render_template, request, abort, redirect, url_for, flash
+from flask import render_template, request, abort, redirect, url_for, flash, session
 from werkzeug.security import generate_password_hash, check_password_hash
 
 import json
-
 from app.models import (db, Section, SubSection, Article, ArticleRelation, ArticleComment,
-                        SiteSetting, Board, BoardPost, BoardReply, Banner, EventRequest, Popup)
+                        SiteSetting, Board, BoardPost, BoardReply, Banner, EventRequest, Popup,
+                        Poll, PollOption, Member)
 from app.public import public_bp
 
 
@@ -60,8 +60,14 @@ def inject_sections():
         ua = request.headers.get('User-Agent', '')
         if re.search(r'Mobile|Android|iPhone|iPod|Opera Mini|IEMobile', ua, re.I):
             is_mobile = True
+    # 로그인 회원 정보
+    current_member = None
+    member_id = session.get('member_id')
+    if member_id:
+        current_member = Member.query.get(member_id)
     return {'nav_sections': sections, 'nav_boards': boards, 'updated_time': updated_time,
-            'banners': banners_by_pos, 'popups': active_popups, 'is_mobile': is_mobile}
+            'banners': banners_by_pos, 'popups': active_popups, 'is_mobile': is_mobile,
+            'current_member': current_member}
 
 
 @public_bp.route('/')
@@ -108,16 +114,20 @@ def index():
             Article.section_id == opinion_section.id
         ).order_by(Article.created_at.desc()).limit(4).all()
 
+    # 설문조사 (활성 상태)
+    active_poll = Poll.query.filter_by(is_active=True).order_by(Poll.created_at.desc()).first()
+
     return render_template('public/index.html',
                            headline_articles=headline_articles,
                            latest_articles=latest_articles,
                            popular_articles=popular_articles,
                            section_articles=section_articles,
-                           opinion_articles=opinion_articles)
+                           opinion_articles=opinion_articles,
+                           active_poll=active_poll)
 
 
 def _get_sidebar_data():
-    """사이드바 공통 데이터: 오피니언 + 많이 본 뉴스"""
+    """사이드바 공통 데이터: 오피니언 + 많이 본 뉴스 (오늘/주간)"""
     query = _get_published_query()
     opinion_section = Section.query.filter_by(code='S1N2').first()
     sidebar_opinion = []
@@ -125,8 +135,19 @@ def _get_sidebar_data():
         sidebar_opinion = query.filter(
             Article.section_id == opinion_section.id
         ).order_by(Article.created_at.desc()).limit(4).all()
-    sidebar_popular = query.order_by(Article.view_count.desc()).limit(5).all()
-    return sidebar_opinion, sidebar_popular
+    # 많이 본 뉴스: 오늘
+    today_start = datetime.now().replace(hour=0, minute=0, second=0, microsecond=0)
+    popular_today = _get_published_query().filter(
+        Article.created_at >= today_start
+    ).order_by(Article.view_count.desc()).limit(5).all()
+    # 많이 본 뉴스: 주간
+    week_start = today_start - timedelta(days=7)
+    popular_week = _get_published_query().filter(
+        Article.created_at >= week_start
+    ).order_by(Article.view_count.desc()).limit(5).all()
+    # 오늘 데이터가 부족하면 전체로 채움
+    sidebar_popular = popular_today if len(popular_today) >= 3 else popular_week
+    return sidebar_opinion, sidebar_popular, popular_today, popular_week
 
 
 @public_bp.route('/news/articleList.html')
@@ -169,7 +190,7 @@ def article_list():
         page=page, per_page=20, error_out=False
     )
 
-    sidebar_opinion, sidebar_popular = _get_sidebar_data()
+    sidebar_opinion, sidebar_popular, popular_today, popular_week = _get_sidebar_data()
 
     return render_template('public/article_list.html',
                            articles=pagination.items,
@@ -182,7 +203,9 @@ def article_list():
                            sc_word=sc_word,
                            view_type=view_type,
                            sidebar_opinion=sidebar_opinion,
-                           sidebar_popular=sidebar_popular)
+                           sidebar_popular=sidebar_popular,
+                           popular_today=popular_today,
+                           popular_week=popular_week)
 
 
 @public_bp.route('/news/articleView.html')
@@ -221,7 +244,7 @@ def article_view():
         Article.id > article.id
     ).order_by(Article.id.asc()).first()
 
-    sidebar_opinion, sidebar_popular = _get_sidebar_data()
+    sidebar_opinion, sidebar_popular, popular_today, popular_week = _get_sidebar_data()
 
     # 댓글
     comment_use = _get_setting('comment_use', 'Y')
@@ -241,6 +264,8 @@ def article_view():
                            next_article=next_article,
                            sidebar_opinion=sidebar_opinion,
                            sidebar_popular=sidebar_popular,
+                           popular_today=popular_today,
+                           popular_week=popular_week,
                            comments=comments,
                            comment_count=comment_count,
                            comment_use=comment_use,
@@ -604,3 +629,151 @@ def bbs_reply_delete():
     db.session.commit()
 
     return redirect(url_for('public.bbs_view', idxno=post_id) + '#replies')
+
+
+# ─── 설문조사 ───────────────────────────────────────────────
+
+@public_bp.route('/poll/pollView.html')
+def poll_view():
+    poll_id = request.args.get('id', 0, type=int)
+    if poll_id:
+        poll = Poll.query.get_or_404(poll_id)
+    else:
+        poll = Poll.query.filter_by(is_active=True).order_by(Poll.created_at.desc()).first()
+    if not poll:
+        abort(404)
+    options = poll.options.order_by(PollOption.sort_order).all()
+    total_votes = sum(o.vote_count for o in options)
+    voted = request.cookies.get(f'poll_voted_{poll.id}')
+    return render_template('public/poll.html',
+                           poll=poll, options=options,
+                           total_votes=total_votes, voted=voted)
+
+
+@public_bp.route('/poll/vote', methods=['POST'])
+def poll_vote():
+    poll_id = request.form.get('poll_id', 0, type=int)
+    poll = Poll.query.get_or_404(poll_id)
+
+    if request.cookies.get(f'poll_voted_{poll.id}'):
+        flash('이미 투표하셨습니다.', 'error')
+        resp = redirect(url_for('public.poll_view', id=poll.id))
+        return resp
+
+    if poll.is_multiple:
+        option_ids = request.form.getlist('option_id', type=int)
+    else:
+        oid = request.form.get('option_id', 0, type=int)
+        option_ids = [oid] if oid else []
+
+    for oid in option_ids:
+        opt = PollOption.query.get(oid)
+        if opt and opt.poll_id == poll.id:
+            opt.vote_count += 1
+
+    db.session.commit()
+
+    resp = redirect(url_for('public.poll_view', id=poll.id))
+    resp.set_cookie(f'poll_voted_{poll.id}', 'y', max_age=60*60*24*365)
+    return resp
+
+
+# ─── 회원가입/로그인 ──────────────────────────────────────────
+
+@public_bp.route('/member/register.html', methods=['GET', 'POST'])
+def member_register():
+    if request.method == 'POST':
+        user_id = request.form.get('user_id', '').strip()
+        password = request.form.get('password', '').strip()
+        password2 = request.form.get('password2', '').strip()
+        name = request.form.get('name', '').strip()
+        email = request.form.get('email', '').strip()
+        phone = request.form.get('phone', '').strip()
+
+        if not user_id or not password or not name:
+            flash('아이디, 비밀번호, 이름은 필수입니다.', 'error')
+            return redirect(url_for('public.member_register'))
+        if password != password2:
+            flash('비밀번호가 일치하지 않습니다.', 'error')
+            return redirect(url_for('public.member_register'))
+        if len(user_id) < 4:
+            flash('아이디는 4자 이상이어야 합니다.', 'error')
+            return redirect(url_for('public.member_register'))
+        if Member.query.filter_by(user_id=user_id).first():
+            flash('이미 사용 중인 아이디입니다.', 'error')
+            return redirect(url_for('public.member_register'))
+
+        member = Member(
+            user_id=user_id,
+            password_hash=generate_password_hash(password),
+            name=name,
+            email=email,
+            phone=phone,
+        )
+        db.session.add(member)
+        db.session.commit()
+
+        flash('회원가입이 완료되었습니다. 로그인해주세요.', 'success')
+        return redirect(url_for('public.member_login'))
+
+    return render_template('public/member_register.html')
+
+
+@public_bp.route('/member/login.html', methods=['GET', 'POST'])
+def member_login():
+    if request.method == 'POST':
+        user_id = request.form.get('user_id', '').strip()
+        password = request.form.get('password', '').strip()
+
+        member = Member.query.filter_by(user_id=user_id).first()
+        if not member or not check_password_hash(member.password_hash, password):
+            flash('아이디 또는 비밀번호가 올바르지 않습니다.', 'error')
+            return redirect(url_for('public.member_login'))
+        if not member.is_active:
+            flash('비활성화된 계정입니다.', 'error')
+            return redirect(url_for('public.member_login'))
+
+        session['member_id'] = member.id
+        flash(f'{member.name}님, 환영합니다!', 'success')
+        next_url = request.args.get('next', url_for('public.index'))
+        return redirect(next_url)
+
+    return render_template('public/member_login.html')
+
+
+@public_bp.route('/member/logout')
+def member_logout():
+    session.pop('member_id', None)
+    return redirect(url_for('public.index'))
+
+
+@public_bp.route('/member/mypage.html')
+def member_mypage():
+    if not session.get('member_id'):
+        return redirect(url_for('public.member_login'))
+    member = Member.query.get_or_404(session['member_id'])
+    return render_template('public/member_mypage.html', member=member)
+
+
+@public_bp.route('/member/mypage/update', methods=['POST'])
+def member_update():
+    if not session.get('member_id'):
+        return redirect(url_for('public.member_login'))
+    member = Member.query.get_or_404(session['member_id'])
+
+    name = request.form.get('name', '').strip()
+    email = request.form.get('email', '').strip()
+    phone = request.form.get('phone', '').strip()
+    new_password = request.form.get('new_password', '').strip()
+
+    if name:
+        member.name = name
+    member.email = email
+    member.phone = phone
+
+    if new_password:
+        member.password_hash = generate_password_hash(new_password)
+
+    db.session.commit()
+    flash('회원정보가 수정되었습니다.', 'success')
+    return redirect(url_for('public.member_mypage'))

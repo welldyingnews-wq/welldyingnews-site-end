@@ -10,9 +10,13 @@
 <meta name="viewport" content="width=1240">
 {% endif %}
 <meta name="description" content="삶과 죽음의 존엄성을 전하는 웰다잉뉴스"/>
+<meta property="og:type" content="website"/>
 <meta property="og:title" content="웰다잉뉴스"/>
 <meta property="og:site_name" content="웰다잉뉴스"/>
 <meta property="og:description" content="삶과 죽음의 존엄성을 전하는 웰다잉뉴스"/>
+<meta property="og:url" content="{{ request.url }}"/>
+<meta property="og:image" content="{{ url_for('static', filename='images/og_default.png', _external=True) }}"/>
+<meta name="twitter:card" content="summary_large_image"/>
 {% block meta %}{% endblock %}
 <title>{% block title %}웰다잉뉴스{% endblock %}</title>
 <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/slick-carousel@1.8.1/slick/slick.css">
@@ -126,7 +130,11 @@
                 <img src="{{ url_for('static', filename='images/mobile-logo.png') }}" alt="웰다잉뉴스" />
             </a>
             <article class="item">
-                <a href="{{ url_for('admin.login') }}" class="btns"><i class="icon-user-o"><span class="show-for-sr">로그인</span></i></a>
+                {% if current_member %}
+                <a href="{{ url_for('public.member_mypage') }}" class="btns"><i class="icon-user-o"><span class="show-for-sr">마이페이지</span></i></a>
+                {% else %}
+                <a href="{{ url_for('public.member_login') }}" class="btns"><i class="icon-user-o"><span class="show-for-sr">로그인</span></i></a>
+                {% endif %}
                 <button type="button" class="btns nav-close"><i class="icon-close"><span class="show-for-sr">메뉴닫기</span></i></button>
             </article>
         </header>
@@ -252,7 +260,13 @@
 
             <div class="user-banner text-right">
                 <ul id="userLogin" class="user-logbox">
-                    <li><a href="{{ url_for('admin.login') }}" class="user-point">로그인</a></li>
+                    {% if current_member %}
+                    <li><a href="{{ url_for('public.member_mypage') }}">{{ current_member.name }}</a></li>
+                    <li><a href="{{ url_for('public.member_logout') }}">로그아웃</a></li>
+                    {% else %}
+                    <li><a href="{{ url_for('public.member_login') }}" class="user-point">로그인</a></li>
+                    <li><a href="{{ url_for('public.member_register') }}">회원가입</a></li>
+                    {% endif %}
                 </ul>
                 <div class="user-intro">UPDATED. {{ updated_time }}</div>
             </div>
@@ -326,7 +340,13 @@
             </a>
         </h5>
         <ul id="userLogin" class="user-logbox">
-            <li><a href="{{ url_for('admin.login') }}">로그인</a></li>
+            {% if current_member %}
+            <li><a href="{{ url_for('public.member_mypage') }}">{{ current_member.name }}</a></li>
+            <li><a href="{{ url_for('public.member_logout') }}">로그아웃</a></li>
+            {% else %}
+            <li><a href="{{ url_for('public.member_login') }}">로그인</a></li>
+            <li><a href="{{ url_for('public.member_register') }}">회원가입</a></li>
+            {% endif %}
         </ul>
         <ul class="sidenav-bt">
             <li><a href="{{ url_for('public.com_page', page_code='jb') }}">제보 및 문의</a></li>
@@ -559,6 +579,17 @@ $(document).ready(function(){
         else $('#back-to-top').fadeOut();
     });
     $('#back-to-top').click(function(){ $('html, body').animate({scrollTop:0}, 400); });
+
+    // 많이 본 뉴스 탭 전환
+    $(document).on('click', '.tabs [data-tab]', function(e){
+        e.preventDefault();
+        var tab = $(this).data('tab');
+        var wrap = $(this).closest('.tabs-wrap');
+        wrap.find('.tabs-title').removeClass('is-active');
+        $(this).parent().addClass('is-active');
+        wrap.find('.tabs-popular').hide();
+        wrap.find('.tabs-panel-' + tab).show();
+    });
 });
 </script>
 {% block extra_scripts %}{% endblock %}

@@ -1,0 +1,71 @@
+{% extends "public/base.html" %}
+{% block title %}마이페이지 - 웰다잉뉴스{% endblock %}
+
+{% block extra_head %}
+<style type="text/css">
+.member-wrap {max-width:500px;margin:60px auto;padding:0 15px}
+.member-header {text-align:center;margin-bottom:30px}
+.member-header .titles {font-size:1.5rem;font-weight:700;color:#222}
+.member-info {padding:20px;background:#f9f9f9;border:1px solid #eee;border-radius:4px;margin-bottom:25px}
+.member-info .row {display:flex;padding:8px 0;border-bottom:1px solid #eee;font-size:14px}
+.member-info .row:last-child {border-bottom:none}
+.member-info .row .label {width:100px;color:#999;flex-shrink:0}
+.member-info .row .value {color:#333;font-weight:500}
+.member-form .form-group {margin-bottom:15px}
+.member-form label {display:block;font-size:14px;font-weight:600;color:#333;margin-bottom:5px}
+.member-form input[type="text"], .member-form input[type="password"], .member-form input[type="email"], .member-form input[type="tel"] {width:100%;height:42px;padding:0 12px;border:1px solid #ddd;border-radius:3px;font-size:14px}
+.member-form input:focus {border-color:#5e1985;outline:none}
+.member-form .help {font-size:12px;color:#999;margin-top:3px}
+.member-form .btn-submit {display:block;width:100%;height:44px;background:#5e1985;color:#fff;border:none;border-radius:3px;font-size:16px;font-weight:500;cursor:pointer;margin-top:25px}
+.member-form .btn-submit:hover {background:#4a1369}
+.flash-msg {padding:10px 15px;margin-bottom:15px;border-radius:3px;font-size:14px}
+.flash-msg.error {background:#fff0f0;color:#c00;border:1px solid #fdd}
+.flash-msg.success {background:#f0fff0;color:#2a7a2a;border:1px solid #b2e6b2}
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="member-wrap">
+    <header class="member-header">
+        <h3 class="titles">마이페이지</h3>
+    </header>
+
+    {% with messages = get_flashed_messages(with_categories=true) %}
+    {% if messages %}
+    {% for category, message in messages %}
+    <div class="flash-msg {{ category }}">{{ message }}</div>
+    {% endfor %}
+    {% endif %}
+    {% endwith %}
+
+    <div class="member-info">
+        <div class="row"><span class="label">아이디</span><span class="value">{{ member.user_id }}</span></div>
+        <div class="row"><span class="label">이름</span><span class="value">{{ member.name }}</span></div>
+        <div class="row"><span class="label">이메일</span><span class="value">{{ member.email or '-' }}</span></div>
+        <div class="row"><span class="label">연락처</span><span class="value">{{ member.phone or '-' }}</span></div>
+        <div class="row"><span class="label">가입일</span><span class="value">{{ member.created_at.strftime('%Y-%m-%d') }}</span></div>
+    </div>
+
+    <h4 style="font-size:1.125rem;font-weight:700;margin-bottom:15px">회원정보 수정</h4>
+    <form class="member-form" method="POST" action="{{ url_for('public.member_update') }}">
+        <div class="form-group">
+            <label for="name">이름</label>
+            <input type="text" id="name" name="name" value="{{ member.name }}" maxlength="50">
+        </div>
+        <div class="form-group">
+            <label for="email">이메일</label>
+            <input type="email" id="email" name="email" value="{{ member.email }}">
+        </div>
+        <div class="form-group">
+            <label for="phone">연락처</label>
+            <input type="tel" id="phone" name="phone" value="{{ member.phone }}">
+        </div>
+        <div class="form-group">
+            <label for="new_password">새 비밀번호</label>
+            <input type="password" id="new_password" name="new_password" placeholder="변경 시에만 입력">
+            <div class="help">비밀번호를 변경하려면 입력하세요. 비우면 변경되지 않습니다.</div>
+        </div>
+        <button type="submit" class="btn-submit">수정하기</button>
+    </form>
+</div>
+{% endblock %}

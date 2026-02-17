@@ -5,9 +5,13 @@
 <meta property="og:type" content="article">
 <meta property="og:title" content="{{ article.title }}">
 <meta property="og:description" content="{{ article.summary_text|truncate(200) }}">
+<meta property="og:url" content="{{ request.url }}">
 {% if article.thumb_url %}
 <meta property="og:image" content="{{ article.thumb_url }}">
 {% endif %}
+<meta name="twitter:card" content="summary_large_image">
+<meta name="twitter:title" content="{{ article.title }}">
+<meta name="twitter:description" content="{{ article.summary_text|truncate(200) }}">
 {% endblock %}
 
 {% block extra_head %}
@@ -116,10 +120,43 @@
 .article-navigate .item .label {display:inline-block;width:70px;font-size:13px;font-weight:700;color:#5e1985}
 .article-navigate .item a {font-size:14px;color:#333}
 .article-navigate .item a:hover {color:#5e1985}
+/* sticky 스크롤 헤더 */
+#sticky-header {position:fixed;z-index:999;left:0;top:0;width:100%;background:#fff;box-shadow:0 1px 3px rgba(0,0,0,.12);transform:translateY(-100%);transition:transform .25s ease;display:flex;align-items:center;justify-content:center}
+#sticky-header.scroll {transform:translateY(0)}
+#sticky-header .aht-btn {position:absolute;top:0;width:50px;height:100%;border:none;background:none;font-size:1.25rem;color:#666;cursor:pointer}
+#sticky-header .aht-btn.prev {left:0}
+#sticky-header .aht-btn.next {right:0}
+#sticky-header .aht-btn:hover {color:#5e1985}
+#sticky-header .aht-wrapper {display:flex;align-items:center;max-width:{% if is_mobile %}728{% else %}1240{% endif %}px;width:100%;padding:10px 60px}
+#sticky-header .aht-wrapper .item.logo {flex-shrink:0;margin-right:15px}
+#sticky-header .aht-wrapper .item.logo img {height:22px}
+#sticky-header .aht-wrapper .item.titles {flex:1;overflow:hidden}
+#sticky-header .aht-wrapper .aht-title-view {font-size:14px;font-weight:500;color:#333;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;display:block}
+#sticky-header .aht-control {position:absolute;left:0;bottom:0;width:100%;height:2px;background:transparent}
+#sticky-header .aht-bar {height:2px;width:0;border-top:2px solid #5e1985;transition:width .1s linear}
+{% if is_mobile %}
+#sticky-header .aht-btn {display:none}
+#sticky-header .aht-wrapper {padding:10px 15px}
+{% endif %}
 </style>
 {% endblock %}
 
 {% block content %}
+<!-- sticky 스크롤 헤더 -->
+<div id="sticky-header">
+    {% if prev_article %}
+    <a href="{{ url_for('public.article_view', idxno=prev_article.id) }}" class="aht-btn prev" title="이전기사"><i class="icon-angle-left-thin"></i></a>
+    {% endif %}
+    {% if next_article %}
+    <a href="{{ url_for('public.article_view', idxno=next_article.id) }}" class="aht-btn next" title="다음기사"><i class="icon-angle-right-thin"></i></a>
+    {% endif %}
+    <div class="aht-wrapper">
+        <div class="item logo"><a href="{{ url_for('public.index') }}"><img src="{{ url_for('static', filename='images/print-logo.png') }}" alt="웰다잉뉴스"></a></div>
+        <div class="item titles"><span class="aht-title-view">{{ article.title }}</span></div>
+    </div>
+    <div class="aht-control"><div class="aht-bar user-border-top"></div></div>
+</div>
+
 <div id="article-view"{% if is_mobile %} class="mobile"{% endif %}>
 <div class="wrapper" style="max-width:{% if is_mobile %}728{% else %}1240{% endif %}px">
 <div class="clearfix"></div>
@@ -160,10 +197,16 @@
         <article class="item">
             <!-- 소셜 공유 -->
             <div class="social-group">
+                <button type="button" class="sns sns-share-btns facebook" title="페이스북" onclick="window.open('https://www.facebook.com/sharer/sharer.php?u='+encodeURIComponent(window.location.href),'_blank','width=600,height=400')">
+                    <i class="icon-facebook"><span class="show-for-sr">페이스북(으)로 기사보내기</span></i>
+                </button>
+                <button type="button" class="sns sns-share-btns twitter" title="트위터" onclick="window.open('https://twitter.com/intent/tweet?text='+encodeURIComponent('{{ article.title }}')+'&url='+encodeURIComponent(window.location.href),'_blank','width=600,height=400')">
+                    <i class="icon-twitter"><span class="show-for-sr">트위터(으)로 기사보내기</span></i>
+                </button>
                 <button type="button" class="sns link sns_clipboard" title="URL복사" onclick="navigator.clipboard.writeText(window.location.href).then(function(){alert('URL이 복사되었습니다.')})">
                     <i class="icon-link"><span class="show-for-sr">URL복사</span></i>
                 </button>
-                <button type="button" class="sns mail right" title="이메일" onclick="location.href='mailto:?subject={{ article.title }}&body='+encodeURIComponent(window.location.href)">
+                <button type="button" class="sns mail right" title="이메일" onclick="location.href='mailto:?subject='+encodeURIComponent('{{ article.title }}')+'&body='+encodeURIComponent(window.location.href)">
                     <i class="icon-mail"><span class="show-for-sr">이메일 보내기</span></i>
                 </button>
             </div>
@@ -411,19 +454,39 @@
                 <div class="box-margins box-solid" style="margin-bottom:25px;margin-top:25px;"></div>
                 {% endif %}
 
-                <!-- 많이 본 뉴스 -->
-                {% if sidebar_popular %}
+                <!-- 많이 본 뉴스 (탭) -->
+                {% if popular_today or popular_week %}
                 <div class="tabs-wrap type-E">
                     <header class="tabs-header">많이 본 뉴스</header>
-                    <div class="tabs-panel active" style="padding-top:10px">
-                        <div id="skin-15" class="auto-article">
-                            {% for art in sidebar_popular %}
+                    <ul class="tabs" data-tabs style="margin:0;border:none;border-bottom:1px solid #eee">
+                        <li class="tabs-title is-active"><a href="#" data-tab="today" style="font-size:13px;padding:8px 15px">오늘</a></li>
+                        <li class="tabs-title"><a href="#" data-tab="week" style="font-size:13px;padding:8px 15px">주간</a></li>
+                    </ul>
+                    <div class="tabs-panel-today tabs-popular active" style="padding-top:10px">
+                        <div class="auto-article">
+                            {% for art in popular_today %}
                             <div class="item{% if not loop.first %} martop-8{% endif %}">
                                 <a href="{{ url_for('public.article_view', idxno=art.id) }}" style="display:flex;align-items:flex-start">
                                     <strong class="number size-22 line-2x1 {% if loop.index <= 3 %}user-point{% else %}auto-fontA{% endif %}" style="flex-shrink:0;width:28px;margin-right:8px;font-size:18px;font-weight:700">{{ loop.index }}</strong>
                                     <H2 class="auto-titles size-16 line-4x2 auto-fontA onload" style="font-size:14px;line-height:1.5;font-weight:400;color:#333">{{ art.title }}</H2>
                                 </a>
                             </div>
+                            {% else %}
+                            <div style="padding:20px 0;text-align:center;font-size:13px;color:#999">오늘 기사가 없습니다.</div>
+                            {% endfor %}
+                        </div>
+                    </div>
+                    <div class="tabs-panel-week tabs-popular" style="padding-top:10px;display:none">
+                        <div class="auto-article">
+                            {% for art in popular_week %}
+                            <div class="item{% if not loop.first %} martop-8{% endif %}">
+                                <a href="{{ url_for('public.article_view', idxno=art.id) }}" style="display:flex;align-items:flex-start">
+                                    <strong class="number size-22 line-2x1 {% if loop.index <= 3 %}user-point{% else %}auto-fontA{% endif %}" style="flex-shrink:0;width:28px;margin-right:8px;font-size:18px;font-weight:700">{{ loop.index }}</strong>
+                                    <H2 class="auto-titles size-16 line-4x2 auto-fontA onload" style="font-size:14px;line-height:1.5;font-weight:400;color:#333">{{ art.title }}</H2>
+                                </a>
+                            </div>
+                            {% else %}
+                            <div style="padding:20px 0;text-align:center;font-size:13px;color:#999">주간 기사가 없습니다.</div>
                             {% endfor %}
                         </div>
                     </div>
@@ -466,6 +529,21 @@ $(document).on('click', '.btn-delete-comment', function(e){
         $('#deleteCommentPw').val(pw);
         $('#deleteCommentForm').submit();
     }
+});
+
+// sticky 스크롤 헤더
+$(window).scroll(function(){
+    var scrollTop = $(this).scrollTop();
+    var headerTrigger = $('.article-view-header').length ? $('.article-view-header').offset().top + $('.article-view-header').outerHeight() : 300;
+    if(scrollTop > headerTrigger) {
+        $('#sticky-header').addClass('scroll');
+    } else {
+        $('#sticky-header').removeClass('scroll');
+    }
+    // 진행률 바
+    var docHeight = $(document).height() - $(window).height();
+    var percent = docHeight > 0 ? (scrollTop / docHeight) * 100 : 0;
+    $('.aht-bar').css('width', Math.min(percent, 100) + '%');
 });
 </script>
 {% endblock %}

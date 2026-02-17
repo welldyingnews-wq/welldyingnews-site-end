@@ -20,6 +20,19 @@ class AdminUser(UserMixin, db.Model):
     created_at = db.Column(db.DateTime, default=datetime.now)
 
 
+class Member(db.Model):
+    """일반 회원"""
+    __tablename__ = 'member'
+    id = db.Column(db.Integer, primary_key=True)
+    user_id = db.Column(db.String(50), unique=True, nullable=False)
+    password_hash = db.Column(db.String(256), nullable=False)
+    name = db.Column(db.String(50), nullable=False)
+    email = db.Column(db.String(100), default='')
+    phone = db.Column(db.String(20), default='')
+    is_active = db.Column(db.Boolean, default=True)
+    created_at = db.Column(db.DateTime, default=datetime.now)
+
+
 class Department(db.Model):
     __tablename__ = 'department'
     id = db.Column(db.Integer, primary_key=True)

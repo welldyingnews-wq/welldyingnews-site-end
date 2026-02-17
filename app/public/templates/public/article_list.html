@@ -272,19 +272,39 @@
     <div class="box-margins box-solid" style="margin-bottom:25px;margin-top:25px;"></div>
     {% endif %}
 
-    <!-- 많이 본 뉴스 -->
-    {% if sidebar_popular %}
+    <!-- 많이 본 뉴스 (탭) -->
+    {% if popular_today or popular_week %}
     <div class="tabs-wrap type-E">
         <header class="tabs-header">많이 본 뉴스</header>
-        <div class="tabs-panel active" style="padding-top:10px">
-            <div id="skin-15" class="auto-article">
-                {% for art in sidebar_popular %}
+        <ul class="tabs" data-tabs style="margin:0;border:none;border-bottom:1px solid #eee">
+            <li class="tabs-title is-active"><a href="#" data-tab="today" style="font-size:13px;padding:8px 15px">오늘</a></li>
+            <li class="tabs-title"><a href="#" data-tab="week" style="font-size:13px;padding:8px 15px">주간</a></li>
+        </ul>
+        <div class="tabs-panel-today tabs-popular active" style="padding-top:10px">
+            <div class="auto-article">
+                {% for art in popular_today %}
                 <div class="item{% if not loop.first %} martop-8{% endif %}">
                     <a href="{{ url_for('public.article_view', idxno=art.id) }}" style="display:flex;align-items:flex-start">
                         <strong class="number size-22 line-2x1 {% if loop.index <= 3 %}user-point{% else %}auto-fontA{% endif %}" style="flex-shrink:0;width:28px;margin-right:8px;font-size:18px;font-weight:700">{{ loop.index }}</strong>
                         <H2 class="auto-titles size-16 line-4x2 auto-fontA onload" style="font-size:14px;line-height:1.5;font-weight:400;color:#333">{{ art.title }}</H2>
                     </a>
                 </div>
+                {% else %}
+                <div style="padding:20px 0;text-align:center;font-size:13px;color:#999">오늘 기사가 없습니다.</div>
+                {% endfor %}
+            </div>
+        </div>
+        <div class="tabs-panel-week tabs-popular" style="padding-top:10px;display:none">
+            <div class="auto-article">
+                {% for art in popular_week %}
+                <div class="item{% if not loop.first %} martop-8{% endif %}">
+                    <a href="{{ url_for('public.article_view', idxno=art.id) }}" style="display:flex;align-items:flex-start">
+                        <strong class="number size-22 line-2x1 {% if loop.index <= 3 %}user-point{% else %}auto-fontA{% endif %}" style="flex-shrink:0;width:28px;margin-right:8px;font-size:18px;font-weight:700">{{ loop.index }}</strong>
+                        <H2 class="auto-titles size-16 line-4x2 auto-fontA onload" style="font-size:14px;line-height:1.5;font-weight:400;color:#333">{{ art.title }}</H2>
+                    </a>
+                </div>
+                {% else %}
+                <div style="padding:20px 0;text-align:center;font-size:13px;color:#999">주간 기사가 없습니다.</div>
                 {% endfor %}
             </div>
         </div>
