@@ -651,13 +651,12 @@ def event_submit():
             os.makedirs(upload_dir, exist_ok=True)
             filepath = os.path.join(upload_dir, f'{int(datetime.now().timestamp())}_{fname}')
             file.save(filepath)
-            # Cloudinary 업로드 (raw 파일)
-            from app.utils.cloud_storage import cloudinary_upload
-            cloud_url = cloudinary_upload(filepath, folder='welldying/attachments', resource_type='raw')
-            if not cloud_url:
+            from app.utils.cloud_storage import upload_file
+            url = upload_file(filepath, folder='welldying/attachments', resource_type='raw')
+            if not url:
                 flash('파일 업로드에 실패했습니다.', 'error')
                 return redirect(request.referrer or '/')
-            req.extra_data = json.dumps({'attachment': cloud_url, 'filename': fname}, ensure_ascii=False)
+            req.extra_data = json.dumps({'attachment': url, 'filename': fname}, ensure_ascii=False)
 
     # 구독신청 추가 필드
     if page['event_code'] == 'event5':
@@ -1242,12 +1241,12 @@ def member_update():
             os.makedirs(upload_dir, exist_ok=True)
             local_path = os.path.join(upload_dir, fname)
             profile_file.save(local_path)
-            from app.utils.cloud_storage import cloudinary_upload
-            cloud_url = cloudinary_upload(local_path, folder='welldying/profiles')
-            if not cloud_url:
+            from app.utils.cloud_storage import upload_file
+            url = upload_file(local_path, folder='welldying/profiles')
+            if not url:
                 flash('프로필 이미지 업로드에 실패했습니다.', 'error')
                 return redirect(url_for('public.member_mypage'))
-            member.profile_image = cloud_url
+            member.profile_image = url
 
     db.session.commit()
     flash('회원정보가 수정되었습니다.', 'success')

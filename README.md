@@ -109,7 +109,7 @@ application = create_app()
 
 ## 외부 서비스 키 발급 가이드
 
-아래 서비스는 모두 **선택사항**입니다. 환경변수를 비워두면 로컬 저장소로 동작합니다.
+아래 서비스는 모두 **선택사항**입니다. Cloudinary 미설정 시 로컬 저장소(`app/static/uploads/`)를 사용합니다. Cloudinary 설정 시 모든 파일이 Cloudinary로 업로드되며, 실패 시 로컬 폴백 없이 에러가 발생합니다.
 
 ### Cloudinary (이미지+파일 업로드)
 
