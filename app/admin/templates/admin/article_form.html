@@ -8,8 +8,8 @@
 .ck-editor__editable { min-height: 400px; }
 .ck-editor__editable.ck-focused { border-color: #5e1985 !important; }
 /* 전체화면 모드 */
-.ck-editor-fullscreen { position:fixed !important; top:0; left:0; right:0; bottom:0; z-index:9999; background:#fff; }
-.ck-editor-fullscreen .ck-editor__editable { min-height:calc(100vh - 80px) !important; max-height:calc(100vh - 80px) !important; }
+.ck-editor-fullscreen { position:fixed !important; top:0; left:0; right:0; bottom:0; z-index:9999; background:#fff; padding:10px; }
+.ck-editor-fullscreen .ck-editor__editable { min-height:calc(100vh - 120px) !important; max-height:calc(100vh - 120px) !important; overflow-y:auto !important; }
 .dz-area { border:2px dashed #ccc; border-radius:8px; padding:15px; min-height:100px; background:#fafafa; cursor:pointer; }
 .dz-area:hover { border-color:#5e1985; background:#f5f0fa; }
 .dz-area .dz-message { text-align:center; color:#999; font-size:14px; margin:10px 0; }
@@ -119,9 +119,22 @@
                 <div class="card-body">
                     <div class="d-flex justify-content-between align-items-center mb-2">
                         <label class="form-label fw-bold mb-0">본문</label>
-                        <div class="btn-group btn-group-sm" id="previewToggle">
-                            <button type="button" class="btn btn-outline-secondary active" onclick="setPreview('desktop')"><i class="bi bi-display"></i> 데스크탑</button>
-                            <button type="button" class="btn btn-outline-secondary" onclick="setPreview('mobile')"><i class="bi bi-phone"></i> 모바일</button>
+                        <div class="d-flex align-items-center gap-2">
+                            <select id="lineHeightSelect" onchange="setLineHeight(this.value)" class="form-select form-select-sm" style="width:auto;font-size:12px" title="줄간격">
+                                <option value="">줄간격</option>
+                                <option value="1.0">1.0</option>
+                                <option value="1.2">1.2</option>
+                                <option value="1.5">1.5</option>
+                                <option value="1.8">1.8</option>
+                                <option value="2.0">2.0</option>
+                                <option value="2.5">2.5</option>
+                                <option value="3.0">3.0</option>
+                            </select>
+                            <button type="button" class="btn btn-outline-secondary btn-sm" id="fullscreenBtn" onclick="toggleFullscreen()" title="전체화면"><i class="bi bi-arrows-fullscreen"></i></button>
+                            <div class="btn-group btn-group-sm" id="previewToggle">
+                                <button type="button" class="btn btn-outline-secondary active" onclick="setPreview('desktop')"><i class="bi bi-display"></i> 데스크탑</button>
+                                <button type="button" class="btn btn-outline-secondary" onclick="setPreview('mobile')"><i class="bi bi-phone"></i> 모바일</button>
+                            </div>
                         </div>
                     </div>
                     <div id="editorWrap">
@@ -243,6 +256,21 @@
                 </div>
             </div>
 
+            <!-- SNS 자동발행 -->
+            <div class="card mb-3">
+                <div class="card-header"><strong>SNS 자동발행</strong></div>
+                <div class="card-body">
+                    <div class="form-check mb-2">
+                        <input class="form-check-input" type="checkbox" name="sns_facebook" id="snsFacebook" disabled>
+                        <label class="form-check-label" for="snsFacebook">페이스북 <small class="text-muted">(준비중)</small></label>
+                    </div>
+                    <div class="form-check">
+                        <input class="form-check-input" type="checkbox" name="sns_twitter" id="snsTwitter" disabled>
+                        <label class="form-check-label" for="snsTwitter">X (트위터) <small class="text-muted">(준비중)</small></label>
+                    </div>
+                </div>
+            </div>
+
             <!-- 노출시간 -->
             <div class="card mb-3">
                 <div class="card-header"><strong>노출시간</strong></div>
@@ -345,6 +373,18 @@ function MyUploadAdapterPlugin(editor) {
     editor.plugins.get('FileRepository').createUploadAdapter = (loader) => new MyUploadAdapter(loader);
 }
 
+// LineHeight 커스텀 플러그인 (줄간격)
+function LineHeightPlugin(editor) {
+    const blocks = ['paragraph', 'heading1', 'heading2', 'heading3', 'heading4'];
+    for (const el of blocks) {
+        editor.model.schema.extend(el, { allowAttributes: 'lineHeight' });
+    }
+    editor.conversion.for('downcast').attributeToAttribute({
+        model: 'lineHeight',
+        view: value => ({ key: 'style', value: { 'line-height': value } })
+    });
+}
+
 ClassicEditor.create(document.querySelector('#editor'), {
     plugins: [
         Essentials, Paragraph, Heading, Undo,
@@ -366,7 +406,8 @@ ClassicEditor.create(document.querySelector('#editor'), {
         PasteFromOffice,
         FileRepository,
         GeneralHtmlSupport,
-        MyUploadAdapterPlugin
+        MyUploadAdapterPlugin,
+        LineHeightPlugin
     ],
     language: koTranslations,
     toolbar: {
@@ -418,6 +459,33 @@ ClassicEditor.create(document.querySelector('#editor'), {
     }
 }).then(editor => {
     window.editorInstance = editor;
+
+    // 줄간격 외부 컨트롤
+    window.setLineHeight = function(value) {
+        editor.model.change(writer => {
+            for (const block of editor.model.document.selection.getSelectedBlocks()) {
+                if (value) writer.setAttribute('lineHeight', value, block);
+                else writer.removeAttribute('lineHeight', block);
+            }
+        });
+        editor.editing.view.focus();
+    };
+
+    // 전체화면 토글
+    window.toggleFullscreen = function() {
+        var el = document.querySelector('.ck.ck-editor');
+        el.classList.toggle('ck-editor-fullscreen');
+        document.getElementById('fullscreenBtn').innerHTML = el.classList.contains('ck-editor-fullscreen') ?
+            '<i class="bi bi-fullscreen-exit"></i>' : '<i class="bi bi-arrows-fullscreen"></i>';
+    };
+
+    // ESC 키로 전체화면 해제
+    document.addEventListener('keydown', function(e) {
+        if (e.key === 'Escape') {
+            var el = document.querySelector('.ck.ck-editor.ck-editor-fullscreen');
+            if (el) window.toggleFullscreen();
+        }
+    });
 }).catch(error => console.error('CKEditor error:', error));
 
 // form submit 시 CKEditor 내용을 textarea로 동기화
