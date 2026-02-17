@@ -273,15 +273,15 @@ def _save_article(article):
     # 썸네일 업로드 (Cloudinary 지원)
     thumbnail = request.files.get('thumbnail')
     if thumbnail and thumbnail.filename:
-        from app.utils.cloud_storage import cloudinary_configured, cloudinary_upload
+        from app.utils.cloud_storage import cloudinary_upload
         filename = f"{uuid.uuid4().hex}_{secure_filename(thumbnail.filename)}"
         filepath = os.path.join(current_app.config['UPLOAD_FOLDER'], filename)
         thumbnail.save(filepath)
-        if cloudinary_configured():
-            cloud_url = cloudinary_upload(filepath, folder='welldying/thumbnails')
-            article.thumbnail_path = cloud_url if cloud_url else f'uploads/{filename}'
+        cloud_url = cloudinary_upload(filepath, folder='welldying/thumbnails')
+        if not cloud_url:
+            flash('썸네일 업로드에 실패했습니다.', 'error')
         else:
-            article.thumbnail_path = f'uploads/{filename}'
+            article.thumbnail_path = cloud_url
 
     article.updated_at = datetime.now()
     if is_new:
@@ -526,30 +526,35 @@ def find_related():
 @admin_bp.route('/api/upload-image', methods=['POST'])
 @admin_required
 def upload_image():
-    """CKEditor 이미지 업로드 API + 포토DB 저장 (Cloudinary/Google Drive 지원)"""
-    from app.utils.cloud_storage import cloudinary_configured, cloudinary_upload, gdrive_configured, gdrive_upload
+    """CKEditor 이미지 업로드 API + 포토DB 저장 (Cloudinary)"""
+    from app.utils.cloud_storage import cloudinary_upload
 
     upload = request.files.get('upload')
     if not upload or not upload.filename:
         return jsonify({'error': {'message': '파일이 없습니다.'}}), 400
 
     original_name = upload.filename
-    filename = f"{uuid.uuid4().hex}_{secure_filename(upload.filename)}"
+    ext = original_name.rsplit('.', 1)[-1].lower() if '.' in original_name else ''
+    content_type = upload.content_type or ''
+    filename = f"{uuid.uuid4().hex}.{ext}" if ext else f"{uuid.uuid4().hex}"
     filepath = os.path.join(current_app.config['UPLOAD_FOLDER'], filename)
     upload.save(filepath)
 
-    ext = filename.rsplit('.', 1)[-1].lower() if '.' in filename else ''
-    is_image = ext in ('jpg', 'jpeg', 'png', 'gif', 'webp', 'bmp', 'svg')
+    is_image = ext in ('jpg', 'jpeg', 'png', 'gif', 'webp', 'bmp', 'svg', 'heic', 'heif', 'tiff', 'avif') \
+               or content_type.startswith('image/')
+    is_video = ext in ('mp4', 'webm', 'ogg', 'mov', 'avi', 'mkv', 'wmv') \
+               or content_type.startswith('video/')
 
-    # Cloudinary 업로드 시도 (이미지) / Google Drive 업로드 시도 (비이미지)
-    if is_image and cloudinary_configured():
-        cloud_url = cloudinary_upload(filepath, folder='welldying/articles')
-        url = cloud_url if cloud_url else url_for('static', filename=f'uploads/{filename}')
-    elif not is_image and gdrive_configured():
-        gdrive_url = gdrive_upload(filepath, original_name, upload.content_type or 'application/octet-stream')
-        url = gdrive_url if gdrive_url else url_for('static', filename=f'uploads/{filename}')
-    else:
-        url = url_for('static', filename=f'uploads/{filename}')
+    current_app.logger.info(f'[upload] 파일: {original_name}, ext={ext}, content_type={content_type}, is_image={is_image}, is_video={is_video}')
+
+    # Cloudinary 업로드
+    current_app.logger.info(f'[upload] Cloudinary 업로드 시도: {original_name}')
+    resource_type = 'image' if is_image else ('video' if is_video else 'raw')
+    url = cloudinary_upload(filepath, folder='welldying/articles', resource_type=resource_type)
+    if not url:
+        current_app.logger.error(f'[upload] Cloudinary 업로드 실패: {original_name}')
+        return jsonify({'error': {'message': 'Cloudinary 업로드에 실패했습니다.'}}), 500
+    current_app.logger.info(f'[upload] Cloudinary 업로드 성공: {url}')
 
     # 이미지 파일이면 포토DB에 저장
     if is_image:
@@ -562,8 +567,10 @@ def upload_image():
         )
         db.session.add(photo)
         db.session.commit()
+        current_app.logger.info(f'[upload] 포토DB 저장 완료: id={photo.id}')
 
-    return jsonify({'url': url})
+    current_app.logger.info(f'[upload] 응답: url={url}, is_image={is_image}, is_video={is_video}, filename={original_name}')
+    return jsonify({'url': url, 'is_image': is_image, 'is_video': is_video, 'filename': original_name})
 
 
 # ── 포토DB ──
@@ -1824,7 +1831,15 @@ def event_request_list():
     if event_code:
         query = query.filter_by(event_code=event_code)
     pagination = query.order_by(EventRequest.created_at.desc()).paginate(page=page, per_page=20, error_out=False)
-    return render_template('admin/event_request_list.html', requests=pagination.items, pagination=pagination, event_code=event_code)
+    # extra_data JSON 파싱
+    extras = {}
+    for r in pagination.items:
+        if r.extra_data and r.extra_data.startswith('{'):
+            try:
+                extras[r.id] = json.loads(r.extra_data)
+            except Exception:
+                extras[r.id] = {}
+    return render_template('admin/event_request_list.html', requests=pagination.items, pagination=pagination, event_code=event_code, extras=extras)
 
 
 @admin_bp.route('/event-request/<int:req_id>/toggle', methods=['POST'])
@@ -1873,15 +1888,15 @@ def _save_banner(banner):
     banner.is_active = request.form.get('is_active') == '1'
     image = request.files.get('image')
     if image and image.filename:
-        from app.utils.cloud_storage import cloudinary_configured, cloudinary_upload
+        from app.utils.cloud_storage import cloudinary_upload
         filename = f"{uuid.uuid4().hex}_{secure_filename(image.filename)}"
         filepath = os.path.join(current_app.config['UPLOAD_FOLDER'], filename)
         image.save(filepath)
-        if cloudinary_configured():
-            cloud_url = cloudinary_upload(filepath, folder='welldying/banners')
-            banner.image_path = cloud_url if cloud_url else f'uploads/{filename}'
-        else:
-            banner.image_path = f'uploads/{filename}'
+        cloud_url = cloudinary_upload(filepath, folder='welldying/banners')
+        if not cloud_url:
+            flash('배너 이미지 업로드에 실패했습니다.', 'error')
+            return redirect(request.referrer or url_for('admin.banner_list'))
+        banner.image_path = cloud_url
     if is_new:
         max_order = db.session.query(db.func.max(Banner.sort_order)).scalar() or 0
         banner.sort_order = max_order + 1
@@ -1936,15 +1951,15 @@ def _save_popup(popup):
     popup.is_active = request.form.get('is_active') == '1'
     image = request.files.get('image')
     if image and image.filename:
-        from app.utils.cloud_storage import cloudinary_configured, cloudinary_upload
+        from app.utils.cloud_storage import cloudinary_upload
         filename = f"{uuid.uuid4().hex}_{secure_filename(image.filename)}"
         filepath = os.path.join(current_app.config['UPLOAD_FOLDER'], filename)
         image.save(filepath)
-        if cloudinary_configured():
-            cloud_url = cloudinary_upload(filepath, folder='welldying/popups')
-            popup.image_path = cloud_url if cloud_url else f'uploads/{filename}'
-        else:
-            popup.image_path = f'uploads/{filename}'
+        cloud_url = cloudinary_upload(filepath, folder='welldying/popups')
+        if not cloud_url:
+            flash('팝업 이미지 업로드에 실패했습니다.', 'error')
+            return redirect(request.referrer or url_for('admin.popup_list'))
+        popup.image_path = cloud_url
     if is_new:
         db.session.add(popup)
     db.session.commit()

@@ -59,6 +59,15 @@
         </div>
         {% endif %}
         {% if not edit_post %}
+        {% if current_member %}
+        <div class="form-row">
+            <div class="label-cell">작성자</div>
+            <div class="input-cell" style="display:flex;align-items:center;height:38px;font-size:14px">
+                <strong>{{ current_member.name }}</strong>
+                <input type="hidden" name="author_name" value="{{ current_member.name }}" />
+            </div>
+        </div>
+        {% else %}
         <div class="form-row">
             <div class="label-cell">닉네임</div>
             <div class="input-cell">
@@ -71,6 +80,7 @@
                 <input type="password" name="password" placeholder="글 삭제 시 필요합니다" maxlength="50" />
             </div>
         </div>
+        {% endif %}
         {% endif %}
         <div class="form-row">
             <div class="label-cell">제목</div>

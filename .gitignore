@@ -11,3 +11,4 @@ build/
 .claude/
 .env
 welldying.db
+credentials/

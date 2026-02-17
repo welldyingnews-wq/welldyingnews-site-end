@@ -269,12 +269,14 @@ class BoardPost(db.Model):
     content = db.Column(db.Text, default='')
     author_name = db.Column(db.String(50), default='')
     password = db.Column(db.String(200), default='')
+    member_id = db.Column(db.Integer, db.ForeignKey('member.id'), nullable=True)
     view_count = db.Column(db.Integer, default=0)
     is_hidden = db.Column(db.Boolean, default=False)
     is_secret = db.Column(db.Boolean, default=False)
     created_at = db.Column(db.DateTime, default=datetime.now)
     board = db.relationship('Board', backref=db.backref('posts', lazy='dynamic'))
     parent_post = db.relationship('BoardPost', remote_side='BoardPost.id', backref='child_posts')
+    member = db.relationship('Member', backref='board_posts')
 
 
 class BoardReply(db.Model):

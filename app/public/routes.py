@@ -651,16 +651,13 @@ def event_submit():
             os.makedirs(upload_dir, exist_ok=True)
             filepath = os.path.join(upload_dir, f'{int(datetime.now().timestamp())}_{fname}')
             file.save(filepath)
-            # Google Drive 업로드 시도
-            from app.utils.cloud_storage import gdrive_configured, gdrive_upload
-            if gdrive_configured():
-                gdrive_url = gdrive_upload(filepath, fname, file.content_type or 'application/octet-stream')
-                if gdrive_url:
-                    req.extra_data = json.dumps({'attachment': gdrive_url, 'filename': fname}, ensure_ascii=False)
-                else:
-                    req.extra_data = json.dumps({'attachment': filepath, 'filename': fname}, ensure_ascii=False)
-            else:
-                req.extra_data = json.dumps({'attachment': filepath, 'filename': fname}, ensure_ascii=False)
+            # Cloudinary 업로드 (raw 파일)
+            from app.utils.cloud_storage import cloudinary_upload
+            cloud_url = cloudinary_upload(filepath, folder='welldying/attachments', resource_type='raw')
+            if not cloud_url:
+                flash('파일 업로드에 실패했습니다.', 'error')
+                return redirect(request.referrer or '/')
+            req.extra_data = json.dumps({'attachment': cloud_url, 'filename': fname}, ensure_ascii=False)
 
     # 구독신청 추가 필드
     if page['event_code'] == 'event5':
@@ -825,13 +822,18 @@ def bbs_write():
     is_secret = request.form.get('is_secret') == '1'
     parent_post_id = request.form.get('parent_post_id', 0, type=int) or None
 
+    # 로그인 회원이면 member_id 연동
+    member_id = session.get('member_id')
+    current_member = Member.query.get(member_id) if member_id else None
+
     post = BoardPost(
         board_id=board.id,
         parent_post_id=parent_post_id,
         title=title,
         content=content,
-        author_name=author_name or '익명',
-        password=generate_password_hash(password) if password else '',
+        author_name=current_member.name if current_member else (author_name or '익명'),
+        password='' if current_member else (generate_password_hash(password) if password else ''),
+        member_id=current_member.id if current_member else None,
         is_secret=is_secret
     )
     db.session.add(post)
@@ -848,9 +850,13 @@ def bbs_delete():
     post = BoardPost.query.get_or_404(post_id)
     table = post.board.code
 
-    if not post.password or not check_password_hash(post.password, password):
-        flash('비밀번호가 일치하지 않습니다.', 'error')
-        return redirect(url_for('public.bbs_view', idxno=post_id))
+    # 로그인 회원 본인이면 비밀번호 불필요
+    member_id = session.get('member_id')
+    is_owner = post.member_id and member_id and post.member_id == member_id
+    if not is_owner:
+        if not post.password or not check_password_hash(post.password, password):
+            flash('비밀번호가 일치하지 않습니다.', 'error')
+            return redirect(url_for('public.bbs_view', idxno=post_id))
 
     # 댓글도 함께 삭제
     BoardReply.query.filter_by(post_id=post.id).delete()
@@ -884,9 +890,13 @@ def bbs_edit_verify():
 
     post = BoardPost.query.get_or_404(post_id)
 
-    if not post.password or not check_password_hash(post.password, password):
-        flash('비밀번호가 일치하지 않습니다.', 'error')
-        return redirect(url_for('public.bbs_view', idxno=post_id))
+    # 로그인 회원 본인이면 비밀번호 불필요
+    member_id = session.get('member_id')
+    is_owner = post.member_id and member_id and post.member_id == member_id
+    if not is_owner:
+        if not post.password or not check_password_hash(post.password, password):
+            flash('비밀번호가 일치하지 않습니다.', 'error')
+            return redirect(url_for('public.bbs_view', idxno=post_id))
 
     # 비밀번호 확인 완료 → 세션에 수정 허가 저장
     session[f'bbs_edit_{post_id}'] = True
@@ -1232,12 +1242,12 @@ def member_update():
             os.makedirs(upload_dir, exist_ok=True)
             local_path = os.path.join(upload_dir, fname)
             profile_file.save(local_path)
-            from app.utils.cloud_storage import cloudinary_configured, cloudinary_upload
-            if cloudinary_configured():
-                cloud_url = cloudinary_upload(local_path, folder='welldying/profiles')
-                member.profile_image = cloud_url if cloud_url else url_for('static', filename=f'uploads/profile/{fname}')
-            else:
-                member.profile_image = url_for('static', filename=f'uploads/profile/{fname}')
+            from app.utils.cloud_storage import cloudinary_upload
+            cloud_url = cloudinary_upload(local_path, folder='welldying/profiles')
+            if not cloud_url:
+                flash('프로필 이미지 업로드에 실패했습니다.', 'error')
+                return redirect(url_for('public.member_mypage'))
+            member.profile_image = cloud_url
 
     db.session.commit()
     flash('회원정보가 수정되었습니다.', 'success')

@@ -26,6 +26,11 @@ cp .env.sample .env
 | `ADMIN_PASSWORD` | 초기 관리자 비밀번호 | `my-secure-pw` |
 | `ADMIN_NAME` | 관리자 표시 이름 | `관리자` |
 | `ADMIN_EMAIL` | 관리자 이메일 | `admin@example.com` |
+| `CLOUDINARY_CLOUD_NAME` | Cloudinary Cloud Name | `dk9ptebu2` |
+| `CLOUDINARY_API_KEY` | Cloudinary API Key | `373745398985613` |
+| `CLOUDINARY_API_SECRET` | Cloudinary API Secret | `ADYF4O7b...` |
+| `RECAPTCHA_SITE_KEY` | reCAPTCHA v2 사이트 키 | `6LeIxAcTAAAAAJcZ...` |
+| `RECAPTCHA_SECRET_KEY` | reCAPTCHA v2 시크릿 키 | `6LeIxAcTAAAAAGG-...` |
 
 ```bash
 # 4. DB 초기화 (최초 1회)
@@ -41,3 +46,34 @@ python run.py
 ## 서버 종료
 
 터미널에서 `Ctrl + C`를 누르면 서버가 종료됩니다.
+
+---
+
+## 외부 서비스 키 발급 가이드
+
+아래 서비스는 모두 **선택사항**입니다. 환경변수를 비워두면 로컬 저장소로 동작합니다.
+
+### Cloudinary (이미지+파일 업로드)
+
+1. https://cloudinary.com 에서 무료 계정 생성
+2. 로그인 후 **Dashboard** 진입
+3. **Product Environment Credentials** 섹션에서 아래 3개 값 확인:
+   - `Cloud Name` → `CLOUDINARY_CLOUD_NAME`
+   - `API Key` → `CLOUDINARY_API_KEY`
+   - `API Secret` → `CLOUDINARY_API_SECRET`
+4. pip 의존성 설치:
+   ```bash
+   pip install cloudinary
+   ```
+
+### Google reCAPTCHA v2 (자동등록방지)
+
+1. https://www.google.com/recaptcha/admin 접속 (Google 계정 로그인)
+2. **+** 버튼으로 새 사이트 등록:
+   - **라벨**: 사이트 이름 (예: `welldying-news`)
+   - **reCAPTCHA 유형**: **reCAPTCHA v2 > "로봇이 아닙니다" 체크박스** 선택
+   - **도메인**: `localhost`, 운영 도메인 추가
+3. 등록 완료 후 표시되는 키 확인:
+   - `사이트 키` → `RECAPTCHA_SITE_KEY`
+   - `비밀 키` → `RECAPTCHA_SECRET_KEY`
+4. 또는 관리자 페이지 **댓글설정 > 비회원 CAPTCHA 설정**에서도 입력 가능

@@ -21,7 +21,7 @@
                 <td>{{ r.id }}</td>
                 <td>{% if r.event_code == 'event5' %}<span class="badge bg-info text-dark">구독</span>{% elif r.event_code == 'event4' %}<span class="badge bg-warning text-dark">제보</span>{% else %}<span class="badge bg-secondary">문의</span>{% endif %}</td>
                 <td>{{ r.name }}</td><td>{{ r.email }}</td>
-                <td>{{ r.content|truncate(50) }}</td>
+                <td><a href="#" class="text-decoration-none" data-bs-toggle="modal" data-bs-target="#detailModal{{ r.id }}">{{ r.content|truncate(50) }}</a></td>
                 <td>{{ r.created_at.strftime('%Y-%m-%d') }}</td>
                 <td>{% if r.is_processed %}<span class="badge bg-success">처리완료</span>{% else %}<span class="badge bg-danger">미처리</span>{% endif %}</td>
                 <td>
@@ -36,6 +36,51 @@
         </tbody>
     </table>
 </div>
+
+<!-- 상세 보기 모달 -->
+{% for r in requests %}
+<div class="modal fade" id="detailModal{{ r.id }}" tabindex="-1">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">
+                    {% if r.event_code == 'event5' %}구독신청{% elif r.event_code == 'event4' %}기사제보{% else %}저작권문의{% endif %} #{{ r.id }}
+                </h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <table class="table table-bordered mb-0">
+                    <tr><th style="width:100px" class="table-light">이름</th><td>{{ r.name }}</td><th style="width:100px" class="table-light">이메일</th><td>{{ r.email }}</td></tr>
+                    {% if r.phone %}<tr><th class="table-light">연락처</th><td colspan="3">{{ r.phone }}</td></tr>{% endif %}
+                    {% if r.subject %}<tr><th class="table-light">제목</th><td colspan="3">{{ r.subject }}</td></tr>{% endif %}
+                    <tr><th class="table-light">내용</th><td colspan="3" style="white-space:pre-wrap">{{ r.content }}</td></tr>
+                    {% if extras.get(r.id) %}
+                    <tr><th class="table-light">추가정보</th><td colspan="3">
+                        {% for key, val in extras[r.id].items() %}
+                            {% if key == 'attachment' %}
+                                <div class="mb-1"><strong>첨부파일:</strong> <a href="{{ val }}" target="_blank" class="text-primary"><i class="bi bi-paperclip"></i> {{ extras[r.id].get('filename', '다운로드') }}</a></div>
+                            {% elif key != 'filename' %}
+                                <div class="mb-1"><strong>{{ key }}:</strong> {{ val }}</div>
+                            {% endif %}
+                        {% endfor %}
+                    </td></tr>
+                    {% elif r.extra_data %}
+                    <tr><th class="table-light">추가정보</th><td colspan="3">{{ r.extra_data }}</td></tr>
+                    {% endif %}
+                    <tr><th class="table-light">등록일</th><td>{{ r.created_at.strftime('%Y-%m-%d %H:%M') }}</td><th class="table-light">IP</th><td>{{ r.ip_address }}</td></tr>
+                    <tr><th class="table-light">상태</th><td colspan="3">{% if r.is_processed %}<span class="badge bg-success">처리완료</span>{% else %}<span class="badge bg-danger">미처리</span>{% endif %}</td></tr>
+                </table>
+            </div>
+            <div class="modal-footer">
+                <form method="post" action="{{ url_for('admin.event_request_toggle', req_id=r.id) }}" class="d-inline">
+                    <button class="btn {% if r.is_processed %}btn-outline-secondary{% else %}btn-success{% endif %}">{{ '미처리로 변경' if r.is_processed else '처리완료로 변경' }}</button>
+                </form>
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">닫기</button>
+            </div>
+        </div>
+    </div>
+</div>
+{% endfor %}
 {% if pagination.pages > 1 %}
 <nav class="d-flex justify-content-center"><ul class="pagination">
 {% for p in pagination.iter_pages(left_edge=1, right_edge=1, left_current=2, right_current=2) %}

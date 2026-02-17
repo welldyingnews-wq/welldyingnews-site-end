@@ -377,7 +377,8 @@ import {
     SourceEditing,
     PasteFromOffice,
     FileRepository,
-    GeneralHtmlSupport
+    GeneralHtmlSupport,
+    Plugin
 } from 'ckeditor5';
 import koTranslations from 'ckeditor5/translations/ko.js';
 
@@ -389,8 +390,15 @@ class MyUploadAdapter {
             const data = new FormData();
             data.append('upload', file);
             return fetch('{{ url_for("admin.upload_image") }}', { method: 'POST', body: data })
-                .then(res => res.json())
-                .then(result => ({ default: result.url }));
+                .then(res => {
+                    console.log('[CKEditor Upload] status:', res.status);
+                    if (!res.ok) return res.json().then(err => { throw new Error(err.error?.message || '업로드 실패'); });
+                    return res.json();
+                })
+                .then(result => {
+                    console.log('[CKEditor Upload] 응답:', result);
+                    return { default: result.url };
+                });
         });
     }
     abort() {}
@@ -400,17 +408,28 @@ function MyUploadAdapterPlugin(editor) {
 }
 
 // LineHeight 커스텀 플러그인 (줄간격)
-function LineHeightPlugin(editor) {
-    const blocks = ['paragraph', 'heading1', 'heading2', 'heading3', 'heading4'];
-    for (const el of blocks) {
-        editor.model.schema.extend(el, { allowAttributes: 'lineHeight' });
+class LineHeightPlugin extends Plugin {
+    static get requires() { return [Paragraph, Heading]; }
+    afterInit() {
+        const editor = this.editor;
+        const blocks = ['paragraph', 'heading1', 'heading2', 'heading3', 'heading4'];
+        for (const el of blocks) {
+            if (editor.model.schema.isRegistered(el)) {
+                editor.model.schema.extend(el, { allowAttributes: 'lineHeight' });
+            }
+        }
+        editor.conversion.for('downcast').attributeToAttribute({
+            model: 'lineHeight',
+            view: value => ({ key: 'style', value: { 'line-height': value } })
+        });
+        editor.conversion.for('upcast').attributeToAttribute({
+            view: { key: 'style', value: { 'line-height': /.*/ } },
+            model: { key: 'lineHeight', value: viewElement => viewElement.getStyle('line-height') }
+        });
     }
-    editor.conversion.for('downcast').attributeToAttribute({
-        model: 'lineHeight',
-        view: value => ({ key: 'style', value: { 'line-height': value } })
-    });
 }
 
+console.log('[CKEditor] 초기화 시작, #editor 요소:', document.querySelector('#editor'));
 ClassicEditor.create(document.querySelector('#editor'), {
     plugins: [
         Essentials, Paragraph, Heading, Undo,
@@ -485,6 +504,7 @@ ClassicEditor.create(document.querySelector('#editor'), {
     }
 }).then(editor => {
     window.editorInstance = editor;
+    console.log('[CKEditor] 초기화 성공, editorInstance:', !!window.editorInstance);
 
     // 줄간격 외부 컨트롤
     window.setLineHeight = function(value) {
@@ -512,7 +532,7 @@ ClassicEditor.create(document.querySelector('#editor'), {
             if (el) window.toggleFullscreen();
         }
     });
-}).catch(error => console.error('CKEditor error:', error));
+}).catch(error => console.error('[CKEditor] 초기화 실패:', error));
 
 // form submit 시 CKEditor 내용을 textarea로 동기화
 document.querySelector('form').addEventListener('submit', function() {
@@ -527,37 +547,46 @@ Dropzone.autoDiscover = false;
 var mediaDropzone = new Dropzone('#mediaDropzone', {
     url: '{{ url_for("admin.upload_image") }}',
     paramName: 'upload',
-    maxFilesize: 10,
-    acceptedFiles: 'image/*,video/*,.pdf,.doc,.docx,.hwp',
+    maxFilesize: 100,
+    acceptedFiles: 'image/*,video/*,.pdf,.doc,.docx,.hwp,.ppt,.pptx,.xls,.xlsx,.zip,.hwpx',
     addRemoveLinks: false,
     dictDefaultMessage: '파일을 여기에 끌어다 놓거나 클릭하여 업로드',
     previewsContainer: '#mediaDropzone',
     success: function(file, response) {
+        console.log('[Dropzone] 업로드 응답:', response);
         if (response.url) {
             var container = document.getElementById('uploadedMedia');
             var div = document.createElement('div');
             div.className = 'dz-uploaded-item';
             div.title = '클릭하면 본문에 삽입';
-            var ext = file.name.split('.').pop().toLowerCase();
-            var isImage = ['jpg','jpeg','png','gif','webp','bmp','svg'].indexOf(ext) >= 0;
+            var isImage = response.is_image;
+            var isVideo = response.is_video;
+            var displayName = response.filename || file.name;
             if (isImage) {
-                div.innerHTML = '<img src="' + response.url + '" alt="' + file.name + '"><div class="dz-label">' + file.name + '</div>';
+                div.innerHTML = '<img src="' + response.url + '" alt="' + displayName + '"><div class="dz-label">' + displayName + '</div>';
+            } else if (isVideo) {
+                div.innerHTML = '<div style="width:80px;height:80px;background:#1a1a2e;border-radius:4px;display:flex;align-items:center;justify-content:center;border:2px solid #ddd"><i class="bi bi-play-circle-fill" style="font-size:28px;color:#fff"></i></div><div class="dz-label">' + displayName + '</div>';
             } else {
-                div.innerHTML = '<div style="width:80px;height:80px;background:#eee;border-radius:4px;display:flex;align-items:center;justify-content:center;font-size:10px;text-align:center;border:2px solid #ddd">' + ext.toUpperCase() + '</div><div class="dz-label">' + file.name + '</div>';
+                var ext = file.name.split('.').pop().toUpperCase();
+                div.innerHTML = '<div style="width:80px;height:80px;background:#eee;border-radius:4px;display:flex;align-items:center;justify-content:center;font-size:10px;text-align:center;border:2px solid #ddd"><i class="bi bi-file-earmark" style="font-size:24px"></i><br>' + ext + '</div><div class="dz-label">' + displayName + '</div>';
             }
             div.addEventListener('click', function() {
+                console.log('[Dropzone] 클릭 — 본문 삽입, isImage:', isImage, 'isVideo:', isVideo);
                 if (window.editorInstance) {
+                    var html;
                     if (isImage) {
-                        window.editorInstance.model.change(function(writer) {
-                            var imageElement = writer.createElement('imageBlock', { src: response.url });
-                            window.editorInstance.model.insertContent(imageElement);
-                        });
+                        html = '<figure class="image"><img src="' + response.url + '"></figure>';
+                    } else if (isVideo) {
+                        html = '<figure class="media"><div data-oembed-url="' + response.url + '">' +
+                               '<video controls style="max-width:100%"><source src="' + response.url + '"></video>' +
+                               '</div></figure>';
                     } else {
-                        var linkHtml = '<p><a href="' + response.url + '">' + file.name + '</a></p>';
-                        var viewFragment = window.editorInstance.data.processor.toView(linkHtml);
-                        var modelFragment = window.editorInstance.data.toModel(viewFragment);
-                        window.editorInstance.model.insertContent(modelFragment);
+                        html = '<p><a href="' + response.url + '" target="_blank">📎 ' + displayName + '</a></p>';
                     }
+                    var viewFragment = window.editorInstance.data.processor.toView(html);
+                    var modelFragment = window.editorInstance.data.toModel(viewFragment);
+                    window.editorInstance.model.insertContent(modelFragment);
+                    window.editorInstance.editing.view.focus();
                 }
             });
             container.appendChild(div);

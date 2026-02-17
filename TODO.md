@@ -166,33 +166,22 @@
 
 ---
 
-## 10. 이미지 Cloudinary 전환
+## 10. Cloudinary 클라우드 업로드
 
-> 이미지 파일(기사 본문/썸네일/배너/팝업/프로필)은 Cloudinary를 통해 업로드/서빙.
+> 모든 파일(이미지/첨부파일)은 Cloudinary를 통해 업로드/서빙.
 > 환경변수(CLOUDINARY_CLOUD_NAME, CLOUDINARY_API_KEY, CLOUDINARY_API_SECRET) 설정 시 자동 활성화.
+> 이미지는 resource_type='image', 첨부파일은 resource_type='raw'로 업로드.
 
 - [x] Cloudinary SDK 연동 (app/utils/cloud_storage.py — cloudinary_upload 함수)
 - [x] 기사 본문 이미지 업로드 → Cloudinary (admin upload_image 라우트)
 - [x] 기사 대표 이미지(thumbnail) 업로드 → Cloudinary
-- [x] Dropzone 이미지 업로드 → Cloudinary (업로드 후 Cloudinary URL 반환)
+- [x] Dropzone 이미지/파일 업로드 → Cloudinary (업로드 후 Cloudinary URL 반환)
 - [x] 배너/팝업 이미지 업로드 → Cloudinary
 - [x] 회원 프로필 이미지 업로드 → Cloudinary
 - [x] 댓글 작성자 프로필 이미지 → Cloudinary URL 참조 (Member.profile_image)
+- [x] 기사제보 첨부파일(.doc/.hwp/.pdf/.zip 등) 업로드 → Cloudinary (resource_type='raw')
 - [ ] 기존 로컬 이미지(`static/uploads/`) → Cloudinary 마이그레이션 스크립트 작성
 - [ ] 모든 템플릿에서 로컬 이미지 경로를 Cloudinary URL로 교체
-
----
-
-## 11. 첨부파일 Google Drive 전환
-
-> 이미지가 아닌 첨부파일(문서, PDF, HWP 등)은 Google Drive를 통해 업로드/서빙.
-> 환경변수(GOOGLE_SERVICE_ACCOUNT_JSON, GOOGLE_DRIVE_FOLDER_ID) 설정 시 자동 활성화.
-
-- [x] Google Drive API 연동 (app/utils/cloud_storage.py — gdrive_upload 함수)
-- [x] 공유 폴더 설정 (GOOGLE_DRIVE_FOLDER_ID 환경변수)
-- [x] 기사제보 첨부파일(.doc/.hwp/.pdf 등) 업로드 → Google Drive
-- [x] Dropzone 비이미지 파일 업로드 → Google Drive (업로드 후 공유 링크 반환)
-- [ ] 기존 로컬 첨부파일 → Google Drive 마이그레이션 스크립트 작성
 
 ---
 

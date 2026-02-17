@@ -268,19 +268,31 @@
 {% block extra_scripts %}
 <script>
 var isMember = {{ 'true' if member else 'false' }};
+var isPostOwner = {{ 'true' if (current_member and post.member_id and current_member.id == post.member_id) else 'false' }};
 
 function deletePost() {
-    var pw = prompt('글 작성 시 입력한 비밀번호를 입력하세요.');
-    if (pw !== null && pw !== '') {
-        document.getElementById('deletePostPw').value = pw;
+    if (isPostOwner) {
+        if (!confirm('글을 삭제하시겠습니까?')) return;
+        document.getElementById('deletePostPw').value = '';
         document.getElementById('deletePostForm').submit();
+    } else {
+        var pw = prompt('글 작성 시 입력한 비밀번호를 입력하세요.');
+        if (pw !== null && pw !== '') {
+            document.getElementById('deletePostPw').value = pw;
+            document.getElementById('deletePostForm').submit();
+        }
     }
 }
 function editPost() {
-    var pw = prompt('글 작성 시 입력한 비밀번호를 입력하세요.');
-    if (pw !== null && pw !== '') {
-        document.getElementById('editPostPw').value = pw;
+    if (isPostOwner) {
+        document.getElementById('editPostPw').value = '';
         document.getElementById('editPostForm').submit();
+    } else {
+        var pw = prompt('글 작성 시 입력한 비밀번호를 입력하세요.');
+        if (pw !== null && pw !== '') {
+            document.getElementById('editPostPw').value = pw;
+            document.getElementById('editPostForm').submit();
+        }
     }
 }
 function deleteReply(replyId, memberId) {
