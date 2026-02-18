@@ -14,11 +14,6 @@ from app.models import (db, Section, SubSection, Article, ArticleRelation, Artic
 from app.public import public_bp
 
 
-@public_bp.route('/v2')
-def index_v2():
-    return render_template('public/index_v2.html')
-
-
 
 def _get_published_query():
     """승인된 + 삭제되지 않은 + 노출시간 지난 기사만 조회"""
