@@ -1089,12 +1089,15 @@
                                 <i class="icon-user-o"><span class="show-for-sr">기자명</span></i>
                                 {{ article.author_name }}
                             </li>
-                            <li><i class="icon-clock-o"></i> 입력 {{ article.created_at.strftime('%Y.%m.%d %H:%M') }}</li>
-                            {% if article.updated_at and (article.updated_at - article.created_at).total_seconds() > 60
+                            <li><i class="icon-clock-o"></i> 입력 {{ (article.embargo_date or
+                                article.created_at).strftime('%Y.%m.%d %H:%M') }}</li>
+                            {% if article.updated_at and (article.updated_at - (article.embargo_date or
+                            article.created_at)).total_seconds() > 60
                             %}
                             <li><i class="icon-check-circle-o"></i> 수정 {{ article.updated_at.strftime('%Y.%m.%d %H:%M')
                                 }}</li>
                             {% endif %}
+
                         </ul>
                     </article>
 

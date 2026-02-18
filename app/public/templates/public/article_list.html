@@ -164,7 +164,8 @@
                                         <span class="byline">
                                             {% if article.subsection %}<em>{{ article.subsection.name }}</em>{% endif %}
                                             <em>{{ article.author_name }}</em>
-                                            <em>{{ article.created_at.strftime('%Y.%m.%d %H:%M') }}</em>
+                                            <em>{{ (article.embargo_date or article.created_at).strftime('%Y.%m.%d
+                                                %H:%M') }}</em>
                                         </span>
                                     </div>
                                 </li>
@@ -195,7 +196,8 @@
                                             article.title }}</strong>
                                     </a>
                                     <span style="display:block;margin-top:5px;font-size:12px;color:#999">{{
-                                        article.author_name }} | {{ article.created_at.strftime('%Y.%m.%d') }}</span>
+                                        article.author_name }} | {{ (article.embargo_date or
+                                        article.created_at).strftime('%Y.%m.%d') }}</span>
                                 </div>
                                 {% else %}
                                 <div style="padding:40px 0;text-align:center;color:#999;width:100%">등록된 기사가 없습니다.</div>
@@ -214,7 +216,8 @@
                                     {% if article.subsection %}<em class="info category">{{ article.subsection.name
                                         }}</em>{% endif %}
                                     <em class="info name">{{ article.author_name }}</em>
-                                    <em class="info dated">{{ article.created_at.strftime('%m.%d %H:%M') }}</em>
+                                    <em class="info dated">{{ (article.embargo_date or
+                                        article.created_at).strftime('%m.%d %H:%M') }}</em>
                                 </li>
                                 {% else %}
                                 <li style="padding:40px 0;text-align:center;color:#999;border-bottom:none">등록된 기사가 없습니다.
