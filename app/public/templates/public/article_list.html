@@ -26,12 +26,12 @@
     .row #user-section .grid-wrap > .grid.side {padding-left:0}
     }
     {% endif %}
-    #section-list .type2 li {display:flex;align-items:flex-start;padding:20px 0;border-bottom:1px solid rgba(0,0,0,.06)}
+    #section-list .type2 li {padding:20px 0;border-bottom:1px solid rgba(0,0,0,.06)}
     #section-list .type2 li:first-child {padding-top:0}
-    #section-list .type2 .thumb {flex-shrink:0;display:block;{% if not is_mobile
-    %}width:180px;height:120px;margin-right:20px;{% else %}width:100px;height:70px;margin-right:12px;{% endif %}overflow:hidden;position:relative}
+    #section-list .type2 .thumb {display:block;{% if not is_mobile
+    %}width:160px;height:210px;margin-right:20px;{% else %}width:100px;height:130px;margin-right:12px;{% endif %}overflow:hidden;position:relative;flex-shrink:0}
     #section-list .type2 .thumb img {display:block;width:100%;height:100%;object-fit:cover}
-    #section-list .type2 .view-cont {flex:1;min-width:0}
+    #section-list .type2 .view-cont {overflow:hidden}
     #section-list .type2 .view-cont .titles {margin:0 0 8px}
     #section-list .type2 .view-cont .titles a
     {font-size:18px;font-weight:700;color:#222;line-height:1.4;letter-spacing:-.025em}
@@ -127,10 +127,9 @@
                             <!-- 요약형 (type2) -->
                             <ul class="type2 no-bullet">
                                 {% for article in articles %}
-                                <li>
+                                <li style="display:flex;align-items:flex-start;{% if loop.first %}padding-top:0;{% endif %}">
                                     {% if article.thumb_url %}
-                                    <a href="{{ url_for('public.article_view', idxno=article.id) }}" class="thumb"
-                                        style="position:relative">
+                                    <a href="{{ url_for('public.article_view', idxno=article.id) }}" class="thumb">
                                         <img src="{{ article.thumb_url }}" alt="" />
                                         {% if article.article_type == 'V' %}
                                         <span
@@ -289,26 +288,6 @@
             <aside class="grid side">
                 <div class="clearfix">
                     <div class="sticky">
-
-                        <!-- 섹션 바로가기 -->
-                        <article class="box-skin" style="margin-bottom:25px">
-                            <header class="header">섹션 바로가기</header>
-                            <section class="content">
-                                <ul style="list-style:none;margin:0;padding:0">
-                                    {% for sec in nav_sections %}
-                                    {% if sec.code != 'S1N6' %}
-                                    <li style="padding:6px 0;border-bottom:1px solid #f0f0f0">
-                                        <a href="{{ url_for('public.article_list', sc_section_code=sec.code) }}"
-                                            style="font-size:14px;color:#333;display:flex;align-items:center;justify-content:space-between">
-                                            <span>{{ sec.name }}</span>
-                                            <i class="icon-angle-right-min" style="color:#999;font-size:12px"></i>
-                                        </a>
-                                    </li>
-                                    {% endif %}
-                                    {% endfor %}
-                                </ul>
-                            </section>
-                        </article>
 
                         <!-- 사이드바 배너 -->
                         {% if banners.get('sidebar') %}
