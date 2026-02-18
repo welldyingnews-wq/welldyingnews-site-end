@@ -1132,7 +1132,7 @@
                             <!-- 부제 -->
                             <!-- [Bug 3 fix] 부제 줄바꿈 적용 -->
                             {% if article.subtitle %}
-                            <H2 class="subheading">{{ article.subtitle|e|replace('\n', '<br>')|safe }}</H2>
+                            <H2 class="subheading" style="white-space:pre-line">{{ article.subtitle }}</H2>
                             {% endif %}
 
                             <!-- 기사 상단 배너 -->
