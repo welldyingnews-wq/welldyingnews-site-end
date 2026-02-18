@@ -82,10 +82,7 @@
             background: #fff !important
         }
 
-            {
-            % if is_mobile %
-        }
-
+        {% if is_mobile %}
         /* mobile site size */
         .width-728 {
             width: 728px
@@ -95,10 +92,7 @@
             max-width: 728px
         }
 
-            {
-            % else %
-        }
-
+        {% else %}
         /* desktop site size */
         .width-1240 {
             width: 1240px
@@ -237,9 +231,7 @@
             text-decoration: none
         }
 
-            {
-            % endif %
-        }
+        {% endif %}
 
         /* 사이드바 많이 본 뉴스 탭 — Foundation 오버라이드 */
         .tabs-wrap.type-E {

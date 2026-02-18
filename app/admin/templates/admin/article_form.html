@@ -753,8 +753,7 @@
 
     // 관련기사 팝업
     function openRelatedPopup() {
-        var articleId = {{ article.id if article and article.id else 0 }
-    };
+        var articleId = {{ article.id if article and article.id else 0 }};
     var url = '/admin/find-related?article_id=' + articleId;
     window.open(url, 'findRelated', 'width=980,height=800,scrollbars=yes,resizable=yes');
 }
