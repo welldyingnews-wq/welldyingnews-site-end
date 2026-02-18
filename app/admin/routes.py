@@ -270,10 +270,6 @@ def _save_article(article):
     else:
         article.embargo_date = None
 
-    # [Bug 1 fix] 엠바고 날짜가 과거이면 created_at을 엠바고 날짜로 갱신하여 정렬 순서 반영
-    if article.embargo_date and article.embargo_date <= datetime.now():
-        article.created_at = article.embargo_date
-
     # 썸네일 업로드
     thumbnail = request.files.get('thumbnail')
     if thumbnail and thumbnail.filename:
@@ -293,6 +289,11 @@ def _save_article(article):
     if is_new:
         article.created_at = now
         db.session.add(article)
+
+    # [Bug 1 fix] 엠바고 날짜가 설정되면 created_at을 엠바고 날짜로 갱신 (is_new 이후에 덮어쓰기)
+    # → 기사가 날짜순으로 재정렬되도록 보장
+    if article.embargo_date:
+        article.created_at = article.embargo_date
 
     db.session.flush()  # article.id 확보
 
