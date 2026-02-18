@@ -5,27 +5,106 @@
 <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/dropzone@5.9.3/dist/min/dropzone.min.css">
 <link rel="stylesheet" href="https://cdn.ckeditor.com/ckeditor5/43.3.1/ckeditor5.css">
 <style>
-.ck-editor__editable { min-height: 400px; }
-.ck-editor__editable.ck-focused { border-color: #5e1985 !important; }
-/* 전체화면 모드 */
-.ck-editor-fullscreen { position:fixed !important; top:0; left:0; right:0; bottom:0; z-index:9999; background:#fff; padding:10px; }
-.ck-editor-fullscreen .ck-editor__editable { min-height:calc(100vh - 120px) !important; max-height:calc(100vh - 120px) !important; overflow-y:auto !important; }
-.dz-area { border:2px dashed #ccc; border-radius:8px; padding:15px; min-height:100px; background:#fafafa; cursor:pointer; }
-.dz-area:hover { border-color:#5e1985; background:#f5f0fa; }
-.dz-area .dz-message { text-align:center; color:#999; font-size:14px; margin:10px 0; }
-.dz-area .dz-preview { display:inline-block; margin:5px; }
-.dz-area .dz-preview .dz-image { width:100px; height:100px; overflow:hidden; border-radius:4px; }
-.dz-area .dz-preview .dz-image img { width:100%; height:100%; object-fit:cover; }
-.dz-uploaded-item { display:inline-block; margin:4px; position:relative; cursor:pointer; }
-.dz-uploaded-item img { width:80px; height:80px; object-fit:cover; border-radius:4px; border:2px solid #ddd; }
-.dz-uploaded-item:hover img { border-color:#5e1985; }
-.dz-uploaded-item .dz-label { display:block; font-size:10px; text-align:center; color:#666; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; max-width:80px; }
+    .ck-editor__editable {
+        min-height: 400px;
+    }
+
+    .ck-editor__editable.ck-focused {
+        border-color: #5e1985 !important;
+    }
+
+    /* 전체화면 모드 */
+    .ck-editor-fullscreen {
+        position: fixed !important;
+        top: 0;
+        left: 0;
+        right: 0;
+        bottom: 0;
+        z-index: 9999;
+        background: #fff;
+        padding: 10px;
+    }
+
+    .ck-editor-fullscreen .ck-editor__editable {
+        min-height: calc(100vh - 120px) !important;
+        max-height: calc(100vh - 120px) !important;
+        overflow-y: auto !important;
+    }
+
+    .dz-area {
+        border: 2px dashed #ccc;
+        border-radius: 8px;
+        padding: 15px;
+        min-height: 100px;
+        background: #fafafa;
+        cursor: pointer;
+    }
+
+    .dz-area:hover {
+        border-color: #5e1985;
+        background: #f5f0fa;
+    }
+
+    .dz-area .dz-message {
+        text-align: center;
+        color: #999;
+        font-size: 14px;
+        margin: 10px 0;
+    }
+
+    .dz-area .dz-preview {
+        display: inline-block;
+        margin: 5px;
+    }
+
+    .dz-area .dz-preview .dz-image {
+        width: 100px;
+        height: 100px;
+        overflow: hidden;
+        border-radius: 4px;
+    }
+
+    .dz-area .dz-preview .dz-image img {
+        width: 100%;
+        height: 100%;
+        object-fit: cover;
+    }
+
+    .dz-uploaded-item {
+        display: inline-block;
+        margin: 4px;
+        position: relative;
+        cursor: pointer;
+    }
+
+    .dz-uploaded-item img {
+        width: 80px;
+        height: 80px;
+        object-fit: cover;
+        border-radius: 4px;
+        border: 2px solid #ddd;
+    }
+
+    .dz-uploaded-item:hover img {
+        border-color: #5e1985;
+    }
+
+    .dz-uploaded-item .dz-label {
+        display: block;
+        font-size: 10px;
+        text-align: center;
+        color: #666;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        white-space: nowrap;
+        max-width: 80px;
+    }
 </style>
 {% endblock %}
 
 {% block content %}
 <form method="post" enctype="multipart/form-data"
-      action="{{ url_for('admin.article_edit', article_id=article.id) if article and article.id else url_for('admin.article_new') }}">
+    action="{{ url_for('admin.article_edit', article_id=article.id) if article and article.id else url_for('admin.article_new') }}">
 
     <div class="row">
         <div class="col-lg-9">
@@ -38,7 +117,8 @@
                             <select name="section_id" id="sectionSelect" class="form-select">
                                 <option value="">1차 섹션 선택</option>
                                 {% for sec in sections %}
-                                <option value="{{ sec.id }}" {% if article and article.section_id == sec.id %}selected{% endif %}>{{ sec.name }}</option>
+                                <option value="{{ sec.id }}" {% if article and article.section_id==sec.id %}selected{%
+                                    endif %}>{{ sec.name }}</option>
                                 {% endfor %}
                             </select>
                         </div>
@@ -48,10 +128,26 @@
                                 <option value="">2차 섹션 선택</option>
                                 {% if article and article.section_id %}
                                 {% for sub in article.section.subsections %}
-                                <option value="{{ sub.id }}" {% if article.subsection_id == sub.id %}selected{% endif %}>{{ sub.name }}</option>
+                                <option value="{{ sub.id }}" {% if article.subsection_id==sub.id %}selected{% endif %}>
+                                    {{ sub.name }}</option>
                                 {% endfor %}
                                 {% endif %}
                             </select>
+                        </div>
+                    </div>
+                    <div class="mt-3">
+                        <label class="form-label fw-bold small">추가 섹션 <span class="text-muted fw-normal">(여러 섹션에 동시
+                                게재)</span></label>
+                        <div class="d-flex flex-wrap gap-2">
+                            {% for sec in sections %}
+                            <div class="form-check">
+                                <input class="form-check-input" type="checkbox" name="extra_section_ids"
+                                    value="{{ sec.id }}" id="extra_sec_{{ sec.id }}" {% if article and sec in
+                                    article.extra_sections %}checked{% endif %}>
+                                <label class="form-check-label small" for="extra_sec_{{ sec.id }}">{{ sec.name
+                                    }}</label>
+                            </div>
+                            {% endfor %}
                         </div>
                     </div>
                 </div>
@@ -64,13 +160,17 @@
                         <div class="col-md-4">
                             <label class="form-label fw-bold">기자</label>
                             <div class="input-group">
-                                <input type="text" name="author_name" id="authorName" class="form-control" value="{{ article.author_name if article else '웰다잉뉴스' }}" placeholder="이름">
-                                <button type="button" class="btn btn-outline-secondary" data-bs-toggle="modal" data-bs-target="#reporterModal" title="기자 선택"><i class="bi bi-people"></i></button>
+                                <input type="text" name="author_name" id="authorName" class="form-control"
+                                    value="{{ article.author_name if article else '웰다잉뉴스' }}" placeholder="이름">
+                                <button type="button" class="btn btn-outline-secondary" data-bs-toggle="modal"
+                                    data-bs-target="#reporterModal" title="기자 선택"><i class="bi bi-people"></i></button>
                             </div>
                         </div>
                         <div class="col-md-8">
                             <label class="form-label fw-bold">이메일</label>
-                            <input type="email" name="author_email" id="authorEmail" class="form-control" value="{{ article.author_email if article else 'welldyingnews@naver.com' }}" placeholder="이메일">
+                            <input type="email" name="author_email" id="authorEmail" class="form-control"
+                                value="{{ article.author_email if article else 'welldyingnews@naver.com' }}"
+                                placeholder="이메일">
                         </div>
                     </div>
                 </div>
@@ -80,7 +180,8 @@
             <div class="card mb-3">
                 <div class="card-body">
                     <label class="form-label fw-bold">제목</label>
-                    <input type="text" name="title" class="form-control form-control-lg" value="{{ article.title if article else '' }}" placeholder="제목을 입력하세요" required>
+                    <input type="text" name="title" class="form-control form-control-lg"
+                        value="{{ article.title if article else '' }}" placeholder="제목을 입력하세요" required>
                 </div>
             </div>
 
@@ -88,15 +189,18 @@
             <div class="card mb-3">
                 <div class="card-body">
                     <label class="form-label fw-bold">부제목</label>
-                    <textarea name="subtitle" class="form-control" rows="2" placeholder="부제목을 입력하세요">{{ article.subtitle if article else '' }}</textarea>
+                    <textarea name="subtitle" class="form-control" rows="2"
+                        placeholder="부제목을 입력하세요">{{ article.subtitle if article else '' }}</textarea>
                 </div>
             </div>
 
             <!-- 리드문(요약문) -->
             <div class="card mb-3">
                 <div class="card-body">
-                    <label class="form-label fw-bold">리드문 <small class="text-muted fw-normal">(요약문 — 목록/OG/검색에 노출)</small></label>
-                    <textarea name="summary" class="form-control" rows="3" placeholder="기사 요약문을 입력하세요 (미입력 시 본문에서 자동 추출)">{{ article.summary if article else '' }}</textarea>
+                    <label class="form-label fw-bold">리드문 <small class="text-muted fw-normal">(요약문 — 목록/OG/검색에
+                            노출)</small></label>
+                    <textarea name="summary" class="form-control" rows="3"
+                        placeholder="기사 요약문을 입력하세요 (미입력 시 본문에서 자동 추출)">{{ article.summary if article else '' }}</textarea>
                 </div>
             </div>
 
@@ -105,7 +209,8 @@
                 <div class="card-header d-flex justify-content-between align-items-center py-2">
                     <strong>사진/파일 업로드</strong>
                     <div>
-                        <button type="button" class="btn btn-sm btn-outline-primary" data-bs-toggle="modal" data-bs-target="#photoDbModal"><i class="bi bi-images"></i> 포토DB</button>
+                        <button type="button" class="btn btn-sm btn-outline-primary" data-bs-toggle="modal"
+                            data-bs-target="#photoDbModal"><i class="bi bi-images"></i> 포토DB</button>
                         <small class="text-muted ms-2">드래그앤드롭 또는 클릭하여 업로드</small>
                     </div>
                 </div>
@@ -123,7 +228,8 @@
                     <div class="d-flex justify-content-between align-items-center mb-2">
                         <label class="form-label fw-bold mb-0">본문</label>
                         <div class="d-flex align-items-center gap-2">
-                            <select id="lineHeightSelect" onchange="setLineHeight(this.value)" class="form-select form-select-sm" style="width:auto;font-size:12px" title="줄간격">
+                            <select id="lineHeightSelect" onchange="setLineHeight(this.value)"
+                                class="form-select form-select-sm" style="width:auto;font-size:12px" title="줄간격">
                                 <option value="">줄간격</option>
                                 <option value="1.0">1.0</option>
                                 <option value="1.2">1.2</option>
@@ -133,10 +239,14 @@
                                 <option value="2.5">2.5</option>
                                 <option value="3.0">3.0</option>
                             </select>
-                            <button type="button" class="btn btn-outline-secondary btn-sm" id="fullscreenBtn" onclick="toggleFullscreen()" title="전체화면"><i class="bi bi-arrows-fullscreen"></i></button>
+                            <button type="button" class="btn btn-outline-secondary btn-sm" id="fullscreenBtn"
+                                onclick="toggleFullscreen()" title="전체화면"><i
+                                    class="bi bi-arrows-fullscreen"></i></button>
                             <div class="btn-group btn-group-sm" id="previewToggle">
-                                <button type="button" class="btn btn-outline-secondary active" onclick="setPreview('desktop')"><i class="bi bi-display"></i> 데스크탑</button>
-                                <button type="button" class="btn btn-outline-secondary" onclick="setPreview('mobile')"><i class="bi bi-phone"></i> 모바일</button>
+                                <button type="button" class="btn btn-outline-secondary active"
+                                    onclick="setPreview('desktop')"><i class="bi bi-display"></i> 데스크탑</button>
+                                <button type="button" class="btn btn-outline-secondary"
+                                    onclick="setPreview('mobile')"><i class="bi bi-phone"></i> 모바일</button>
                             </div>
                         </div>
                     </div>
@@ -150,7 +260,8 @@
             <div class="card mb-3">
                 <div class="card-body">
                     <label class="form-label fw-bold">키워드</label>
-                    <input type="text" name="keyword" class="form-control" value="{{ article.keyword if article else '' }}" placeholder="쉼표로 구분하여 입력">
+                    <input type="text" name="keyword" class="form-control"
+                        value="{{ article.keyword if article else '' }}" placeholder="쉼표로 구분하여 입력">
                 </div>
             </div>
 
@@ -159,20 +270,25 @@
                 <div class="card-header"><strong>관련기사</strong></div>
                 <div class="card-body">
                     <div class="mb-2">
-                        <button type="button" class="btn btn-secondary w-100" onclick="openRelatedPopup()"><i class="bi bi-plus-circle"></i> 관련기사추가</button>
+                        <button type="button" class="btn btn-secondary w-100" onclick="openRelatedPopup()"><i
+                                class="bi bi-plus-circle"></i> 관련기사추가</button>
                     </div>
                     <ul id="relatedList" class="list-group">
                         {% if related_articles %}
                         {% for rel in related_articles %}
-                        <li class="list-group-item d-flex justify-content-between align-items-center py-2" data-id="{{ rel.related_article.id }}">
-                            <span class="text-truncate me-2" style="font-size:13px">{{ rel.related_article.title }}</span>
+                        <li class="list-group-item d-flex justify-content-between align-items-center py-2"
+                            data-id="{{ rel.related_article.id }}">
+                            <span class="text-truncate me-2" style="font-size:13px">{{ rel.related_article.title
+                                }}</span>
                             <input type="hidden" name="related_ids[]" value="{{ rel.related_article.id }}">
-                            <button type="button" class="btn btn-sm btn-outline-danger flex-shrink-0 remove-related" title="삭제">&times;</button>
+                            <button type="button" class="btn btn-sm btn-outline-danger flex-shrink-0 remove-related"
+                                title="삭제">&times;</button>
                         </li>
                         {% endfor %}
                         {% endif %}
                     </ul>
-                    <small class="text-muted mt-1 d-block" id="relatedCount">{{ related_articles|length if related_articles else 0 }}개 선택됨</small>
+                    <small class="text-muted mt-1 d-block" id="relatedCount">{{ related_articles|length if
+                        related_articles else 0 }}개 선택됨</small>
                 </div>
             </div>
 
@@ -192,15 +308,18 @@
                         <label class="form-label fw-bold small">중요도</label>
                         <div>
                             <div class="form-check form-check-inline">
-                                <input class="form-check-input" type="radio" name="level" id="levelB" value="B" {{ 'checked' if not article or article.level == 'B' }}>
+                                <input class="form-check-input" type="radio" name="level" id="levelB" value="B"
+                                    {{ 'checked' if not article or article.level=='B' }}>
                                 <label class="form-check-label" for="levelB">일반</label>
                             </div>
                             <div class="form-check form-check-inline">
-                                <input class="form-check-input" type="radio" name="level" id="levelI" value="I" {{ 'checked' if article and article.level == 'I' }}>
+                                <input class="form-check-input" type="radio" name="level" id="levelI" value="I"
+                                    {{ 'checked' if article and article.level=='I' }}>
                                 <label class="form-check-label" for="levelI">중요</label>
                             </div>
                             <div class="form-check form-check-inline">
-                                <input class="form-check-input" type="radio" name="level" id="levelT" value="T" {{ 'checked' if article and article.level == 'T' }}>
+                                <input class="form-check-input" type="radio" name="level" id="levelT" value="T"
+                                    {{ 'checked' if article and article.level=='T' }}>
                                 <label class="form-check-label" for="levelT">헤드라인</label>
                             </div>
                         </div>
@@ -209,15 +328,18 @@
                         <label class="form-label fw-bold small">승인상태</label>
                         <div>
                             <div class="form-check form-check-inline">
-                                <input class="form-check-input" type="radio" name="recognition" id="recogC" value="C" {{ 'checked' if article and article.recognition == 'C' }}>
+                                <input class="form-check-input" type="radio" name="recognition" id="recogC" value="C"
+                                    {{ 'checked' if article and article.recognition=='C' }}>
                                 <label class="form-check-label" for="recogC">미승인</label>
                             </div>
                             <div class="form-check form-check-inline">
-                                <input class="form-check-input" type="radio" name="recognition" id="recogE" value="E" {{ 'checked' if not article or article.recognition == 'E' }}>
+                                <input class="form-check-input" type="radio" name="recognition" id="recogE" value="E"
+                                    {{ 'checked' if not article or article.recognition=='E' }}>
                                 <label class="form-check-label" for="recogE">승인</label>
                             </div>
                             <div class="form-check form-check-inline">
-                                <input class="form-check-input" type="radio" name="recognition" id="recogR" value="R" {{ 'checked' if article and article.recognition == 'R' }}>
+                                <input class="form-check-input" type="radio" name="recognition" id="recogR" value="R"
+                                    {{ 'checked' if article and article.recognition=='R' }}>
                                 <label class="form-check-label" for="recogR">반려</label>
                             </div>
                         </div>
@@ -226,12 +348,19 @@
                         <label class="form-label fw-bold small">기사유형</label>
                         <div>
                             <div class="form-check form-check-inline">
-                                <input class="form-check-input" type="radio" name="article_type" id="typeB" value="B" {{ 'checked' if not article or article.article_type == 'B' }}>
+                                <input class="form-check-input" type="radio" name="article_type" id="typeB" value="B"
+                                    {{ 'checked' if not article or article.article_type=='B' }}>
                                 <label class="form-check-label" for="typeB">일반</label>
                             </div>
                             <div class="form-check form-check-inline">
-                                <input class="form-check-input" type="radio" name="article_type" id="typeP" value="P" {{ 'checked' if article and article.article_type == 'P' }}>
+                                <input class="form-check-input" type="radio" name="article_type" id="typeP" value="P"
+                                    {{ 'checked' if article and article.article_type=='P' }}>
                                 <label class="form-check-label" for="typeP">카드뉴스</label>
+                            </div>
+                            <div class="form-check form-check-inline">
+                                <input class="form-check-input" type="radio" name="article_type" id="typeV" value="V"
+                                    {{ 'checked' if article and article.article_type=='V' }}>
+                                <label class="form-check-label" for="typeV">동영상</label>
                             </div>
                         </div>
                     </div>
@@ -242,7 +371,8 @@
             <div class="card mb-3">
                 <div class="card-header"><strong>출처</strong></div>
                 <div class="card-body">
-                    <input type="text" name="source" class="form-control form-control-sm" value="{{ article.source if article else '' }}" placeholder="기사 출처 (예: 연합뉴스)">
+                    <input type="text" name="source" class="form-control form-control-sm"
+                        value="{{ article.source if article else '' }}" placeholder="기사 출처 (예: 연합뉴스)">
                 </div>
             </div>
 
@@ -253,7 +383,8 @@
                     <select name="serial_code_id" class="form-select form-select-sm">
                         <option value="">연재 선택 (없음)</option>
                         {% for sc in serial_codes %}
-                        <option value="{{ sc.id }}" {% if article and article.serial_code_id == sc.id %}selected{% endif %}>{{ sc.name }}</option>
+                        <option value="{{ sc.id }}" {% if article and article.serial_code_id==sc.id %}selected{% endif
+                            %}>{{ sc.name }}</option>
                         {% endfor %}
                     </select>
                 </div>
@@ -265,11 +396,13 @@
                 <div class="card-body">
                     <div class="form-check mb-2">
                         <input class="form-check-input" type="checkbox" name="sns_facebook" id="snsFacebook" disabled>
-                        <label class="form-check-label" for="snsFacebook">페이스북 <small class="text-muted">(준비중)</small></label>
+                        <label class="form-check-label" for="snsFacebook">페이스북 <small
+                                class="text-muted">(준비중)</small></label>
                     </div>
                     <div class="form-check">
                         <input class="form-check-input" type="checkbox" name="sns_twitter" id="snsTwitter" disabled>
-                        <label class="form-check-label" for="snsTwitter">X (트위터) <small class="text-muted">(준비중)</small></label>
+                        <label class="form-check-label" for="snsTwitter">X (트위터) <small
+                                class="text-muted">(준비중)</small></label>
                     </div>
                 </div>
             </div>
@@ -279,9 +412,11 @@
                 <div class="card-header"><strong>노출시간</strong></div>
                 <div class="card-body">
                     <div class="mb-2">
-                        <input type="date" name="embargo_date" class="form-control" value="{{ article.embargo_date.strftime('%Y-%m-%d') if article and article.embargo_date else '' }}">
+                        <input type="date" name="embargo_date" class="form-control"
+                            value="{{ article.embargo_date.strftime('%Y-%m-%d') if article and article.embargo_date else '' }}">
                     </div>
-                    <input type="time" name="embargo_time" class="form-control" value="{{ article.embargo_date.strftime('%H:%M') if article and article.embargo_date else '' }}">
+                    <input type="time" name="embargo_time" class="form-control"
+                        value="{{ article.embargo_date.strftime('%H:%M') if article and article.embargo_date else '' }}">
                     <small class="text-muted mt-1 d-block">미래 시간 설정 시 예약기사로 등록됩니다.</small>
                 </div>
             </div>
@@ -292,17 +427,20 @@
                 <div class="card-body">
                     {% if article and article.thumbnail_path %}
                     <div class="mb-2">
-                        <img src="{{ url_for('static', filename=article.thumbnail_path) }}" class="img-fluid rounded" alt="썸네일">
+                        <img src="{{ url_for('static', filename=article.thumbnail_path) }}" class="img-fluid rounded"
+                            alt="썸네일">
                     </div>
                     {% endif %}
                     <input type="file" name="thumbnail" class="form-control" accept="image/*">
+                    <small class="text-muted d-block mt-1">권장: 가로 800px 이상, JPG/PNG, 최대 5MB</small>
                 </div>
             </div>
 
             {% if article and article.id %}
             <div class="card mb-3 border-danger">
                 <div class="card-body">
-                    <button type="button" class="btn btn-outline-danger w-100" onclick="deleteArticle()"><i class="bi bi-trash"></i> 휴지통으로 이동</button>
+                    <button type="button" class="btn btn-outline-danger w-100" onclick="deleteArticle()"><i
+                            class="bi bi-trash"></i> 휴지통으로 이동</button>
                 </div>
             </div>
             {% endif %}
@@ -320,13 +458,19 @@
             </div>
             <div class="modal-body">
                 <div class="d-flex gap-2 mb-3">
-                    <input type="text" id="photoSearchInput" class="form-control form-control-sm" placeholder="파일명 검색...">
-                    <button type="button" class="btn btn-sm btn-outline-secondary" onclick="searchPhotos()"><i class="bi bi-search"></i></button>
-                    <button type="button" class="btn btn-sm btn-outline-warning" id="photoFavFilter" onclick="toggleFavFilter()"><i class="bi bi-star"></i> 즐겨찾기</button>
+                    <input type="text" id="photoSearchInput" class="form-control form-control-sm"
+                        placeholder="파일명 검색...">
+                    <button type="button" class="btn btn-sm btn-outline-secondary" onclick="searchPhotos()"><i
+                            class="bi bi-search"></i></button>
+                    <button type="button" class="btn btn-sm btn-outline-warning" id="photoFavFilter"
+                        onclick="toggleFavFilter()"><i class="bi bi-star"></i> 즐겨찾기</button>
                 </div>
-                <div id="photoGrid" style="display:grid;grid-template-columns:repeat(auto-fill,minmax(100px,1fr));gap:8px;max-height:400px;overflow-y:auto"></div>
+                <div id="photoGrid"
+                    style="display:grid;grid-template-columns:repeat(auto-fill,minmax(100px,1fr));gap:8px;max-height:400px;overflow-y:auto">
+                </div>
                 <div class="text-center mt-2">
-                    <button type="button" class="btn btn-sm btn-outline-secondary" id="photoLoadMore" onclick="loadMorePhotos()" style="display:none">더보기</button>
+                    <button type="button" class="btn btn-sm btn-outline-secondary" id="photoLoadMore"
+                        onclick="loadMorePhotos()" style="display:none">더보기</button>
                 </div>
             </div>
         </div>
@@ -337,7 +481,10 @@
 <div class="modal fade" id="reporterModal" tabindex="-1">
     <div class="modal-dialog">
         <div class="modal-content">
-            <div class="modal-header"><h6 class="modal-title">기자 선택</h6><button type="button" class="btn-close" data-bs-dismiss="modal"></button></div>
+            <div class="modal-header">
+                <h6 class="modal-title">기자 선택</h6><button type="button" class="btn-close"
+                    data-bs-dismiss="modal"></button>
+            </div>
             <div class="modal-body" id="reporterList" style="max-height:400px;overflow-y:auto">
                 <p class="text-muted">로딩중...</p>
             </div>
@@ -357,81 +504,8 @@
 }
 </script>
 <script type="module">
-import {
-    ClassicEditor,
-    Essentials, Paragraph, Heading, Undo,
-    Bold, Italic, Underline, Strikethrough,
-    Font,
-    Alignment,
-    Link, AutoLink,
-    Image, ImageCaption, ImageStyle, ImageToolbar, ImageUpload, ImageResize, ImageInsert,
-    BlockQuote,
-    List,
-    Indent, IndentBlock,
-    Table, TableToolbar, TableCaption,
-    MediaEmbed,
-    HorizontalLine,
-    SpecialCharacters, SpecialCharactersEssentials, SpecialCharactersArrows, SpecialCharactersCurrency, SpecialCharactersLatin, SpecialCharactersMathematical, SpecialCharactersText,
-    RemoveFormat,
-    FindAndReplace,
-    SourceEditing,
-    PasteFromOffice,
-    FileRepository,
-    GeneralHtmlSupport,
-    Plugin
-} from 'ckeditor5';
-import koTranslations from 'ckeditor5/translations/ko.js';
-
-// Custom Upload Adapter
-class MyUploadAdapter {
-    constructor(loader) { this.loader = loader; }
-    upload() {
-        return this.loader.file.then(file => {
-            const data = new FormData();
-            data.append('upload', file);
-            return fetch('{{ url_for("admin.upload_image") }}', { method: 'POST', body: data })
-                .then(res => {
-                    console.log('[CKEditor Upload] status:', res.status);
-                    if (!res.ok) return res.json().then(err => { throw new Error(err.error?.message || '업로드 실패'); });
-                    return res.json();
-                })
-                .then(result => {
-                    console.log('[CKEditor Upload] 응답:', result);
-                    return { default: result.url };
-                });
-        });
-    }
-    abort() {}
-}
-function MyUploadAdapterPlugin(editor) {
-    editor.plugins.get('FileRepository').createUploadAdapter = (loader) => new MyUploadAdapter(loader);
-}
-
-// LineHeight 커스텀 플러그인 (줄간격)
-class LineHeightPlugin extends Plugin {
-    static get requires() { return [Paragraph, Heading]; }
-    afterInit() {
-        const editor = this.editor;
-        const blocks = ['paragraph', 'heading1', 'heading2', 'heading3', 'heading4'];
-        for (const el of blocks) {
-            if (editor.model.schema.isRegistered(el)) {
-                editor.model.schema.extend(el, { allowAttributes: 'lineHeight' });
-            }
-        }
-        editor.conversion.for('downcast').attributeToAttribute({
-            model: 'lineHeight',
-            view: value => ({ key: 'style', value: { 'line-height': value } })
-        });
-        editor.conversion.for('upcast').attributeToAttribute({
-            view: { key: 'style', value: { 'line-height': /.*/ } },
-            model: { key: 'lineHeight', value: viewElement => viewElement.getStyle('line-height') }
-        });
-    }
-}
-
-console.log('[CKEditor] 초기화 시작, #editor 요소:', document.querySelector('#editor'));
-ClassicEditor.create(document.querySelector('#editor'), {
-    plugins: [
+    import {
+        ClassicEditor,
         Essentials, Paragraph, Heading, Undo,
         Bold, Italic, Underline, Strikethrough,
         Font,
@@ -451,362 +525,436 @@ ClassicEditor.create(document.querySelector('#editor'), {
         PasteFromOffice,
         FileRepository,
         GeneralHtmlSupport,
-        MyUploadAdapterPlugin,
-        LineHeightPlugin
-    ],
-    language: koTranslations,
-    toolbar: {
-        items: [
-            'heading', '|',
-            'bold', 'italic', 'underline', 'strikethrough', '|',
-            'fontSize', 'fontColor', 'fontBackgroundColor', '|',
-            'alignment', '|',
-            'link', 'uploadImage', 'mediaEmbed', 'insertTable', 'blockQuote', 'horizontalLine', '|',
-            'bulletedList', 'numberedList', '|',
-            'outdent', 'indent', '|',
-            'specialCharacters', 'removeFormat', 'findAndReplace', '|',
-            'sourceEditing', '|',
-            'undo', 'redo'
-        ],
-        shouldNotGroupWhenFull: true
-    },
-    fontSize: {
-        options: [9, 10, 11, 12, 'default', 14, 16, 18, 20, 24, 28, 32, 36]
-    },
-    heading: {
-        options: [
-            { model: 'paragraph', title: '본문', class: 'ck-heading_paragraph' },
-            { model: 'heading1', view: 'h1', title: '제목 1', class: 'ck-heading_heading1' },
-            { model: 'heading2', view: 'h2', title: '제목 2', class: 'ck-heading_heading2' },
-            { model: 'heading3', view: 'h3', title: '제목 3', class: 'ck-heading_heading3' },
-            { model: 'heading4', view: 'h4', title: '제목 4', class: 'ck-heading_heading4' }
-        ]
-    },
-    image: {
-        toolbar: ['imageStyle:inline', 'imageStyle:block', 'imageStyle:side', '|',
-                  'toggleImageCaption', 'imageTextAlternative', '|',
-                  'resizeImage:25', 'resizeImage:50', 'resizeImage:75', 'resizeImage:original'],
-        resizeOptions: [
-            { name: 'resizeImage:original', value: null, label: '원본' },
-            { name: 'resizeImage:25', value: '25', label: '25%' },
-            { name: 'resizeImage:50', value: '50', label: '50%' },
-            { name: 'resizeImage:75', value: '75', label: '75%' }
-        ]
-    },
-    table: {
-        contentToolbar: ['tableColumn', 'tableRow', 'mergeTableCells', 'toggleTableCaption']
-    },
-    mediaEmbed: {
-        previewsInData: true
-    },
-    htmlSupport: {
-        allow: [{ name: /.*/, attributes: true, classes: true, styles: true }]
-    }
-}).then(editor => {
-    window.editorInstance = editor;
-    console.log('[CKEditor] 초기화 성공, editorInstance:', !!window.editorInstance);
+        Plugin
+    } from 'ckeditor5';
+    import koTranslations from 'ckeditor5/translations/ko.js';
 
-    // 줄간격 외부 컨트롤
-    window.setLineHeight = function(value) {
-        editor.model.change(writer => {
-            for (const block of editor.model.document.selection.getSelectedBlocks()) {
-                if (value) writer.setAttribute('lineHeight', value, block);
-                else writer.removeAttribute('lineHeight', block);
-            }
-        });
-        editor.editing.view.focus();
-    };
-
-    // 전체화면 토글
-    window.toggleFullscreen = function() {
-        var el = document.querySelector('.ck.ck-editor');
-        el.classList.toggle('ck-editor-fullscreen');
-        document.getElementById('fullscreenBtn').innerHTML = el.classList.contains('ck-editor-fullscreen') ?
-            '<i class="bi bi-fullscreen-exit"></i>' : '<i class="bi bi-arrows-fullscreen"></i>';
-    };
-
-    // ESC 키로 전체화면 해제
-    document.addEventListener('keydown', function(e) {
-        if (e.key === 'Escape') {
-            var el = document.querySelector('.ck.ck-editor.ck-editor-fullscreen');
-            if (el) window.toggleFullscreen();
+    // Custom Upload Adapter
+    class MyUploadAdapter {
+        constructor(loader) { this.loader = loader; }
+        upload() {
+            return this.loader.file.then(file => {
+                const data = new FormData();
+                data.append('upload', file);
+                return fetch('{{ url_for("admin.upload_image") }}', { method: 'POST', body: data })
+                    .then(res => {
+                        console.log('[CKEditor Upload] status:', res.status);
+                        if (!res.ok) return res.json().then(err => { throw new Error(err.error?.message || '업로드 실패'); });
+                        return res.json();
+                    })
+                    .then(result => {
+                        console.log('[CKEditor Upload] 응답:', result);
+                        return { default: result.url };
+                    });
+            });
         }
-    });
-}).catch(error => console.error('[CKEditor] 초기화 실패:', error));
-
-// form submit 시 CKEditor 내용을 textarea로 동기화
-document.querySelector('form').addEventListener('submit', function() {
-    if (window.editorInstance) {
-        document.querySelector('#editor').value = window.editorInstance.getData();
+        abort() { }
     }
-});
-</script>
-<script>
-// Dropzone 초기화
-Dropzone.autoDiscover = false;
-var mediaDropzone = new Dropzone('#mediaDropzone', {
-    url: '{{ url_for("admin.upload_image") }}',
-    paramName: 'upload',
-    maxFilesize: 100,
-    acceptedFiles: 'image/*,video/*,.pdf,.doc,.docx,.hwp,.ppt,.pptx,.xls,.xlsx,.zip,.hwpx',
-    addRemoveLinks: false,
-    dictDefaultMessage: '파일을 여기에 끌어다 놓거나 클릭하여 업로드',
-    previewsContainer: '#mediaDropzone',
-    success: function(file, response) {
-        console.log('[Dropzone] 업로드 응답:', response);
-        if (response.url) {
-            var container = document.getElementById('uploadedMedia');
-            var div = document.createElement('div');
-            div.className = 'dz-uploaded-item';
-            div.title = '클릭하면 본문에 삽입';
-            var isImage = response.is_image;
-            var isVideo = response.is_video;
-            var displayName = response.filename || file.name;
-            if (isImage) {
-                div.innerHTML = '<img src="' + response.url + '" alt="' + displayName + '"><div class="dz-label">' + displayName + '</div>';
-            } else if (isVideo) {
-                div.innerHTML = '<div style="width:80px;height:80px;background:#1a1a2e;border-radius:4px;display:flex;align-items:center;justify-content:center;border:2px solid #ddd"><i class="bi bi-play-circle-fill" style="font-size:28px;color:#fff"></i></div><div class="dz-label">' + displayName + '</div>';
-            } else {
-                var ext = file.name.split('.').pop().toUpperCase();
-                div.innerHTML = '<div style="width:80px;height:80px;background:#eee;border-radius:4px;display:flex;align-items:center;justify-content:center;font-size:10px;text-align:center;border:2px solid #ddd"><i class="bi bi-file-earmark" style="font-size:24px"></i><br>' + ext + '</div><div class="dz-label">' + displayName + '</div>';
+    function MyUploadAdapterPlugin(editor) {
+        editor.plugins.get('FileRepository').createUploadAdapter = (loader) => new MyUploadAdapter(loader);
+    }
+
+    // LineHeight 커스텀 플러그인 (줄간격)
+    class LineHeightPlugin extends Plugin {
+        static get requires() { return [Paragraph, Heading]; }
+        afterInit() {
+            const editor = this.editor;
+            const blocks = ['paragraph', 'heading1', 'heading2', 'heading3', 'heading4'];
+            for (const el of blocks) {
+                if (editor.model.schema.isRegistered(el)) {
+                    editor.model.schema.extend(el, { allowAttributes: 'lineHeight' });
+                }
             }
-            div.addEventListener('click', function() {
-                console.log('[Dropzone] 클릭 — 본문 삽입, isImage:', isImage, 'isVideo:', isVideo);
-                if (window.editorInstance) {
-                    var html;
-                    if (isImage) {
-                        html = '<figure class="image"><img src="' + response.url + '"></figure>';
-                    } else if (isVideo) {
-                        html = '<figure class="media"><div data-oembed-url="' + response.url + '">' +
-                               '<video controls style="max-width:100%"><source src="' + response.url + '"></video>' +
-                               '</div></figure>';
-                    } else {
-                        html = '<p><a href="' + response.url + '" target="_blank">📎 ' + displayName + '</a></p>';
-                    }
-                    var viewFragment = window.editorInstance.data.processor.toView(html);
-                    var modelFragment = window.editorInstance.data.toModel(viewFragment);
-                    window.editorInstance.model.insertContent(modelFragment);
-                    window.editorInstance.editing.view.focus();
+            editor.conversion.for('downcast').attributeToAttribute({
+                model: 'lineHeight',
+                view: value => ({ key: 'style', value: { 'line-height': value } })
+            });
+            editor.conversion.for('upcast').attributeToAttribute({
+                view: { key: 'style', value: { 'line-height': /.*/ } },
+                model: { key: 'lineHeight', value: viewElement => viewElement.getStyle('line-height') }
+            });
+        }
+    }
+
+    console.log('[CKEditor] 초기화 시작, #editor 요소:', document.querySelector('#editor'));
+    ClassicEditor.create(document.querySelector('#editor'), {
+        plugins: [
+            Essentials, Paragraph, Heading, Undo,
+            Bold, Italic, Underline, Strikethrough,
+            Font,
+            Alignment,
+            Link, AutoLink,
+            Image, ImageCaption, ImageStyle, ImageToolbar, ImageUpload, ImageResize, ImageInsert,
+            BlockQuote,
+            List,
+            Indent, IndentBlock,
+            Table, TableToolbar, TableCaption,
+            MediaEmbed,
+            HorizontalLine,
+            SpecialCharacters, SpecialCharactersEssentials, SpecialCharactersArrows, SpecialCharactersCurrency, SpecialCharactersLatin, SpecialCharactersMathematical, SpecialCharactersText,
+            RemoveFormat,
+            FindAndReplace,
+            SourceEditing,
+            PasteFromOffice,
+            FileRepository,
+            GeneralHtmlSupport,
+            MyUploadAdapterPlugin,
+            LineHeightPlugin
+        ],
+        language: koTranslations,
+        toolbar: {
+            items: [
+                'heading', '|',
+                'bold', 'italic', 'underline', 'strikethrough', '|',
+                'fontSize', 'fontColor', 'fontBackgroundColor', '|',
+                'alignment', '|',
+                'link', 'uploadImage', 'mediaEmbed', 'insertTable', 'blockQuote', 'horizontalLine', '|',
+                'bulletedList', 'numberedList', '|',
+                'outdent', 'indent', '|',
+                'specialCharacters', 'removeFormat', 'findAndReplace', '|',
+                'sourceEditing', '|',
+                'undo', 'redo'
+            ],
+            shouldNotGroupWhenFull: true
+        },
+        fontSize: {
+            options: [9, 10, 11, 12, 'default', 14, 16, 18, 20, 24, 28, 32, 36]
+        },
+        heading: {
+            options: [
+                { model: 'paragraph', title: '본문', class: 'ck-heading_paragraph' },
+                { model: 'heading1', view: 'h1', title: '제목 1', class: 'ck-heading_heading1' },
+                { model: 'heading2', view: 'h2', title: '제목 2', class: 'ck-heading_heading2' },
+                { model: 'heading3', view: 'h3', title: '제목 3', class: 'ck-heading_heading3' },
+                { model: 'heading4', view: 'h4', title: '제목 4', class: 'ck-heading_heading4' }
+            ]
+        },
+        image: {
+            toolbar: ['imageStyle:inline', 'imageStyle:block', 'imageStyle:side', '|',
+                'toggleImageCaption', 'imageTextAlternative', '|',
+                'resizeImage:25', 'resizeImage:50', 'resizeImage:75', 'resizeImage:original'],
+            resizeOptions: [
+                { name: 'resizeImage:original', value: null, label: '원본' },
+                { name: 'resizeImage:25', value: '25', label: '25%' },
+                { name: 'resizeImage:50', value: '50', label: '50%' },
+                { name: 'resizeImage:75', value: '75', label: '75%' }
+            ]
+        },
+        table: {
+            contentToolbar: ['tableColumn', 'tableRow', 'mergeTableCells', 'toggleTableCaption']
+        },
+        mediaEmbed: {
+            previewsInData: true
+        },
+        htmlSupport: {
+            allow: [{ name: /.*/, attributes: true, classes: true, styles: true }]
+        }
+    }).then(editor => {
+        window.editorInstance = editor;
+        console.log('[CKEditor] 초기화 성공, editorInstance:', !!window.editorInstance);
+
+        // 줄간격 외부 컨트롤
+        window.setLineHeight = function (value) {
+            editor.model.change(writer => {
+                for (const block of editor.model.document.selection.getSelectedBlocks()) {
+                    if (value) writer.setAttribute('lineHeight', value, block);
+                    else writer.removeAttribute('lineHeight', block);
                 }
             });
-            container.appendChild(div);
+            editor.editing.view.focus();
+        };
+
+        // 전체화면 토글
+        window.toggleFullscreen = function () {
+            var el = document.querySelector('.ck.ck-editor');
+            el.classList.toggle('ck-editor-fullscreen');
+            document.getElementById('fullscreenBtn').innerHTML = el.classList.contains('ck-editor-fullscreen') ?
+                '<i class="bi bi-fullscreen-exit"></i>' : '<i class="bi bi-arrows-fullscreen"></i>';
+        };
+
+        // ESC 키로 전체화면 해제
+        document.addEventListener('keydown', function (e) {
+            if (e.key === 'Escape') {
+                var el = document.querySelector('.ck.ck-editor.ck-editor-fullscreen');
+                if (el) window.toggleFullscreen();
+            }
+        });
+    }).catch(error => console.error('[CKEditor] 초기화 실패:', error));
+
+    // form submit 시 CKEditor 내용을 textarea로 동기화
+    document.querySelector('form').addEventListener('submit', function () {
+        if (window.editorInstance) {
+            document.querySelector('#editor').value = window.editorInstance.getData();
         }
-        this.removeFile(file);
+    });
+</script>
+<script>
+    // Dropzone 초기화
+    Dropzone.autoDiscover = false;
+    var mediaDropzone = new Dropzone('#mediaDropzone', {
+        url: '{{ url_for("admin.upload_image") }}',
+        paramName: 'upload',
+        maxFilesize: 100,
+        acceptedFiles: 'image/*,video/*,.pdf,.doc,.docx,.hwp,.ppt,.pptx,.xls,.xlsx,.zip,.hwpx',
+        addRemoveLinks: false,
+        dictDefaultMessage: '파일을 여기에 끌어다 놓거나 클릭하여 업로드',
+        previewsContainer: '#mediaDropzone',
+        success: function (file, response) {
+            console.log('[Dropzone] 업로드 응답:', response);
+            if (response.url) {
+                var container = document.getElementById('uploadedMedia');
+                var div = document.createElement('div');
+                div.className = 'dz-uploaded-item';
+                div.title = '클릭하면 본문에 삽입';
+                var isImage = response.is_image;
+                var isVideo = response.is_video;
+                var displayName = response.filename || file.name;
+                if (isImage) {
+                    div.innerHTML = '<img src="' + response.url + '" alt="' + displayName + '"><div class="dz-label">' + displayName + '</div>';
+                } else if (isVideo) {
+                    div.innerHTML = '<div style="width:80px;height:80px;background:#1a1a2e;border-radius:4px;display:flex;align-items:center;justify-content:center;border:2px solid #ddd"><i class="bi bi-play-circle-fill" style="font-size:28px;color:#fff"></i></div><div class="dz-label">' + displayName + '</div>';
+                } else {
+                    var ext = file.name.split('.').pop().toUpperCase();
+                    div.innerHTML = '<div style="width:80px;height:80px;background:#eee;border-radius:4px;display:flex;align-items:center;justify-content:center;font-size:10px;text-align:center;border:2px solid #ddd"><i class="bi bi-file-earmark" style="font-size:24px"></i><br>' + ext + '</div><div class="dz-label">' + displayName + '</div>';
+                }
+                div.addEventListener('click', function () {
+                    console.log('[Dropzone] 클릭 — 본문 삽입, isImage:', isImage, 'isVideo:', isVideo);
+                    if (window.editorInstance) {
+                        var html;
+                        if (isImage) {
+                            html = '<figure class="image"><img src="' + response.url + '"></figure>';
+                        } else if (isVideo) {
+                            html = '<figure class="media"><div data-oembed-url="' + response.url + '">' +
+                                '<video controls style="max-width:100%"><source src="' + response.url + '"></video>' +
+                                '</div></figure>';
+                        } else {
+                            html = '<p><a href="' + response.url + '" target="_blank">📎 ' + displayName + '</a></p>';
+                        }
+                        var viewFragment = window.editorInstance.data.processor.toView(html);
+                        var modelFragment = window.editorInstance.data.toModel(viewFragment);
+                        window.editorInstance.model.insertContent(modelFragment);
+                        window.editorInstance.editing.view.focus();
+                    }
+                });
+                container.appendChild(div);
+            }
+            this.removeFile(file);
+        }
+    });
+
+    {% if article and article.id %}
+    // 삭제 처리 (nested form 방지)
+    function deleteArticle() {
+        if (!confirm('정말 삭제하시겠습니까?')) return;
+        fetch('{{ url_for("admin.article_delete", article_id=article.id) }}', { method: 'POST' })
+            .then(() => { window.location.href = '{{ url_for("admin.article_list") }}'; });
     }
-});
+    {% endif %}
 
-{% if article and article.id %}
-// 삭제 처리 (nested form 방지)
-function deleteArticle() {
-    if (!confirm('정말 삭제하시겠습니까?')) return;
-    fetch('{{ url_for("admin.article_delete", article_id=article.id) }}', { method: 'POST' })
-        .then(() => { window.location.href = '{{ url_for("admin.article_list") }}'; });
-}
-{% endif %}
-
-// 관련기사 팝업
-function openRelatedPopup() {
-    var articleId = {{ article.id if article and article.id else 0 }};
+    // 관련기사 팝업
+    function openRelatedPopup() {
+        var articleId = {{ article.id if article and article.id else 0 }
+    };
     var url = '/admin/find-related?article_id=' + articleId;
     window.open(url, 'findRelated', 'width=980,height=800,scrollbars=yes,resizable=yes');
 }
 
-// 팝업에서 호출하는 콜백: 선택된 기사 목록 반영
-function applyRelatedArticles(articles) {
-    var list = document.getElementById('relatedList');
-    list.innerHTML = '';
-    articles.forEach(function(art) {
-        var li = document.createElement('li');
-        li.className = 'list-group-item d-flex justify-content-between align-items-center py-2';
-        li.dataset.id = art.id;
-        li.innerHTML = '<span class="text-truncate me-2" style="font-size:13px">' + art.title + '</span>' +
-            '<input type="hidden" name="related_ids[]" value="' + art.id + '">' +
-            '<button type="button" class="btn btn-sm btn-outline-danger flex-shrink-0 remove-related" title="삭제">&times;</button>';
-        list.appendChild(li);
-    });
-    document.getElementById('relatedCount').textContent = articles.length + '개 선택됨';
-}
-
-// 관련기사 삭제 버튼
-document.getElementById('relatedList').addEventListener('click', function(e) {
-    if (e.target.classList.contains('remove-related')) {
-        e.target.closest('li').remove();
-        var count = document.getElementById('relatedList').querySelectorAll('li').length;
-        document.getElementById('relatedCount').textContent = count + '개 선택됨';
+    // 팝업에서 호출하는 콜백: 선택된 기사 목록 반영
+    function applyRelatedArticles(articles) {
+        var list = document.getElementById('relatedList');
+        list.innerHTML = '';
+        articles.forEach(function (art) {
+            var li = document.createElement('li');
+            li.className = 'list-group-item d-flex justify-content-between align-items-center py-2';
+            li.dataset.id = art.id;
+            li.innerHTML = '<span class="text-truncate me-2" style="font-size:13px">' + art.title + '</span>' +
+                '<input type="hidden" name="related_ids[]" value="' + art.id + '">' +
+                '<button type="button" class="btn btn-sm btn-outline-danger flex-shrink-0 remove-related" title="삭제">&times;</button>';
+            list.appendChild(li);
+        });
+        document.getElementById('relatedCount').textContent = articles.length + '개 선택됨';
     }
-});
 
-// 기자 선택 모달
-document.getElementById('reporterModal').addEventListener('show.bs.modal', function() {
-    fetch('{{ url_for("admin.api_reporters") }}')
+    // 관련기사 삭제 버튼
+    document.getElementById('relatedList').addEventListener('click', function (e) {
+        if (e.target.classList.contains('remove-related')) {
+            e.target.closest('li').remove();
+            var count = document.getElementById('relatedList').querySelectorAll('li').length;
+            document.getElementById('relatedCount').textContent = count + '개 선택됨';
+        }
+    });
+
+    // 기자 선택 모달
+    document.getElementById('reporterModal').addEventListener('show.bs.modal', function () {
+        fetch('{{ url_for("admin.api_reporters") }}')
+            .then(r => r.json())
+            .then(data => {
+                var html = '<div class="list-group list-group-flush">';
+                data.forEach(function (u) {
+                    html += '<a href="#" class="list-group-item list-group-item-action d-flex justify-content-between" onclick="selectReporter(\'' + u.name.replace(/'/g, "\\'") + '\',\'' + (u.email || '').replace(/'/g, "\\'") + '\');return false;">';
+                    html += '<span><strong>' + u.name + '</strong> <small class="text-muted">(' + u.user_id + ')</small></span>';
+                    html += '<span class="badge bg-' + (u.level === 'admin' ? 'danger' : u.level === 'editor' ? 'warning text-dark' : 'info') + '">' + u.level + '</span>';
+                    html += '</a>';
+                });
+                html += '</div>';
+                document.getElementById('reporterList').innerHTML = html;
+            });
+    });
+    function selectReporter(name, email) {
+        document.getElementById('authorName').value = name;
+        document.getElementById('authorEmail').value = email || '';
+        bootstrap.Modal.getInstance(document.getElementById('reporterModal')).hide();
+    }
+
+    // 본문 크기 토글 (데스크탑/모바일 미리보기)
+    function setPreview(mode) {
+        var wrap = document.getElementById('editorWrap');
+        var btns = document.querySelectorAll('#previewToggle .btn');
+        btns.forEach(function (b) { b.classList.remove('active'); });
+        if (mode === 'mobile') {
+            wrap.style.maxWidth = '375px';
+            wrap.style.margin = '0 auto';
+            wrap.style.border = '2px solid #ddd';
+            wrap.style.borderRadius = '8px';
+            wrap.style.padding = '10px';
+            btns[1].classList.add('active');
+        } else {
+            wrap.style.maxWidth = '';
+            wrap.style.margin = '';
+            wrap.style.border = '';
+            wrap.style.borderRadius = '';
+            wrap.style.padding = '';
+            btns[0].classList.add('active');
+        }
+    }
+
+    // 임시보관함 (자동저장) — 60초마다
+    var draftId = {{ draft_id|default (0) }};
+    var articleId = {{ article.id if article and article.id else 0 }};
+    var draftStatusEl = null;
+
+    {% if draft_id |default (0) %}
+    // draft에서 불러오기
+    fetch('/admin/draft/' + draftId + '/load')
         .then(r => r.json())
         .then(data => {
-            var html = '<div class="list-group list-group-flush">';
-            data.forEach(function(u) {
-                html += '<a href="#" class="list-group-item list-group-item-action d-flex justify-content-between" onclick="selectReporter(\'' + u.name.replace(/'/g, "\\'") + '\',\'' + (u.email || '').replace(/'/g, "\\'") + '\');return false;">';
-                html += '<span><strong>' + u.name + '</strong> <small class="text-muted">(' + u.user_id + ')</small></span>';
-                html += '<span class="badge bg-' + (u.level === 'admin' ? 'danger' : u.level === 'editor' ? 'warning text-dark' : 'info') + '">' + u.level + '</span>';
-                html += '</a>';
-            });
-            html += '</div>';
-            document.getElementById('reporterList').innerHTML = html;
-        });
-});
-function selectReporter(name, email) {
-    document.getElementById('authorName').value = name;
-    document.getElementById('authorEmail').value = email || '';
-    bootstrap.Modal.getInstance(document.getElementById('reporterModal')).hide();
-}
-
-// 본문 크기 토글 (데스크탑/모바일 미리보기)
-function setPreview(mode) {
-    var wrap = document.getElementById('editorWrap');
-    var btns = document.querySelectorAll('#previewToggle .btn');
-    btns.forEach(function(b) { b.classList.remove('active'); });
-    if (mode === 'mobile') {
-        wrap.style.maxWidth = '375px';
-        wrap.style.margin = '0 auto';
-        wrap.style.border = '2px solid #ddd';
-        wrap.style.borderRadius = '8px';
-        wrap.style.padding = '10px';
-        btns[1].classList.add('active');
-    } else {
-        wrap.style.maxWidth = '';
-        wrap.style.margin = '';
-        wrap.style.border = '';
-        wrap.style.borderRadius = '';
-        wrap.style.padding = '';
-        btns[0].classList.add('active');
-    }
-}
-
-// 임시보관함 (자동저장) — 60초마다
-var draftId = {{ draft_id|default(0) }};
-var articleId = {{ article.id if article and article.id else 0 }};
-var draftStatusEl = null;
-
-{% if draft_id|default(0) %}
-// draft에서 불러오기
-fetch('/admin/draft/' + draftId + '/load')
-    .then(r => r.json())
-    .then(data => {
-        if (data.title) document.querySelector('input[name="title"]').value = data.title;
-        if (data.content && window.editorInstance) {
-            window.editorInstance.setData(data.content);
-        } else if (data.content) {
-            document.querySelector('#editor').value = data.content;
-        }
-        if (data.data) {
-            if (data.data.author_name) document.getElementById('authorName').value = data.data.author_name;
-            if (data.data.author_email) document.getElementById('authorEmail').value = data.data.author_email;
-        }
-    });
-{% endif %}
-
-function autoSaveDraft() {
-    var title = document.querySelector('input[name="title"]').value;
-    var content = window.editorInstance ? window.editorInstance.getData() : '';
-    if (!title && !content) return;  // 빈 내용은 저장 안함
-
-    fetch('{{ url_for("admin.draft_save") }}', {
-        method: 'POST',
-        headers: {'Content-Type': 'application/json'},
-        body: JSON.stringify({
-            draft_id: draftId || null,
-            article_id: articleId || null,
-            title: title,
-            content: content,
-            section_id: document.querySelector('[name="section_id"]').value,
-            author_name: document.getElementById('authorName').value,
-            author_email: document.getElementById('authorEmail').value,
-            level: document.querySelector('[name="level"]:checked') ? document.querySelector('[name="level"]:checked').value : 'B'
-        })
-    }).then(r => r.json()).then(data => {
-        if (data.ok) {
-            draftId = data.draft_id;
-            var now = new Date().toLocaleTimeString('ko-KR', {hour:'2-digit', minute:'2-digit'});
-            if (!draftStatusEl) {
-                draftStatusEl = document.createElement('small');
-                draftStatusEl.className = 'text-muted ms-2';
-                document.querySelector('form button[type="submit"]').parentNode.appendChild(draftStatusEl);
+            if (data.title) document.querySelector('input[name="title"]').value = data.title;
+            if (data.content && window.editorInstance) {
+                window.editorInstance.setData(data.content);
+            } else if (data.content) {
+                document.querySelector('#editor').value = data.content;
             }
-            draftStatusEl.textContent = '자동저장됨 ' + now;
-        }
-    }).catch(function(){});
-}
-setInterval(autoSaveDraft, 60000);
+            if (data.data) {
+                if (data.data.author_name) document.getElementById('authorName').value = data.data.author_name;
+                if (data.data.author_email) document.getElementById('authorEmail').value = data.data.author_email;
+            }
+        });
+    {% endif %}
 
-// 섹션 동적 로딩
-document.getElementById('sectionSelect').addEventListener('change', function() {
-    var sectionId = this.value;
-    var subSelect = document.getElementById('subsectionSelect');
-    subSelect.innerHTML = '<option value="">2차 섹션 선택</option>';
-    if (!sectionId) return;
-    fetch('/admin/api/subsections/' + sectionId)
-        .then(r => r.json())
-        .then(data => {
-            data.forEach(function(sub) {
-                var opt = document.createElement('option');
-                opt.value = sub.id;
-                opt.textContent = sub.name;
-                subSelect.appendChild(opt);
+    function autoSaveDraft() {
+        var title = document.querySelector('input[name="title"]').value;
+        var content = window.editorInstance ? window.editorInstance.getData() : '';
+        if (!title && !content) return;  // 빈 내용은 저장 안함
+
+        fetch('{{ url_for("admin.draft_save") }}', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+                draft_id: draftId || null,
+                article_id: articleId || null,
+                title: title,
+                content: content,
+                section_id: document.querySelector('[name="section_id"]').value,
+                author_name: document.getElementById('authorName').value,
+                author_email: document.getElementById('authorEmail').value,
+                level: document.querySelector('[name="level"]:checked') ? document.querySelector('[name="level"]:checked').value : 'B'
+            })
+        }).then(r => r.json()).then(data => {
+            if (data.ok) {
+                draftId = data.draft_id;
+                var now = new Date().toLocaleTimeString('ko-KR', { hour: '2-digit', minute: '2-digit' });
+                if (!draftStatusEl) {
+                    draftStatusEl = document.createElement('small');
+                    draftStatusEl.className = 'text-muted ms-2';
+                    document.querySelector('form button[type="submit"]').parentNode.appendChild(draftStatusEl);
+                }
+                draftStatusEl.textContent = '자동저장됨 ' + now;
+            }
+        }).catch(function () { });
+    }
+    setInterval(autoSaveDraft, 60000);
+
+    // 섹션 동적 로딩
+    document.getElementById('sectionSelect').addEventListener('change', function () {
+        var sectionId = this.value;
+        var subSelect = document.getElementById('subsectionSelect');
+        subSelect.innerHTML = '<option value="">2차 섹션 선택</option>';
+        if (!sectionId) return;
+        fetch('/admin/api/subsections/' + sectionId)
+            .then(r => r.json())
+            .then(data => {
+                data.forEach(function (sub) {
+                    var opt = document.createElement('option');
+                    opt.value = sub.id;
+                    opt.textContent = sub.name;
+                    subSelect.appendChild(opt);
+                });
             });
-        });
-});
+    });
 
-// ── 포토DB ──
-var photoPage = 1, photoFav = false, photoQuery = '';
-function searchPhotos() {
-    photoQuery = document.getElementById('photoSearchInput').value;
-    photoPage = 1;
-    document.getElementById('photoGrid').innerHTML = '';
-    loadPhotos();
-}
-function toggleFavFilter() {
-    photoFav = !photoFav;
-    document.getElementById('photoFavFilter').classList.toggle('btn-warning', photoFav);
-    document.getElementById('photoFavFilter').classList.toggle('btn-outline-warning', !photoFav);
-    searchPhotos();
-}
-function loadMorePhotos() { photoPage++; loadPhotos(); }
-function loadPhotos() {
-    var url = '/admin/api/photos?page=' + photoPage + '&q=' + encodeURIComponent(photoQuery);
-    if (photoFav) url += '&favorite=1';
-    fetch(url).then(r => r.json()).then(data => {
-        var grid = document.getElementById('photoGrid');
-        data.photos.forEach(function(p) {
-            var div = document.createElement('div');
-            div.style.cssText = 'position:relative;cursor:pointer;border:1px solid #ddd;border-radius:4px;overflow:hidden';
-            div.innerHTML = '<img src="' + p.url + '" style="width:100%;height:80px;object-fit:cover" title="' + p.original_name + '">'
-                + '<div style="position:absolute;top:2px;right:2px"><button type="button" onclick="event.stopPropagation();togglePhotoFav(' + p.id + ',this)" class="btn btn-sm p-0" style="font-size:14px;line-height:1">' + (p.is_favorite ? '⭐' : '☆') + '</button></div>'
-                + '<div style="font-size:9px;padding:2px 4px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">' + p.original_name + '</div>';
-            div.addEventListener('click', function() { insertPhotoToEditor(p.url); });
-            grid.appendChild(div);
-        });
-        document.getElementById('photoLoadMore').style.display = (data.photos.length >= data.per_page) ? '' : 'none';
-    });
-}
-function togglePhotoFav(id, btn) {
-    fetch('/admin/api/photos/' + id + '/favorite', {method:'POST'}).then(r => r.json()).then(data => {
-        btn.textContent = data.is_favorite ? '⭐' : '☆';
-    });
-}
-function insertPhotoToEditor(url) {
-    if (window.editorInstance) {
-        window.editorInstance.model.change(function(writer) {
-            var img = writer.createElement('imageBlock', {src: url});
-            window.editorInstance.model.insertContent(img);
+    // ── 포토DB ──
+    var photoPage = 1, photoFav = false, photoQuery = '';
+    function searchPhotos() {
+        photoQuery = document.getElementById('photoSearchInput').value;
+        photoPage = 1;
+        document.getElementById('photoGrid').innerHTML = '';
+        loadPhotos();
+    }
+    function toggleFavFilter() {
+        photoFav = !photoFav;
+        document.getElementById('photoFavFilter').classList.toggle('btn-warning', photoFav);
+        document.getElementById('photoFavFilter').classList.toggle('btn-outline-warning', !photoFav);
+        searchPhotos();
+    }
+    function loadMorePhotos() { photoPage++; loadPhotos(); }
+    function loadPhotos() {
+        var url = '/admin/api/photos?page=' + photoPage + '&q=' + encodeURIComponent(photoQuery);
+        if (photoFav) url += '&favorite=1';
+        fetch(url).then(r => r.json()).then(data => {
+            var grid = document.getElementById('photoGrid');
+            data.photos.forEach(function (p) {
+                var div = document.createElement('div');
+                div.style.cssText = 'position:relative;cursor:pointer;border:1px solid #ddd;border-radius:4px;overflow:hidden';
+                div.innerHTML = '<img src="' + p.url + '" style="width:100%;height:80px;object-fit:cover" title="' + p.original_name + '">'
+                    + '<div style="position:absolute;top:2px;right:2px"><button type="button" onclick="event.stopPropagation();togglePhotoFav(' + p.id + ',this)" class="btn btn-sm p-0" style="font-size:14px;line-height:1">' + (p.is_favorite ? '⭐' : '☆') + '</button></div>'
+                    + '<div style="font-size:9px;padding:2px 4px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">' + p.original_name + '</div>';
+                div.addEventListener('click', function () { insertPhotoToEditor(p.url); });
+                grid.appendChild(div);
+            });
+            document.getElementById('photoLoadMore').style.display = (data.photos.length >= data.per_page) ? '' : 'none';
         });
     }
-    bootstrap.Modal.getInstance(document.getElementById('photoDbModal')).hide();
-}
-document.getElementById('photoDbModal').addEventListener('show.bs.modal', function() {
-    photoPage = 1; photoQuery = ''; photoFav = false;
-    document.getElementById('photoSearchInput').value = '';
-    document.getElementById('photoGrid').innerHTML = '';
-    document.getElementById('photoFavFilter').classList.remove('btn-warning');
-    document.getElementById('photoFavFilter').classList.add('btn-outline-warning');
-    loadPhotos();
-});
+    function togglePhotoFav(id, btn) {
+        fetch('/admin/api/photos/' + id + '/favorite', { method: 'POST' }).then(r => r.json()).then(data => {
+            btn.textContent = data.is_favorite ? '⭐' : '☆';
+        });
+    }
+    function insertPhotoToEditor(url) {
+        if (window.editorInstance) {
+            window.editorInstance.model.change(function (writer) {
+                var img = writer.createElement('imageBlock', { src: url });
+                window.editorInstance.model.insertContent(img);
+            });
+        }
+        bootstrap.Modal.getInstance(document.getElementById('photoDbModal')).hide();
+    }
+    document.getElementById('photoDbModal').addEventListener('show.bs.modal', function () {
+        photoPage = 1; photoQuery = ''; photoFav = false;
+        document.getElementById('photoSearchInput').value = '';
+        document.getElementById('photoGrid').innerHTML = '';
+        document.getElementById('photoFavFilter').classList.remove('btn-warning');
+        document.getElementById('photoFavFilter').classList.add('btn-outline-warning');
+        loadPhotos();
+    });
 </script>
 {% endblock %}

@@ -1,675 +1,1062 @@
 <!doctype html>
 <html class="no-js" lang="ko" dir="ltr">
+
 <head>
-<meta charset="utf-8">
-<meta http-equiv="x-ua-compatible" content="ie=edge">
-{% if is_mobile %}
-<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1">
-<meta name="theme-color" content="#5e1985">
-{% else %}
-<meta name="viewport" content="width=1240">
-{% endif %}
-<meta name="description" content="삶과 죽음의 존엄성을 전하는 웰다잉뉴스"/>
-<meta property="og:type" content="website"/>
-<meta property="og:title" content="웰다잉뉴스"/>
-<meta property="og:site_name" content="웰다잉뉴스"/>
-<meta property="og:description" content="삶과 죽음의 존엄성을 전하는 웰다잉뉴스"/>
-<meta property="og:url" content="{{ request.url }}"/>
-<meta property="og:image" content="{{ url_for('static', filename='images/og_default.png', _external=True) }}"/>
-<meta name="twitter:card" content="summary_large_image"/>
-{% block meta %}{% endblock %}
-<title>{% block title %}웰다잉뉴스{% endblock %}</title>
-<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/slick-carousel@1.8.1/slick/slick.css">
-<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@300;400;500;700&family=Roboto:wght@300;400;500;700&display=swap">
-<link rel="stylesheet" href="{{ url_for('static', filename='css/orig/foundation.min.css') }}">
-<link rel="stylesheet" href="{{ url_for('static', filename='css/orig/custom.foundation.min.css') }}">
-<link rel="stylesheet" href="{{ url_for('static', filename='css/orig/webfonts.min.css') }}">
-<link rel="stylesheet" href="{{ url_for('static', filename='css/orig/font.style.css') }}">
-<link rel="stylesheet" href="{{ url_for('static', filename='css/orig/media.min.css') }}">
-<link rel="stylesheet" href="{{ url_for('static', filename='css/orig/autobox.style.min.css') }}">
-<link rel="stylesheet" href="{{ url_for('static', filename='css/orig/templates.style.min.css') }}">
-<link rel="stylesheet" href="{{ url_for('static', filename='css/orig/plugin.style.min.css') }}">
-<link rel="stylesheet" href="{{ url_for('static', filename='css/orig/style.min.css') }}">
-<link rel="stylesheet" href="{{ url_for('static', filename='css/orig/design.style.css') }}">
-{% if is_mobile %}
-<link rel="stylesheet" href="{{ url_for('static', filename='css/orig/menubar_mobile.css') }}">
-{% else %}
-<link rel="stylesheet" href="{{ url_for('static', filename='css/orig/menubar.css') }}">
-{% endif %}
-<script src="https://cdn.jsdelivr.net/npm/jquery@3.7.1/dist/jquery.min.js"></script>
-<script src="https://cdn.jsdelivr.net/npm/slick-carousel@1.8.1/slick/slick.min.js"></script>
-<style type="text/css">
-/* 사이트 기본 색 */
-.user-point,a.user-point,
-.poll-columns .poll-state.going
-{color:#5e1985 !important}
-.user-bg,.user-bg:hover,.user-bg:active,.user-bg:focus,li[id*="slick-"].slick-active button[data-role],.tabs .is-active a:not([data-tab])
-{background-color:#5e1985 !important}
-.user-border{border-color:#5e1985 !important}
-.user-border-top {border-top-color:#5e1985 !important}
-.user-border-bottom {border-bottom-color:#5e1985 !important}
-.user-border-left {border-left-color:#5e1985 !important}
-.user-border-right {border-right-color:#5e1985 !important}
-.mobile-tabs .tabs .is-active a {color:#5e1985 !important;background:#fff !important}
+    <meta charset="utf-8">
+    <meta http-equiv="x-ua-compatible" content="ie=edge">
+    {% if is_mobile %}
+    <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1">
+    <meta name="theme-color" content="#5e1985">
+    {% else %}
+    <meta name="viewport" content="width=1240">
+    {% endif %}
+    <meta name="description" content="삶과 죽음의 존엄성을 전하는 웰다잉뉴스" />
+    <meta property="og:type" content="website" />
+    <meta property="og:title" content="웰다잉뉴스" />
+    <meta property="og:site_name" content="웰다잉뉴스" />
+    <meta property="og:description" content="삶과 죽음의 존엄성을 전하는 웰다잉뉴스" />
+    <meta property="og:url" content="{{ request.url }}" />
+    <meta property="og:image" content="{{ url_for('static', filename='images/og_default.png', _external=True) }}" />
+    <meta name="twitter:card" content="summary_large_image" />
+    {% block meta %}{% endblock %}
+    <title>{% block title %}웰다잉뉴스{% endblock %}</title>
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/slick-carousel@1.8.1/slick/slick.css">
+    <link rel="stylesheet"
+        href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@300;400;500;700&family=Roboto:wght@300;400;500;700&display=swap">
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/orig/foundation.min.css') }}">
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/orig/custom.foundation.min.css') }}">
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/orig/webfonts.min.css') }}">
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/orig/font.style.css') }}">
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/orig/media.min.css') }}">
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/orig/autobox.style.min.css') }}">
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/orig/templates.style.min.css') }}">
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/orig/plugin.style.min.css') }}">
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/orig/style.min.css') }}">
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/orig/design.style.css') }}">
+    {% if is_mobile %}
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/orig/menubar_mobile.css') }}">
+    {% else %}
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/orig/menubar.css') }}">
+    {% endif %}
+    <script src="https://cdn.jsdelivr.net/npm/jquery@3.7.1/dist/jquery.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/slick-carousel@1.8.1/slick/slick.min.js"></script>
+    <style type="text/css">
+        /* 사이트 기본 색 */
+        .user-point,
+        a.user-point,
+        .poll-columns .poll-state.going {
+            color: #5e1985 !important
+        }
 
-{% if is_mobile %}
-/* mobile site size */
-.width-728 {width:728px}
-.max-width-728 {max-width:728px}
-{% else %}
-/* desktop site size */
-.width-1240 {width:1240px}
-.max-width-1240 {max-width:1240px}
-.min-width-1240 {min-width:1240px}
+        .user-bg,
+        .user-bg:hover,
+        .user-bg:active,
+        .user-bg:focus,
+        li[id*="slick-"].slick-active button[data-role],
+        .tabs .is-active a:not([data-tab]) {
+            background-color: #5e1985 !important
+        }
 
-#header-wrapper .mode-inner {width:1240px}
-#header-wrapper.full #user-nav, #header-wrapper.basic #user-nav .mode-inner {border-bottom-color:#5e1985}
-#user-nav .user-menu .secline > a.a-hover {color:#5e1985}
-#user-nav .user-menu .secline .sub > a.a-sub-hover, #user-nav .user-menu .secline .sub > a:hover {color:#5e1985}
-#user-menu .letter a > i {background-color:#5e1985}
+        .user-border {
+            border-color: #5e1985 !important
+        }
 
-/* footer type-31 */
-#user-footer.type-31 {padding:0 0 5rem;background-color:#fff;border-top:2px solid #333}
-#user-footer.type-31 .user-nav {display:block;margin-bottom:1.875rem;font-size:0;border-bottom:1px solid rgba(0,0,0,.2);white-space:nowrap;text-align:left}
-#user-footer.type-31 .user-nav::after {content:'';display:table;clear:both}
-#user-footer.type-31 .user-nav > .item {display:inline-block;margin-left:2.5rem;font-size:.9375rem;color:rgba(0,0,0,.7);line-height:66px;vertical-align:middle}
-#user-footer.type-31 .user-nav > .item.etc {color:#000}
-#user-footer.type-31 .user-nav > .item:first-of-type {margin-left:0}
-#user-footer.type-31 .user-nav .for-top {overflow:hidden;float:right;width:60px;height:66px;padding-top:.625rem;background-color:#feac1e;text-transform:uppercase;text-align:center;text-decoration:none;transition:padding .25s ease-in}
-#user-footer.type-31 .user-nav .for-top:hover {padding-top:.375rem}
-#user-footer.type-31 .user-nav .for-top > i[class^="icon-"], #user-footer.type-31 .user-nav .for-top > .text {display:block;color:#fff;line-height:1}
-#user-footer.type-31 .user-nav .for-top > i[class^="icon-"] {font-size:1.5rem}
-#user-footer.type-31 .user-nav .for-top > .text {font-size:.9375rem}
-#user-footer.type-31 .user-logo {width:150px;margin-right:1.875rem}
-#user-footer.type-31 .user-address {float:right;width:calc(100% - 180px);font-size:.813rem;font-weight:lighter;text-align:left}
-#user-footer.type-31 .user-address ul li {color:rgba(0,0,0,.6)}
-#user-footer.type-31 .user-address ul li.bars::before {color:rgba(0,0,0,.25)}
-#user-footer.type-31 .user-address ul li.copy {margin-top:1.375rem;font-size:.813rem;color:rgba(0,0,0,.4)}
-#user-footer.type-31 .user-address ul li a {color:inherit;text-decoration:none}
-{% endif %}
+        .user-border-top {
+            border-top-color: #5e1985 !important
+        }
 
-/* 사이드바 많이 본 뉴스 탭 — Foundation 오버라이드 */
-.tabs-wrap.type-E {text-align:left}
-.tabs-wrap.type-E .tabs-header {display:block;margin-bottom:1rem;font-size:1.25rem;font-weight:700;line-height:1;letter-spacing:-.025em;color:#000}
-.tabs-wrap.type-E .tabs {margin:0;padding:0;border:none;border-bottom:1px solid #eee;background:none;list-style:none;display:flex}
-.tabs-wrap.type-E .tabs .tabs-title {float:none;flex:none}
-.tabs-wrap.type-E .tabs .tabs-title > a {display:block;padding:8px 15px;font-size:13px;line-height:1;color:#666;background:none !important;border:none}
-.tabs-wrap.type-E .tabs .tabs-title > a:hover {color:#333;background:none !important}
-.tabs-wrap.type-E .tabs .tabs-title.is-active > a {color:#000;font-weight:700;background:none !important;border-bottom:2px solid #5e1985;margin-bottom:-1px}
-.tabs-wrap.type-E .tabs-popular {padding-top:10px}
-.tabs-wrap.type-E .tabs-popular .item:not(:first-child) {margin-top:12px;padding-top:12px;border-top:1px solid rgba(0,0,0,.06)}
-/* 사이드바 box-skin */
-.box-skin .header {font-weight:700;letter-spacing:-.025em}
-.box-skin .header > a {display:block;margin-bottom:1rem;font-size:1.25rem;line-height:1;text-decoration:none;color:#000}
-.box-skin .header > a:hover {color:#292728}
-.box-skin .content {display:block}
-#skin-11 > .item:not(:first-child) {margin-top:15px;padding-top:15px;border-top:1px solid rgba(0,0,0,.05)}
-#skin-11 .auto-valign {display:flex;align-items:flex-start}
-#skin-11 .frame {width:65px;flex-shrink:0;overflow:hidden;border-radius:4px}
-#skin-11 .frame .auto-images {display:block;width:65px;height:65px;background-size:cover;background-position:center;background-color:#e0d5ea;border-radius:4px;transition:transform .2s ease}
-#skin-11 a:hover .auto-images {transform:scale(1.05)}
-#skin-11 .frame + .content {display:inline-block;width:calc(100% - 65px);padding-left:16px}
-#skin-11 .auto-titles {display:block;font-size:15px;line-height:1.25;font-weight:400;color:#1e1e1e;overflow:hidden;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;max-height:2.5em}
-#skin-11 .auto-name {display:block;margin-top:5px;font-size:12px;font-weight:300;color:#999;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
-.box-margins.box-solid {display:block;border-top:1px solid rgba(0,0,0,.12)}
-.box-margins.height-50 {height:50px}
-</style>
-{% block extra_head %}{% endblock %}
+        .user-border-bottom {
+            border-bottom-color: #5e1985 !important
+        }
+
+        .user-border-left {
+            border-left-color: #5e1985 !important
+        }
+
+        .user-border-right {
+            border-right-color: #5e1985 !important
+        }
+
+        .mobile-tabs .tabs .is-active a {
+            color: #5e1985 !important;
+            background: #fff !important
+        }
+
+            {
+            % if is_mobile %
+        }
+
+        /* mobile site size */
+        .width-728 {
+            width: 728px
+        }
+
+        .max-width-728 {
+            max-width: 728px
+        }
+
+            {
+            % else %
+        }
+
+        /* desktop site size */
+        .width-1240 {
+            width: 1240px
+        }
+
+        .max-width-1240 {
+            max-width: 1240px
+        }
+
+        .min-width-1240 {
+            min-width: 1240px
+        }
+
+        #header-wrapper .mode-inner {
+            width: 1240px
+        }
+
+        #header-wrapper.full #user-nav,
+        #header-wrapper.basic #user-nav .mode-inner {
+            border-bottom-color: #5e1985
+        }
+
+        #user-nav .user-menu .secline>a.a-hover {
+            color: #5e1985
+        }
+
+        #user-nav .user-menu .secline .sub>a.a-sub-hover,
+        #user-nav .user-menu .secline .sub>a:hover {
+            color: #5e1985
+        }
+
+        #user-menu .letter a>i {
+            background-color: #5e1985
+        }
+
+        /* footer type-31 */
+        #user-footer.type-31 {
+            padding: 0 0 5rem;
+            background-color: #fff;
+            border-top: 2px solid #333
+        }
+
+        #user-footer.type-31 .user-nav {
+            display: block;
+            margin-bottom: 1.875rem;
+            font-size: 0;
+            border-bottom: 1px solid rgba(0, 0, 0, .2);
+            white-space: nowrap;
+            text-align: left
+        }
+
+        #user-footer.type-31 .user-nav::after {
+            content: '';
+            display: table;
+            clear: both
+        }
+
+        #user-footer.type-31 .user-nav>.item {
+            display: inline-block;
+            margin-left: 2.5rem;
+            font-size: .9375rem;
+            color: rgba(0, 0, 0, .7);
+            line-height: 66px;
+            vertical-align: middle
+        }
+
+        #user-footer.type-31 .user-nav>.item.etc {
+            color: #000
+        }
+
+        #user-footer.type-31 .user-nav>.item:first-of-type {
+            margin-left: 0
+        }
+
+        #user-footer.type-31 .user-nav .for-top {
+            overflow: hidden;
+            float: right;
+            width: 60px;
+            height: 66px;
+            padding-top: .625rem;
+            background-color: #feac1e;
+            text-transform: uppercase;
+            text-align: center;
+            text-decoration: none;
+            transition: padding .25s ease-in
+        }
+
+        #user-footer.type-31 .user-nav .for-top:hover {
+            padding-top: .375rem
+        }
+
+        #user-footer.type-31 .user-nav .for-top>i[class^="icon-"],
+        #user-footer.type-31 .user-nav .for-top>.text {
+            display: block;
+            color: #fff;
+            line-height: 1
+        }
+
+        #user-footer.type-31 .user-nav .for-top>i[class^="icon-"] {
+            font-size: 1.5rem
+        }
+
+        #user-footer.type-31 .user-nav .for-top>.text {
+            font-size: .9375rem
+        }
+
+        #user-footer.type-31 .user-logo {
+            width: 150px;
+            margin-right: 1.875rem
+        }
+
+        #user-footer.type-31 .user-address {
+            float: right;
+            width: calc(100% - 180px);
+            font-size: .813rem;
+            font-weight: lighter;
+            text-align: left
+        }
+
+        #user-footer.type-31 .user-address ul li {
+            color: rgba(0, 0, 0, .6)
+        }
+
+        #user-footer.type-31 .user-address ul li.bars::before {
+            color: rgba(0, 0, 0, .25)
+        }
+
+        #user-footer.type-31 .user-address ul li.copy {
+            margin-top: 1.375rem;
+            font-size: .813rem;
+            color: rgba(0, 0, 0, .4)
+        }
+
+        #user-footer.type-31 .user-address ul li a {
+            color: inherit;
+            text-decoration: none
+        }
+
+            {
+            % endif %
+        }
+
+        /* 사이드바 많이 본 뉴스 탭 — Foundation 오버라이드 */
+        .tabs-wrap.type-E {
+            text-align: left
+        }
+
+        .tabs-wrap.type-E .tabs-header {
+            display: block;
+            margin-bottom: 1rem;
+            font-size: 1.25rem;
+            font-weight: 700;
+            line-height: 1;
+            letter-spacing: -.025em;
+            color: #000
+        }
+
+        .tabs-wrap.type-E .tabs {
+            margin: 0;
+            padding: 0;
+            border: none;
+            border-bottom: 1px solid #eee;
+            background: none;
+            list-style: none;
+            display: flex
+        }
+
+        .tabs-wrap.type-E .tabs .tabs-title {
+            float: none;
+            flex: none
+        }
+
+        .tabs-wrap.type-E .tabs .tabs-title>a {
+            display: block;
+            padding: 8px 15px;
+            font-size: 13px;
+            line-height: 1;
+            color: #666;
+            background: none !important;
+            border: none
+        }
+
+        .tabs-wrap.type-E .tabs .tabs-title>a:hover {
+            color: #333;
+            background: none !important
+        }
+
+        .tabs-wrap.type-E .tabs .tabs-title.is-active>a {
+            color: #000;
+            font-weight: 700;
+            background: none !important;
+            border-bottom: 2px solid #5e1985;
+            margin-bottom: -1px
+        }
+
+        .tabs-wrap.type-E .tabs-popular {
+            padding-top: 10px
+        }
+
+        .tabs-wrap.type-E .tabs-popular .item:not(:first-child) {
+            margin-top: 12px;
+            padding-top: 12px;
+            border-top: 1px solid rgba(0, 0, 0, .06)
+        }
+
+        /* 사이드바 box-skin */
+        .box-skin .header {
+            font-weight: 700;
+            letter-spacing: -.025em
+        }
+
+        .box-skin .header>a {
+            display: block;
+            margin-bottom: 1rem;
+            font-size: 1.25rem;
+            line-height: 1;
+            text-decoration: none;
+            color: #000
+        }
+
+        .box-skin .header>a:hover {
+            color: #292728
+        }
+
+        .box-skin .content {
+            display: block
+        }
+
+        #skin-11>.item:not(:first-child) {
+            margin-top: 15px;
+            padding-top: 15px;
+            border-top: 1px solid rgba(0, 0, 0, .05)
+        }
+
+        #skin-11 .auto-valign {
+            display: flex;
+            align-items: flex-start
+        }
+
+        #skin-11 .frame {
+            width: 65px;
+            flex-shrink: 0;
+            overflow: hidden;
+            border-radius: 4px
+        }
+
+        #skin-11 .frame .auto-images {
+            display: block;
+            width: 65px;
+            height: 65px;
+            background-size: cover;
+            background-position: center;
+            background-color: #e0d5ea;
+            border-radius: 4px;
+            transition: transform .2s ease
+        }
+
+        #skin-11 a:hover .auto-images {
+            transform: scale(1.05)
+        }
+
+        #skin-11 .frame+.content {
+            display: inline-block;
+            width: calc(100% - 65px);
+            padding-left: 16px
+        }
+
+        #skin-11 .auto-titles {
+            display: block;
+            font-size: 15px;
+            line-height: 1.25;
+            font-weight: 400;
+            color: #1e1e1e;
+            overflow: hidden;
+            display: -webkit-box;
+            -webkit-line-clamp: 2;
+            -webkit-box-orient: vertical;
+            max-height: 2.5em
+        }
+
+        #skin-11 .auto-name {
+            display: block;
+            margin-top: 5px;
+            font-size: 12px;
+            font-weight: 300;
+            color: #999;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            white-space: nowrap
+        }
+
+        .box-margins.box-solid {
+            display: block;
+            border-top: 1px solid rgba(0, 0, 0, .12)
+        }
+
+        .box-margins.height-50 {
+            height: 50px
+        }
+    </style>
+    {% block extra_head %}{% endblock %}
 </head>
+
 <body>
 
-{% if is_mobile %}
-{# ==================== MOBILE LAYOUT ==================== #}
-<div id="user-wrap" class="mobile" data-effect="fade-up" data-effect-time="300">
-<div class="row expanded">
+    {% if is_mobile %}
+    {# ==================== MOBILE LAYOUT ==================== #}
+    <div id="user-wrap" class="mobile" data-effect="fade-up" data-effect-time="300">
+        <div class="row expanded">
 
-<!-- mobile header -->
-<header id="user-header" class="user-border-bottom">
-    <article class="grid-left"></article>
-    <div class="grid-center">
-        <a href="{{ url_for('public.index') }}" class="user-logo" style="background-image:url({{ url_for('static', filename='images/mobile-logo.png') }})">
-            <span class="show-for-sr">웰다잉뉴스</span>
-        </a>
-    </div>
-    <article class="grid-right">
-        <button type="button" class="nav-btns"><i class="icon-bars"><span class="show-for-sr">전체메뉴 버튼</span></i></button>
-    </article>
+            <!-- mobile header -->
+            <header id="user-header" class="user-border-bottom">
+                <article class="grid-left"></article>
+                <div class="grid-center">
+                    <a href="{{ url_for('public.index') }}" class="user-logo"
+                        style="background-image:url({{ url_for('static', filename='images/mobile-logo.png') }})">
+                        <span class="show-for-sr">웰다잉뉴스</span>
+                    </a>
+                </div>
+                <article class="grid-right">
+                    <button type="button" class="nav-btns"><i class="icon-bars"><span class="show-for-sr">전체메뉴
+                                버튼</span></i></button>
+                </article>
 
-    <!-- 카테고리 바 -->
-    <nav class="visual-nav scroll">
-        <div class="inset">
-            {% for sec in nav_sections %}
-            {% if sec.code != 'S1N6' %}
-            <a href="{{ url_for('public.article_list', sc_section_code=sec.code) }}" class="item">{{ sec.name }}</a>
-            {% endif %}
-            {% endfor %}
-            {% for board in nav_boards %}
-            <a href="{{ url_for('public.bbs_list', table=board.code) }}" class="item">{{ board.name }}</a>
-            {% endfor %}
-        </div>
-    </nav>
-
-    <!-- 슬라이드 네비게이션 -->
-    <nav id="user-nav">
-        <header class="header">
-            <a href="{{ url_for('public.index') }}" class="item">
-                <img src="{{ url_for('static', filename='images/mobile-logo.png') }}" alt="웰다잉뉴스" />
-            </a>
-            <article class="item">
-                {% if current_member %}
-                <a href="{{ url_for('public.member_mypage') }}" class="btns"><i class="icon-user-o"><span class="show-for-sr">마이페이지</span></i></a>
-                {% else %}
-                <a href="{{ url_for('public.member_login') }}" class="btns"><i class="icon-user-o"><span class="show-for-sr">로그인</span></i></a>
-                {% endif %}
-                <button type="button" class="btns nav-close"><i class="icon-close"><span class="show-for-sr">메뉴닫기</span></i></button>
-            </article>
-        </header>
-
-        <section class="container">
-            <fieldset class="search-form">
-                <form name="head-search" method="get" class="inner" action="{{ url_for('public.article_list') }}">
-                    <input type="hidden" name="sc_area" value="A">
-                    <input type="hidden" name="view_type" value="sm">
-                    <label class="show-for-sr" for="sc_word_m">검색</label>
-                    <input type="search" name="sc_word" id="sc_word_m" placeholder="검색어를 입력하세요">
-                    <button type="button" onclick="if(this.form.sc_word.value != ''){this.form.submit();}else{alert('검색어를 입력해주세요');this.form.sc_word.focus();return false;}"><i class="icon-search-thin"></i><span class="show-for-sr">검색</span></button>
-                </form>
-            </fieldset>
-
-            <ul class="vertical menu" data-accordion-menu>
-                {% for sec in nav_sections %}
-                <li{% if sec.subsections.count() > 0 %} class="is-accordion-submenu-parent"{% endif %}>
-                    <a href="{{ url_for('public.article_list', sc_section_code=sec.code) }}">{{ sec.name }}</a>
-                    {% if sec.subsections.count() > 0 %}
-                    <ul class="menu vertical nested">
-                        <li><a href="{{ url_for('public.article_list', sc_section_code=sec.code) }}">전체</a></li>
-                        {% for sub in sec.subsections %}
-                        <li><a href="{{ url_for('public.article_list', sc_sub_section_code=sub.code) }}">{{ sub.name }}</a></li>
+                <!-- 카테고리 바 -->
+                <nav class="visual-nav scroll">
+                    <div class="inset">
+                        {% for sec in nav_sections %}
+                        {% if sec.code != 'S1N6' %}
+                        <a href="{{ url_for('public.article_list', sc_section_code=sec.code) }}" class="item">{{
+                            sec.name }}</a>
+                        {% endif %}
                         {% endfor %}
-                    </ul>
+                        {% for board in nav_boards %}
+                        <a href="{{ url_for('public.bbs_list', table=board.code) }}" class="item">{{ board.name }}</a>
+                        {% endfor %}
+                    </div>
+                </nav>
+
+                <!-- 슬라이드 네비게이션 -->
+                <nav id="user-nav">
+                    <header class="header">
+                        <a href="{{ url_for('public.index') }}" class="item">
+                            <img src="{{ url_for('static', filename='images/mobile-logo.png') }}" alt="웰다잉뉴스" />
+                        </a>
+                        <article class="item">
+                            {% if current_member %}
+                            <a href="{{ url_for('public.member_mypage') }}" class="btns"><i class="icon-user-o"><span
+                                        class="show-for-sr">마이페이지</span></i></a>
+                            {% else %}
+                            <a href="{{ url_for('public.member_login') }}" class="btns"><i class="icon-user-o"><span
+                                        class="show-for-sr">로그인</span></i></a>
+                            {% endif %}
+                            <button type="button" class="btns nav-close"><i class="icon-close"><span
+                                        class="show-for-sr">메뉴닫기</span></i></button>
+                        </article>
+                    </header>
+
+                    <section class="container">
+                        <fieldset class="search-form">
+                            <form name="head-search" method="get" class="inner"
+                                action="{{ url_for('public.article_list') }}">
+                                <input type="hidden" name="sc_area" value="A">
+                                <input type="hidden" name="view_type" value="sm">
+                                <label class="show-for-sr" for="sc_word_m">검색</label>
+                                <input type="search" name="sc_word" id="sc_word_m" placeholder="검색어를 입력하세요">
+                                <button type="button"
+                                    onclick="if(this.form.sc_word.value != ''){this.form.submit();}else{alert('검색어를 입력해주세요');this.form.sc_word.focus();return false;}"><i
+                                        class="icon-search-thin"></i><span class="show-for-sr">검색</span></button>
+                            </form>
+                        </fieldset>
+
+                        <ul class="vertical menu" data-accordion-menu>
+                            {% for sec in nav_sections %}
+                            <li{% if sec.subsections.count()> 0 %} class="is-accordion-submenu-parent"{% endif %}>
+                                <a href="{{ url_for('public.article_list', sc_section_code=sec.code) }}">{{ sec.name
+                                    }}</a>
+                                {% if sec.subsections.count() > 0 %}
+                                <ul class="menu vertical nested">
+                                    <li><a href="{{ url_for('public.article_list', sc_section_code=sec.code) }}">전체</a>
+                                    </li>
+                                    {% for sub in sec.subsections %}
+                                    <li><a href="{{ url_for('public.article_list', sc_sub_section_code=sub.code) }}">{{
+                                            sub.name }}</a></li>
+                                    {% endfor %}
+                                </ul>
+                                {% endif %}
+                                </li>
+                                {% endfor %}
+                                {% for board in nav_boards %}
+                                <li><a href="{{ url_for('public.bbs_list', table=board.code) }}">{{ board.name }}</a>
+                                </li>
+                                {% endfor %}
+                        </ul>
+
+                        <div class="rank-tile">
+                            <a href="{{ url_for('public.article_list') }}"><i class="icon-clock-o"></i><span
+                                    class="text">실시간 뉴스</span></a>
+                            <a href="{{ url_for('public.article_list', sc_day='7', sc_order_by='C') }}"><i
+                                    class="icon-chart-bar"></i><span class="text">많이 본 뉴스</span></a>
+                            <a href="{{ url_for('public.article_list', sc_level='T') }}"><i class="icon-crown"></i><span
+                                    class="text">주요 뉴스</span></a>
+                            <a href="{{ url_for('public.article_list', sc_is_image='Y') }}"><i
+                                    class="icon-image-o"></i><span class="text">포토 뉴스</span></a>
+                            <a href="{{ url_for('public.com_page', page_code='jb') }}"><i class="icon-paper"></i><span
+                                    class="text">기사제보</span></a>
+                            <a href="{{ url_for('public.com_page', page_code='kd') }}"><i class="icon-mail-o"></i><span
+                                    class="text">구독신청</span></a>
+                        </div>
+                    </section>
+
+                    <footer class="footer">
+                        <a href="{{ url_for('public.index') }}?view_pc=y"
+                            onclick="document.cookie='view_pc=y;max-age=86400;path=/';" class="go-to-desktop">PC버전
+                            보기</a>
+                        <nav class="navs">
+                            <a href="{{ url_for('public.com_page', page_code='com-1') }}">매체소개</a>
+                            <a href="{{ url_for('public.com_page', page_code='jb') }}">기사제보</a>
+                        </nav>
+                        <address class="address">
+                            <em class="item zips">서울특별시 송파구 송파대로 345</em>
+                            <a href="tel:010-5165-5574" class="item"><i class="icon-call"><span
+                                        class="show-for-sr">전화</span></i>&nbsp;010-5165-5574</a>
+                        </address>
+                    </footer>
+                </nav>
+                <div class="nav-overlap"></div>
+            </header>
+
+            <!-- 모바일 팝업 -->
+            {% if popups %}
+            {% for popup in popups %}
+            <div class="popup-layer popup-mobile" id="popup-m-{{ popup.id }}"
+                style="position:fixed;z-index:99999;left:50%;top:50%;transform:translate(-50%,-50%);width:calc(100vw - 40px);max-width:360px;display:none">
+                <div class="popup-content"
+                    style="background:#fff;border:1px solid #333;box-shadow:0 4px 20px rgba(0,0,0,.3);border-radius:6px;overflow:hidden">
+                    {% if popup.image_path %}
+                    <div class="popup-image">
+                        {% if popup.link_url %}<a href="{{ popup.link_url }}" target="_blank" rel="noopener">{% endif %}
+                            <img src="{{ url_for('static', filename=popup.image_path) }}" alt="{{ popup.name }}"
+                                style="display:block;width:100%">
+                            {% if popup.link_url %}</a>{% endif %}
+                    </div>
                     {% endif %}
-                </li>
-                {% endfor %}
-                {% for board in nav_boards %}
-                <li><a href="{{ url_for('public.bbs_list', table=board.code) }}">{{ board.name }}</a></li>
-                {% endfor %}
-            </ul>
-
-            <div class="rank-tile">
-                <a href="{{ url_for('public.article_list') }}"><i class="icon-clock-o"></i><span class="text">실시간 뉴스</span></a>
-                <a href="{{ url_for('public.article_list', sc_day='7', sc_order_by='C') }}"><i class="icon-chart-bar"></i><span class="text">많이 본 뉴스</span></a>
-                <a href="{{ url_for('public.article_list', sc_level='T') }}"><i class="icon-crown"></i><span class="text">주요 뉴스</span></a>
-                <a href="{{ url_for('public.article_list', sc_is_image='Y') }}"><i class="icon-image-o"></i><span class="text">포토 뉴스</span></a>
-                <a href="{{ url_for('public.com_page', page_code='jb') }}"><i class="icon-paper"></i><span class="text">기사제보</span></a>
-                <a href="{{ url_for('public.com_page', page_code='kd') }}"><i class="icon-mail-o"></i><span class="text">구독신청</span></a>
-            </div>
-        </section>
-
-        <footer class="footer">
-            <a href="{{ url_for('public.index') }}?view_pc=y" onclick="document.cookie='view_pc=y;max-age=86400;path=/';" class="go-to-desktop">PC버전 보기</a>
-            <nav class="navs">
-                <a href="{{ url_for('public.com_page', page_code='com-1') }}">매체소개</a>
-                <a href="{{ url_for('public.com_page', page_code='jb') }}">기사제보</a>
-            </nav>
-            <address class="address">
-                <em class="item zips">서울특별시 송파구 송파대로 345</em>
-                <a href="tel:010-5165-5574" class="item"><i class="icon-call"><span class="show-for-sr">전화</span></i>&nbsp;010-5165-5574</a>
-            </address>
-        </footer>
-    </nav>
-    <div class="nav-overlap"></div>
-</header>
-
-<!-- 모바일 팝업 -->
-{% if popups %}
-{% for popup in popups %}
-<div class="popup-layer popup-mobile" id="popup-m-{{ popup.id }}" style="position:fixed;z-index:99999;left:50%;top:50%;transform:translate(-50%,-50%);width:calc(100vw - 40px);max-width:360px;display:none">
-    <div class="popup-content" style="background:#fff;border:1px solid #333;box-shadow:0 4px 20px rgba(0,0,0,.3);border-radius:6px;overflow:hidden">
-        {% if popup.image_path %}
-        <div class="popup-image">
-            {% if popup.link_url %}<a href="{{ popup.link_url }}" target="_blank" rel="noopener">{% endif %}
-            <img src="{{ url_for('static', filename=popup.image_path) }}" alt="{{ popup.name }}" style="display:block;width:100%">
-            {% if popup.link_url %}</a>{% endif %}
-        </div>
-        {% endif %}
-        {% if popup.content %}
-        <div class="popup-body" style="padding:12px;font-size:13px;line-height:1.6;color:#333">
-            {{ popup.content|safe }}
-        </div>
-        {% endif %}
-        <div class="popup-footer" style="display:flex;justify-content:space-between;align-items:center;padding:8px 10px;background:#f5f5f5;border-top:1px solid #ddd;font-size:11px">
-            <label style="cursor:pointer;color:#666;display:flex;align-items:center;gap:4px">
-                <input type="checkbox" class="popup-today-close" data-popup-id="m-{{ popup.id }}"> 오늘 하루 보지 않기
-            </label>
-            <button type="button" class="popup-close-btn" data-popup-id="m-{{ popup.id }}" style="padding:4px 12px;background:#5e1985;color:#fff;border:none;border-radius:3px;font-size:11px;cursor:pointer">닫기</button>
-        </div>
-    </div>
-</div>
-{% endfor %}
-{% endif %}
-
-<!-- 본문 -->
-<section id="user-container" class="pady-0">
-
-{% else %}
-{# ==================== DESKTOP LAYOUT ==================== #}
-<!-- 팝업 레이어 -->
-{% if popups %}
-{% for popup in popups %}
-<div class="popup-layer" id="popup-{{ popup.id }}" style="position:fixed;z-index:99999;left:{{ popup.pos_x }}px;top:{{ popup.pos_y }}px;width:{{ popup.width }}px;display:none">
-    <div class="popup-content" style="background:#fff;border:1px solid #333;box-shadow:0 4px 20px rgba(0,0,0,.3)">
-        {% if popup.image_path %}
-        <div class="popup-image">
-            {% if popup.link_url %}<a href="{{ popup.link_url }}" target="_blank" rel="noopener">{% endif %}
-            <img src="{{ url_for('static', filename=popup.image_path) }}" alt="{{ popup.name }}" style="display:block;width:100%">
-            {% if popup.link_url %}</a>{% endif %}
-        </div>
-        {% endif %}
-        {% if popup.content %}
-        <div class="popup-body" style="padding:15px;font-size:14px;line-height:1.6;color:#333">
-            {{ popup.content|safe }}
-        </div>
-        {% endif %}
-        <div class="popup-footer" style="display:flex;justify-content:space-between;align-items:center;padding:8px 12px;background:#f5f5f5;border-top:1px solid #ddd;font-size:12px">
-            <label style="cursor:pointer;color:#666;display:flex;align-items:center;gap:5px">
-                <input type="checkbox" class="popup-today-close" data-popup-id="{{ popup.id }}"> 오늘 하루 보지 않기
-            </label>
-            <button type="button" class="popup-close-btn" data-popup-id="{{ popup.id }}" style="padding:4px 14px;background:#5e1985;color:#fff;border:none;border-radius:3px;font-size:12px;cursor:pointer">닫기</button>
-        </div>
-    </div>
-</div>
-{% endfor %}
-{% endif %}
-
-<div class="off-canvas-wrapper">
-<div class="off-canvas-wrapper-inner" data-off-canvas-wrapper>
-<div class="off-canvas-content" data-off-canvas-content>
-
-<div id="user-wrap" class="min-width-1240">
-<div id="user-wrapper">
-
-<!-- header -->
-<header id="user-header" class="posi-re float-center">
-<div id="header-wrapper" class="vertical full left">
-
-    <header id="nav-header">
-        <div class="mode-inner">
-            <div class="user-banner text-left text">
-                <div id="roll-text">
-                    <div class="item dis-none line-3x2">잘 보낸 하루가 편안한 잠을 주듯이 <br>잘 쓰인 일생은 평안한 죽음을 준다.</div>
-                    <div class="item dis-none line-3x2">사람은 어떻게 죽느냐가 문제가 아니라<br> 어떻게 사느냐가 문제다.</div>
-                    <div class="item dis-none line-3x2">항상 죽을 각오를 하고 있는<br> 사람만이 참으로 자유로운 인간이다.</div>
-                    <div class="item dis-none line-3x2">죽음은 마지막 성장의 기회다.</div>
-                    <div class="item dis-none line-3x2">인생은 입구에서 볼 때만 멀고 아늑하다. <br>인생은 출구에서 볼 때는 오히려 너무 짧다.</div>
-                    <div class="item dis-none line-3x2">삶을 깊이 이해하면 할수록<br> 죽음으로 인한 슬픔은 그만큼 줄어들 것입니다.</div>
-                    <div class="item dis-none line-3x2">죽음을 알려고 하지 말고<br> 내가 어디에서 왔는지를 알아야 한다.</div>
+                    {% if popup.content %}
+                    <div class="popup-body" style="padding:12px;font-size:13px;line-height:1.6;color:#333">
+                        {{ popup.content|safe }}
+                    </div>
+                    {% endif %}
+                    <div class="popup-footer"
+                        style="display:flex;justify-content:space-between;align-items:center;padding:8px 10px;background:#f5f5f5;border-top:1px solid #ddd;font-size:11px">
+                        <label style="cursor:pointer;color:#666;display:flex;align-items:center;gap:4px">
+                            <input type="checkbox" class="popup-today-close" data-popup-id="m-{{ popup.id }}"> 오늘 하루 보지
+                            않기
+                        </label>
+                        <button type="button" class="popup-close-btn" data-popup-id="m-{{ popup.id }}"
+                            style="padding:4px 12px;background:#5e1985;color:#fff;border:none;border-radius:3px;font-size:11px;cursor:pointer">닫기</button>
+                    </div>
                 </div>
             </div>
+            {% endfor %}
+            {% endif %}
 
-            <h1 class="user-logo text-center">
-                <a href="{{ url_for('public.index') }}">
-                    <img src="{{ url_for('static', filename='images/logo.png') }}" alt="웰다잉뉴스">
+            <!-- 본문 -->
+            <section id="user-container" class="pady-0">
+
+                {% else %}
+                {# ==================== DESKTOP LAYOUT ==================== #}
+                <!-- 팝업 레이어 -->
+                {% if popups %}
+                {% for popup in popups %}
+                <div class="popup-layer" id="popup-{{ popup.id }}"
+                    style="position:fixed;z-index:99999;left:{{ popup.pos_x }}px;top:{{ popup.pos_y }}px;width:{{ popup.width }}px;display:none">
+                    <div class="popup-content"
+                        style="background:#fff;border:1px solid #333;box-shadow:0 4px 20px rgba(0,0,0,.3)">
+                        {% if popup.image_path %}
+                        <div class="popup-image">
+                            {% if popup.link_url %}<a href="{{ popup.link_url }}" target="_blank" rel="noopener">{%
+                                endif %}
+                                <img src="{{ url_for('static', filename=popup.image_path) }}" alt="{{ popup.name }}"
+                                    style="display:block;width:100%">
+                                {% if popup.link_url %}</a>{% endif %}
+                        </div>
+                        {% endif %}
+                        {% if popup.content %}
+                        <div class="popup-body" style="padding:15px;font-size:14px;line-height:1.6;color:#333">
+                            {{ popup.content|safe }}
+                        </div>
+                        {% endif %}
+                        <div class="popup-footer"
+                            style="display:flex;justify-content:space-between;align-items:center;padding:8px 12px;background:#f5f5f5;border-top:1px solid #ddd;font-size:12px">
+                            <label style="cursor:pointer;color:#666;display:flex;align-items:center;gap:5px">
+                                <input type="checkbox" class="popup-today-close" data-popup-id="{{ popup.id }}"> 오늘 하루
+                                보지 않기
+                            </label>
+                            <button type="button" class="popup-close-btn" data-popup-id="{{ popup.id }}"
+                                style="padding:4px 14px;background:#5e1985;color:#fff;border:none;border-radius:3px;font-size:12px;cursor:pointer">닫기</button>
+                        </div>
+                    </div>
+                </div>
+                {% endfor %}
+                {% endif %}
+
+                <div class="off-canvas-wrapper">
+                    <div class="off-canvas-wrapper-inner" data-off-canvas-wrapper>
+                        <div class="off-canvas-content" data-off-canvas-content>
+
+                            <div id="user-wrap" class="min-width-1240">
+                                <div id="user-wrapper">
+
+                                    <!-- header -->
+                                    <header id="user-header" class="posi-re float-center">
+                                        <div id="header-wrapper" class="vertical full left">
+
+                                            <header id="nav-header">
+                                                <div class="mode-inner">
+                                                    <div class="user-banner text-left text">
+                                                        <div id="roll-text">
+                                                            <div class="item dis-none line-3x2">잘 보낸 하루가 편안한 잠을 주듯이
+                                                                <br>잘 쓰인 일생은 평안한 죽음을 준다.</div>
+                                                            <div class="item dis-none line-3x2">사람은 어떻게 죽느냐가 문제가 아니라<br>
+                                                                어떻게 사느냐가 문제다.</div>
+                                                            <div class="item dis-none line-3x2">항상 죽을 각오를 하고 있는<br> 사람만이
+                                                                참으로 자유로운 인간이다.</div>
+                                                            <div class="item dis-none line-3x2">죽음은 마지막 성장의 기회다.</div>
+                                                            <div class="item dis-none line-3x2">인생은 입구에서 볼 때만 멀고 아늑하다.
+                                                                <br>인생은 출구에서 볼 때는 오히려 너무 짧다.</div>
+                                                            <div class="item dis-none line-3x2">삶을 깊이 이해하면 할수록<br> 죽음으로
+                                                                인한 슬픔은 그만큼 줄어들 것입니다.</div>
+                                                            <div class="item dis-none line-3x2">죽음을 알려고 하지 말고<br> 내가
+                                                                어디에서 왔는지를 알아야 한다.</div>
+                                                        </div>
+                                                    </div>
+
+                                                    <h1 class="user-logo text-center">
+                                                        <a href="{{ url_for('public.index') }}">
+                                                            <img src="{{ url_for('static', filename='images/logo.png') }}"
+                                                                alt="웰다잉뉴스">
+                                                        </a>
+                                                    </h1>
+
+                                                    <div class="user-banner text-right">
+                                                        <ul id="userLogin" class="user-logbox">
+                                                            {% if current_member %}
+                                                            <li><a href="{{ url_for('public.member_mypage') }}">{{
+                                                                    current_member.name }}</a></li>
+                                                            <li><a href="{{ url_for('public.member_logout') }}">로그아웃</a>
+                                                            </li>
+                                                            {% else %}
+                                                            <li><a href="{{ url_for('public.member_login') }}"
+                                                                    class="user-point">로그인</a></li>
+                                                            <li><a href="{{ url_for('public.member_index') }}">회원가입</a>
+                                                            </li>
+                                                            {% endif %}
+                                                        </ul>
+                                                        <div class="user-intro">UPDATED. {{ updated_time }}</div>
+                                                    </div>
+                                                </div>
+                                            </header>
+
+                                            {% if banners.get('header') %}
+                                            <div class="banner-area banner-header"
+                                                style="text-align:center;padding:8px 0">
+                                                {% for b in banners['header'] %}
+                                                <a href="{{ url_for('public.banner_click', banner_id=b.id) }}"
+                                                    target="_blank" rel="noopener"
+                                                    style="display:inline-block{% if not loop.first %};margin-left:10px{% endif %}">
+                                                    <img src="{{ url_for('static', filename=b.image_path) }}"
+                                                        alt="{{ b.name }}" style="max-height:90px">
+                                                </a>
+                                                {% endfor %}
+                                            </div>
+                                            {% endif %}
+
+                                            <nav id="user-nav">
+                                                <div class="mode-inner">
+                                                    <ul id="user-menu" class="user-menu">
+                                                        {% for sec in nav_sections %}
+                                                        {% if sec.code == 'S1N6' %}
+                                                        {% for board in nav_boards %}
+                                                        <li class="secline">
+                                                            <a href="{{ url_for('public.bbs_list', table=board.code) }}"
+                                                                data-code="{{ board.code }}">{{ board.name }}</a>
+                                                        </li>
+                                                        {% endfor %}
+                                                        {% endif %}
+                                                        <li
+                                                            class="secline{% if sec.code == 'S1N6' %} letter{% endif %}">
+                                                            {% if sec.code == 'S1N6' %}
+                                                            <a href="{{ url_for('public.article_list', sc_section_code=sec.code) }}"
+                                                                class="user-point"><i class="icon-mail-o"></i> {{
+                                                                sec.name }}</a>
+                                                            {% else %}
+                                                            <a href="{{ url_for('public.article_list', sc_section_code=sec.code) }}"
+                                                                data-code="{{ sec.code }}">{{ sec.name }}</a>
+                                                            {% endif %}
+                                                            {% if sec.subsections.count() > 0 %}
+                                                            <ul>
+                                                                {% for sub in sec.subsections %}
+                                                                <li class="sub">
+                                                                    <a href="{{ url_for('public.article_list', sc_sub_section_code=sub.code) }}"
+                                                                        data-code="{{ sub.code }}">{{ sub.name }}</a>
+                                                                </li>
+                                                                {% endfor %}
+                                                            </ul>
+                                                            {% endif %}
+                                                        </li>
+                                                        {% endfor %}
+                                                    </ul>
+
+                                                    <div id="userSearch" class="user-search">
+                                                        <button type="button" class="sch-btns"><i
+                                                                class="icon-search-thin"><span
+                                                                    class="show-for-sr">검색</span></i></button>
+                                                        <fieldset class="user-search-form">
+                                                            <form name="head-search" method="get" class="clearfix"
+                                                                action="{{ url_for('public.article_list') }}">
+                                                                <input type="hidden" name="sc_area" value="A">
+                                                                <input type="hidden" name="view_type" value="sm">
+                                                                <label class="show-for-sr" for="search">기사검색</label>
+                                                                <input type="text" name="sc_word" id="search"
+                                                                    placeholder="검색어를 입력해주세요" title="기사검색">
+                                                                <button type="submit" title="기사검색"><i
+                                                                        class="icon-search-thin"></i><span
+                                                                        class="show-for-sr">검색</span></button>
+                                                            </form>
+                                                        </fieldset>
+                                                    </div>
+
+                                                    <button type="button" class="user-allbtn" title="전체메뉴">
+                                                        <i class="icon-bars"><span class="show-for-sr">전체메뉴
+                                                                버튼</span></i>
+                                                    </button>
+                                                </div>
+                                            </nav>
+
+                                            <nav id="user-sidenav">
+                                                <button type="button" class="nav-close"><i class="icon-close-thin"><span
+                                                            class="show-for-sr">메뉴닫기</span></i></button>
+                                                <h5 class="ci">
+                                                    <a href="{{ url_for('public.index') }}">
+                                                        <img src="{{ url_for('static', filename='images/logo.png') }}"
+                                                            alt="웰다잉뉴스" style="max-width:180px">
+                                                    </a>
+                                                </h5>
+                                                <ul id="userLogin" class="user-logbox">
+                                                    {% if current_member %}
+                                                    <li><a href="{{ url_for('public.member_mypage') }}">{{
+                                                            current_member.name }}</a></li>
+                                                    <li><a href="{{ url_for('public.member_logout') }}">로그아웃</a></li>
+                                                    {% else %}
+                                                    <li><a href="{{ url_for('public.member_login') }}">로그인</a></li>
+                                                    <li><a href="{{ url_for('public.member_index') }}">회원가입</a></li>
+                                                    {% endif %}
+                                                </ul>
+                                                <ul class="sidenav-bt">
+                                                    <li><a href="{{ url_for('public.com_page', page_code='jb') }}">제보 및
+                                                            문의</a></li>
+                                                    <li><a
+                                                            href="{{ url_for('public.com_page', page_code='kd') }}">구독안내</a>
+                                                    </li>
+                                                </ul>
+                                                <ul class="vertical menu accordion" data-accordion-menu>
+                                                    <li><a href="{{ url_for('public.article_list') }}">전체기사</a></li>
+                                                    {% for sec in nav_sections %}
+                                                    <li{% if sec.subsections.count()> 0 %}
+                                                        class="is-accordion-submenu-parent"{% endif %}>
+                                                        <a
+                                                            href="{{ url_for('public.article_list', sc_section_code=sec.code) }}">{{
+                                                            sec.name }}</a>
+                                                        {% if sec.subsections.count() > 0 %}
+                                                        <ul class="menu vertical nested">
+                                                            <li><a
+                                                                    href="{{ url_for('public.article_list', sc_section_code=sec.code) }}">전체</a>
+                                                            </li>
+                                                            {% for sub in sec.subsections %}
+                                                            <li><a
+                                                                    href="{{ url_for('public.article_list', sc_sub_section_code=sub.code) }}">{{
+                                                                    sub.name }}</a></li>
+                                                            {% endfor %}
+                                                        </ul>
+                                                        {% endif %}
+                                                        </li>
+                                                        {% endfor %}
+                                                        {% for board in nav_boards %}
+                                                        <li><a
+                                                                href="{{ url_for('public.bbs_list', table=board.code) }}">{{
+                                                                board.name }}</a></li>
+                                                        {% endfor %}
+                                                </ul>
+                                                <footer class="nav-footer">
+                                                    <nav class="navs">
+                                                        <a href="{{ url_for('public.index') }}">웰다잉뉴스 홈</a>
+                                                    </nav>
+                                                </footer>
+                                            </nav>
+                                            <div class="nav-overlap"></div>
+
+                                        </div>
+                                    </header>
+
+                                    <section id="user-container" class="posi-re text-left">
+                                        {% endif %}
+
+                                        {# ==================== CONTENT (shared) ==================== #}
+                                        {% block content %}{% endblock %}
+
+                                        {# ==================== 윙배너 (데스크탑 전용) ==================== #}
+                                        {% if not is_mobile %}
+                                        {% if banners.get('wing_left') %}
+                                        <div class="wing-banner wing-left"
+                                            style="position:fixed;z-index:990;left:10px;top:50%;transform:translateY(-50%)">
+                                            {% for b in banners['wing_left'] %}
+                                            <a href="{{ url_for('public.banner_click', banner_id=b.id) }}"
+                                                target="_blank" rel="noopener"
+                                                style="display:block{% if not loop.first %};margin-top:5px{% endif %}">
+                                                <img src="{{ url_for('static', filename=b.image_path) }}"
+                                                    alt="{{ b.name }}" style="max-width:120px">
+                                            </a>
+                                            {% endfor %}
+                                            <button type="button" class="wing-close"
+                                                onclick="this.parentElement.style.display='none'"
+                                                style="position:absolute;top:-8px;right:-8px;width:20px;height:20px;border-radius:50%;border:1px solid #ddd;background:#fff;font-size:10px;line-height:18px;text-align:center;cursor:pointer;color:#999">&times;</button>
+                                        </div>
+                                        {% endif %}
+                                        {% if banners.get('wing_right') %}
+                                        <div class="wing-banner wing-right"
+                                            style="position:fixed;z-index:990;right:10px;top:50%;transform:translateY(-50%)">
+                                            {% for b in banners['wing_right'] %}
+                                            <a href="{{ url_for('public.banner_click', banner_id=b.id) }}"
+                                                target="_blank" rel="noopener"
+                                                style="display:block{% if not loop.first %};margin-top:5px{% endif %}">
+                                                <img src="{{ url_for('static', filename=b.image_path) }}"
+                                                    alt="{{ b.name }}" style="max-width:120px">
+                                            </a>
+                                            {% endfor %}
+                                            <button type="button" class="wing-close"
+                                                onclick="this.parentElement.style.display='none'"
+                                                style="position:absolute;top:-8px;left:-8px;width:20px;height:20px;border-radius:50%;border:1px solid #ddd;background:#fff;font-size:10px;line-height:18px;text-align:center;cursor:pointer;color:#999">&times;</button>
+                                        </div>
+                                        {% endif %}
+                                        {% endif %}
+
+                                        {% if is_mobile %}
+                                        {# ==================== MOBILE FOOTER ==================== #}
+                                    </section>
+
+                                    <footer id="user-footer">
+                                        <nav class="key-service">
+                                            {% for sec in nav_sections %}
+                                            {% if sec.code != 'S1N6' %}
+                                            <a href="{{ url_for('public.article_list', sc_section_code=sec.code) }}">{{
+                                                sec.name }}</a>
+                                            {% endif %}
+                                            {% endfor %}
+                                        </nav>
+                                        <article class="quick-menu">
+                                            <a href="{{ url_for('public.com_page', page_code='com-1') }}">매체소개</a>
+                                            <a href="{{ url_for('public.com_page', page_code='jb') }}">기사제보</a>
+                                            <a href="{{ url_for('public.com_page', page_code='privacy') }}"
+                                                class="point">개인정보처리방침</a>
+                                            <a href="{{ url_for('public.index') }}?view_pc=y"
+                                                onclick="document.cookie='view_pc=y;max-age=86400;path=/';">PC버전</a>
+                                        </article>
+                                        <article class="info">
+                                            <span class="copyright">&copy; 웰다잉뉴스. All Rights Reserved.</span>
+                                        </article>
+                                    </footer>
+
+                                </div>
+                            </div>
+
+                            {% else %}
+                            {# ==================== DESKTOP FOOTER ==================== #}
+            </section>
+
+            {% if banners.get('footer') %}
+            <div class="banner-area banner-footer"
+                style="text-align:center;padding:20px 0;max-width:1240px;margin:0 auto">
+                {% for b in banners['footer'] %}
+                <a href="{{ url_for('public.banner_click', banner_id=b.id) }}" target="_blank" rel="noopener"
+                    style="display:inline-block{% if not loop.first %};margin-left:10px{% endif %}">
+                    <img src="{{ url_for('static', filename=b.image_path) }}" alt="{{ b.name }}" style="max-width:100%">
                 </a>
-            </h1>
-
-            <div class="user-banner text-right">
-                <ul id="userLogin" class="user-logbox">
-                    {% if current_member %}
-                    <li><a href="{{ url_for('public.member_mypage') }}">{{ current_member.name }}</a></li>
-                    <li><a href="{{ url_for('public.member_logout') }}">로그아웃</a></li>
-                    {% else %}
-                    <li><a href="{{ url_for('public.member_login') }}" class="user-point">로그인</a></li>
-                    <li><a href="{{ url_for('public.member_index') }}">회원가입</a></li>
-                    {% endif %}
-                </ul>
-                <div class="user-intro">UPDATED. {{ updated_time }}</div>
+                {% endfor %}
             </div>
-        </div>
-    </header>
+            {% endif %}
 
-    {% if banners.get('header') %}
-    <div class="banner-area banner-header" style="text-align:center;padding:8px 0">
-        {% for b in banners['header'] %}
-        <a href="{{ url_for('public.banner_click', banner_id=b.id) }}" target="_blank" rel="noopener" style="display:inline-block{% if not loop.first %};margin-left:10px{% endif %}">
-            <img src="{{ url_for('static', filename=b.image_path) }}" alt="{{ b.name }}" style="max-height:90px">
-        </a>
-        {% endfor %}
+            <footer id="user-footer" class="type-31">
+                <div class="float-center width-1240">
+                    <nav class="user-nav">
+                        <a href="{{ url_for('public.com_page', page_code='com-1') }}" class="item">매체소개</a>
+                        <a href="{{ url_for('public.com_page', page_code='jb') }}" class="item">기사제보</a>
+                        <a href="{{ url_for('public.com_page', page_code='ad') }}" class="item">광고문의</a>
+                        <a href="{{ url_for('public.com_page', page_code='service') }}" class="item">이용약관</a>
+                        <a href="{{ url_for('public.com_page', page_code='privacy') }}"
+                            class="item etc"><strong>개인정보처리방침</strong></a>
+                        <a href="{{ url_for('public.com_page', page_code='youthpolicy') }}" class="item">청소년보호정책</a>
+                        <a href="{{ url_for('public.com_page', page_code='copyright') }}" class="item">저작권보호정책</a>
+                        <a href="{{ url_for('public.com_page', page_code='emailno') }}" class="item">이메일무단수집거부</a>
+                        <a href="#top" class="for-top">
+                            <i class="icon-angle-up-thin"></i>
+                            <span class="text">Top</span>
+                        </a>
+                    </nav>
+                    <div class="posi-re clearfix">
+                        <div class="user-logo"><img src="{{ url_for('static', filename='images/footer-logo.png') }}"
+                                alt="웰다잉뉴스" /></div>
+                        <address class="user-address">
+                            <ul class="no-bullet">
+                                <li class="bars">서울특별시 송파구 송파대로 345</li>
+                                <li class="bars">법인명 : 웰다잉미디어</li>
+                                <li class="bars">제호 : 웰다잉뉴스</li>
+                                <li>등록번호 : 서울 아 04366</li>
+                                <li class="bars clear">등록일 : 2017-02-13</li>
+                                <li class="bars">발행일 : 2016-12-01</li>
+                                <li class="bars">발행·편집인 : 김동하</li>
+                                <li>청소년보호책임자 : 김동하</li>
+                                <li class="clear copy">Copyright &copy; 2026 웰다잉뉴스. All rights reserved. mail to <a
+                                        href="mailto:welldyingnews@naver.com">welldyingnews@naver.com</a></li>
+                            </ul>
+                        </address>
+                    </div>
+                </div>
+            </footer>
+
+        </div>
+    </div>
+
+    </div>
+    </div>
     </div>
     {% endif %}
 
-    <nav id="user-nav">
-        <div class="mode-inner">
-            <ul id="user-menu" class="user-menu">
-                {% for sec in nav_sections %}
-                {% if sec.code == 'S1N6' %}
-                {% for board in nav_boards %}
-                <li class="secline">
-                    <a href="{{ url_for('public.bbs_list', table=board.code) }}" data-code="{{ board.code }}">{{ board.name }}</a>
-                </li>
-                {% endfor %}
-                {% endif %}
-                <li class="secline{% if sec.code == 'S1N6' %} letter{% endif %}">
-                    {% if sec.code == 'S1N6' %}
-                    <a href="{{ url_for('public.article_list', sc_section_code=sec.code) }}" class="user-point"><i class="icon-mail-o"></i> {{ sec.name }}</a>
-                    {% else %}
-                    <a href="{{ url_for('public.article_list', sc_section_code=sec.code) }}" data-code="{{ sec.code }}">{{ sec.name }}</a>
-                    {% endif %}
-                    {% if sec.subsections.count() > 0 %}
-                    <ul>
-                        {% for sub in sec.subsections %}
-                        <li class="sub">
-                            <a href="{{ url_for('public.article_list', sc_sub_section_code=sub.code) }}" data-code="{{ sub.code }}">{{ sub.name }}</a>
-                        </li>
-                        {% endfor %}
-                    </ul>
-                    {% endif %}
-                </li>
-                {% endfor %}
-            </ul>
+    <button type="button" id="back-to-top" class="back-to-top{% if is_mobile %} for-mobile{% endif %}" title="위로"><i
+            class="icon-arrow-top"><span class="show-for-sr">위로</span></i></button>
 
-            <div id="userSearch" class="user-search">
-                <button type="button" class="sch-btns"><i class="icon-search-thin"><span class="show-for-sr">검색</span></i></button>
-                <fieldset class="user-search-form">
-                    <form name="head-search" method="get" class="clearfix" action="{{ url_for('public.article_list') }}">
-                        <input type="hidden" name="sc_area" value="A">
-                        <input type="hidden" name="view_type" value="sm">
-                        <label class="show-for-sr" for="search">기사검색</label>
-                        <input type="text" name="sc_word" id="search" placeholder="검색어를 입력해주세요" title="기사검색">
-                        <button type="submit" title="기사검색"><i class="icon-search-thin"></i><span class="show-for-sr">검색</span></button>
-                    </form>
-                </fieldset>
-            </div>
-
-            <button type="button" class="user-allbtn" title="전체메뉴">
-                <i class="icon-bars"><span class="show-for-sr">전체메뉴 버튼</span></i>
-            </button>
-        </div>
-    </nav>
-
-    <nav id="user-sidenav">
-        <button type="button" class="nav-close"><i class="icon-close-thin"><span class="show-for-sr">메뉴닫기</span></i></button>
-        <h5 class="ci">
-            <a href="{{ url_for('public.index') }}">
-                <img src="{{ url_for('static', filename='images/logo.png') }}" alt="웰다잉뉴스" style="max-width:180px">
-            </a>
-        </h5>
-        <ul id="userLogin" class="user-logbox">
-            {% if current_member %}
-            <li><a href="{{ url_for('public.member_mypage') }}">{{ current_member.name }}</a></li>
-            <li><a href="{{ url_for('public.member_logout') }}">로그아웃</a></li>
+    <script>
+        $(document).ready(function () {
+            {% if is_mobile %}
+            // 모바일: 햄버거 메뉴 열기
+            $('.nav-btns').on('click', function () {
+                $('#user-header').addClass('is-active');
+                $('.nav-overlap').show();
+                $('body, html').css('overflow', 'hidden');
+            });
+            // 모바일: 메뉴 닫기
+            $('.nav-close, .nav-overlap').on('click', function () {
+                $('#user-header').removeClass('is-active');
+                $('.nav-overlap').hide();
+                $('body, html').css('overflow', '');
+            });
+            // 모바일: 아코디언 메뉴
+            $('#user-nav .is-accordion-submenu-parent > a').on('click', function (e) {
+                e.preventDefault();
+                var $li = $(this).parent();
+                var $nested = $li.find('> .nested');
+                if ($li.attr('aria-expanded') === 'true') {
+                    $li.attr('aria-expanded', 'false');
+                    $nested.slideUp(200);
+                } else {
+                    $('#user-nav .is-accordion-submenu-parent').not($li).attr('aria-expanded', 'false').find('> .nested').slideUp(200);
+                    $li.attr('aria-expanded', 'true');
+                    $nested.slideDown(200);
+                }
+            });
+            $('#user-nav .menu.nested').hide();
             {% else %}
-            <li><a href="{{ url_for('public.member_login') }}">로그인</a></li>
-            <li><a href="{{ url_for('public.member_index') }}">회원가입</a></li>
+            // 명언 롤링
+            $('#roll-text').slick({
+                arrows: false, dots: false, vertical: true, verticalSwiping: true,
+                infinite: true, autoplay: true, speed: 600,
+            });
+            // 검색 버튼 토글
+            $('.sch-btns').on('click', function () {
+                $(this).closest('.user-search').toggleClass('active');
+            });
+            // 메뉴 hover
+            // [Bug 6 fix] 메뉴 hover — visibility 토글 추가 (CSS에서 visibility:hidden 사용)
+            $('#user-menu .secline').hover(
+                function () { $(this).find('> a').addClass('a-hover'); $(this).find('> ul').css('visibility', 'visible').stop().slideDown(200); },
+                function () { var $ul = $(this).find('> ul'); $(this).find('> a').removeClass('a-hover'); $ul.stop().slideUp(150, function () { $ul.css('visibility', 'hidden'); }); }
+            );
+            // 사이드 네비게이션 열기/닫기
+            var $userHeader = $('#user-header');
+            $('.user-allbtn').on('click', function () {
+                $userHeader.addClass('active');
+                $('.nav-overlap').show();
+                $('body, html').css('overflow', 'hidden');
+            });
+            $('.nav-close, .nav-overlap').on('click', function () {
+                $userHeader.removeClass('active');
+                $('.nav-overlap').hide();
+                $('body, html').css('overflow', 'initial');
+            });
+            // 사이드 메뉴 아코디언
+            $('#user-sidenav .is-accordion-submenu-parent > a').on('click', function (e) {
+                e.preventDefault();
+                var $li = $(this).parent();
+                var $nested = $li.find('> .nested');
+                if ($li.attr('aria-expanded') === 'true') {
+                    $li.attr('aria-expanded', 'false');
+                    $nested.slideUp(200);
+                } else {
+                    $('#user-sidenav .is-accordion-submenu-parent').not($li).attr('aria-expanded', 'false').find('> .nested').slideUp(200);
+                    $li.attr('aria-expanded', 'true');
+                    $nested.slideDown(200);
+                }
+            });
+            $('#user-sidenav .menu.nested').hide();
+            // 팝업 표시
+            $('.popup-layer').each(function () {
+                var id = $(this).attr('id');
+                if (document.cookie.indexOf('popup_hide_' + id + '=1') === -1) $(this).show();
+            });
+            $('.popup-close-btn').on('click', function () {
+                var pid = $(this).data('popup-id');
+                var $layer = $('#popup-' + pid);
+                if ($layer.find('.popup-today-close').is(':checked')) {
+                    var d = new Date(); d.setHours(23, 59, 59, 0);
+                    document.cookie = 'popup_hide_popup-' + pid + '=1;expires=' + d.toUTCString() + ';path=/';
+                }
+                $layer.fadeOut(200);
+            });
+            $('.popup-layer').each(function () {
+                var $el = $(this), startX, startY, origX, origY, dragging = false;
+                $el.find('.popup-footer').on('mousedown', function (e) {
+                    if ($(e.target).is('input,button')) return;
+                    dragging = true; startX = e.clientX; startY = e.clientY;
+                    origX = parseInt($el.css('left')); origY = parseInt($el.css('top'));
+                    e.preventDefault();
+                });
+                $(document).on('mousemove', function (e) {
+                    if (!dragging) return;
+                    $el.css({ left: origX + (e.clientX - startX), top: origY + (e.clientY - startY) });
+                }).on('mouseup', function () { dragging = false; });
+            });
             {% endif %}
-        </ul>
-        <ul class="sidenav-bt">
-            <li><a href="{{ url_for('public.com_page', page_code='jb') }}">제보 및 문의</a></li>
-            <li><a href="{{ url_for('public.com_page', page_code='kd') }}">구독안내</a></li>
-        </ul>
-        <ul class="vertical menu accordion" data-accordion-menu>
-            <li><a href="{{ url_for('public.article_list') }}">전체기사</a></li>
-            {% for sec in nav_sections %}
-            <li{% if sec.subsections.count() > 0 %} class="is-accordion-submenu-parent"{% endif %}>
-                <a href="{{ url_for('public.article_list', sc_section_code=sec.code) }}">{{ sec.name }}</a>
-                {% if sec.subsections.count() > 0 %}
-                <ul class="menu vertical nested">
-                    <li><a href="{{ url_for('public.article_list', sc_section_code=sec.code) }}">전체</a></li>
-                    {% for sub in sec.subsections %}
-                    <li><a href="{{ url_for('public.article_list', sc_sub_section_code=sub.code) }}">{{ sub.name }}</a></li>
-                    {% endfor %}
-                </ul>
-                {% endif %}
-            </li>
-            {% endfor %}
-            {% for board in nav_boards %}
-            <li><a href="{{ url_for('public.bbs_list', table=board.code) }}">{{ board.name }}</a></li>
-            {% endfor %}
-        </ul>
-        <footer class="nav-footer">
-            <nav class="navs">
-                <a href="{{ url_for('public.index') }}">웰다잉뉴스 홈</a>
-            </nav>
-        </footer>
-    </nav>
-    <div class="nav-overlap"></div>
+            // Back to top
+            $(window).scroll(function () {
+                if ($(this).scrollTop() > 300) $('#back-to-top').fadeIn();
+                else $('#back-to-top').fadeOut();
+            });
+            $('#back-to-top').click(function () { $('html, body').animate({ scrollTop: 0 }, 400); });
 
-</div>
-</header>
-
-<section id="user-container" class="posi-re text-left">
-{% endif %}
-
-{# ==================== CONTENT (shared) ==================== #}
-{% block content %}{% endblock %}
-
-{# ==================== 윙배너 (데스크탑 전용) ==================== #}
-{% if not is_mobile %}
-{% if banners.get('wing_left') %}
-<div class="wing-banner wing-left" style="position:fixed;z-index:990;left:10px;top:50%;transform:translateY(-50%)">
-    {% for b in banners['wing_left'] %}
-    <a href="{{ url_for('public.banner_click', banner_id=b.id) }}" target="_blank" rel="noopener" style="display:block{% if not loop.first %};margin-top:5px{% endif %}">
-        <img src="{{ url_for('static', filename=b.image_path) }}" alt="{{ b.name }}" style="max-width:120px">
-    </a>
-    {% endfor %}
-    <button type="button" class="wing-close" onclick="this.parentElement.style.display='none'" style="position:absolute;top:-8px;right:-8px;width:20px;height:20px;border-radius:50%;border:1px solid #ddd;background:#fff;font-size:10px;line-height:18px;text-align:center;cursor:pointer;color:#999">&times;</button>
-</div>
-{% endif %}
-{% if banners.get('wing_right') %}
-<div class="wing-banner wing-right" style="position:fixed;z-index:990;right:10px;top:50%;transform:translateY(-50%)">
-    {% for b in banners['wing_right'] %}
-    <a href="{{ url_for('public.banner_click', banner_id=b.id) }}" target="_blank" rel="noopener" style="display:block{% if not loop.first %};margin-top:5px{% endif %}">
-        <img src="{{ url_for('static', filename=b.image_path) }}" alt="{{ b.name }}" style="max-width:120px">
-    </a>
-    {% endfor %}
-    <button type="button" class="wing-close" onclick="this.parentElement.style.display='none'" style="position:absolute;top:-8px;left:-8px;width:20px;height:20px;border-radius:50%;border:1px solid #ddd;background:#fff;font-size:10px;line-height:18px;text-align:center;cursor:pointer;color:#999">&times;</button>
-</div>
-{% endif %}
-{% endif %}
-
-{% if is_mobile %}
-{# ==================== MOBILE FOOTER ==================== #}
-</section>
-
-<footer id="user-footer">
-    <nav class="key-service">
-        {% for sec in nav_sections %}
-        {% if sec.code != 'S1N6' %}
-        <a href="{{ url_for('public.article_list', sc_section_code=sec.code) }}">{{ sec.name }}</a>
-        {% endif %}
-        {% endfor %}
-    </nav>
-    <article class="quick-menu">
-        <a href="{{ url_for('public.com_page', page_code='com-1') }}">매체소개</a>
-        <a href="{{ url_for('public.com_page', page_code='jb') }}">기사제보</a>
-        <a href="{{ url_for('public.com_page', page_code='privacy') }}" class="point">개인정보처리방침</a>
-        <a href="{{ url_for('public.index') }}?view_pc=y" onclick="document.cookie='view_pc=y;max-age=86400;path=/';">PC버전</a>
-    </article>
-    <article class="info">
-        <span class="copyright">&copy; 웰다잉뉴스. All Rights Reserved.</span>
-    </article>
-</footer>
-
-</div>
-</div>
-
-{% else %}
-{# ==================== DESKTOP FOOTER ==================== #}
-</section>
-
-{% if banners.get('footer') %}
-<div class="banner-area banner-footer" style="text-align:center;padding:20px 0;max-width:1240px;margin:0 auto">
-    {% for b in banners['footer'] %}
-    <a href="{{ url_for('public.banner_click', banner_id=b.id) }}" target="_blank" rel="noopener" style="display:inline-block{% if not loop.first %};margin-left:10px{% endif %}">
-        <img src="{{ url_for('static', filename=b.image_path) }}" alt="{{ b.name }}" style="max-width:100%">
-    </a>
-    {% endfor %}
-</div>
-{% endif %}
-
-<footer id="user-footer" class="type-31">
-    <div class="float-center width-1240">
-        <nav class="user-nav">
-            <a href="{{ url_for('public.com_page', page_code='com-1') }}" class="item">매체소개</a>
-            <a href="{{ url_for('public.com_page', page_code='jb') }}" class="item">기사제보</a>
-            <a href="{{ url_for('public.com_page', page_code='ad') }}" class="item">광고문의</a>
-            <a href="{{ url_for('public.com_page', page_code='service') }}" class="item">이용약관</a>
-            <a href="{{ url_for('public.com_page', page_code='privacy') }}" class="item etc"><strong>개인정보처리방침</strong></a>
-            <a href="{{ url_for('public.com_page', page_code='youthpolicy') }}" class="item">청소년보호정책</a>
-            <a href="{{ url_for('public.com_page', page_code='copyright') }}" class="item">저작권보호정책</a>
-            <a href="{{ url_for('public.com_page', page_code='emailno') }}" class="item">이메일무단수집거부</a>
-            <a href="#top" class="for-top">
-                <i class="icon-angle-up-thin"></i>
-                <span class="text">Top</span>
-            </a>
-        </nav>
-        <div class="posi-re clearfix">
-            <div class="user-logo"><img src="{{ url_for('static', filename='images/footer-logo.png') }}" alt="웰다잉뉴스" /></div>
-            <address class="user-address">
-                <ul class="no-bullet">
-                    <li class="bars">서울특별시 송파구 송파대로 345</li>
-                    <li class="bars">법인명 : 웰다잉미디어</li>
-                    <li class="bars">제호 : 웰다잉뉴스</li>
-                    <li>등록번호 : 서울 아 04366</li>
-                    <li class="bars clear">등록일 : 2017-02-13</li>
-                    <li class="bars">발행일 : 2016-12-01</li>
-                    <li class="bars">발행·편집인 : 김동하</li>
-                    <li>청소년보호책임자 : 김동하</li>
-                    <li class="clear copy">Copyright &copy; 2026 웰다잉뉴스. All rights reserved. mail to <a href="mailto:welldyingnews@naver.com">welldyingnews@naver.com</a></li>
-                </ul>
-            </address>
-        </div>
-    </div>
-</footer>
-
-</div>
-</div>
-
-</div>
-</div>
-</div>
-{% endif %}
-
-<button type="button" id="back-to-top" class="back-to-top{% if is_mobile %} for-mobile{% endif %}" title="위로"><i class="icon-arrow-top"><span class="show-for-sr">위로</span></i></button>
-
-<script>
-$(document).ready(function(){
-{% if is_mobile %}
-    // 모바일: 햄버거 메뉴 열기
-    $('.nav-btns').on('click', function(){
-        $('#user-header').addClass('is-active');
-        $('.nav-overlap').show();
-        $('body, html').css('overflow','hidden');
-    });
-    // 모바일: 메뉴 닫기
-    $('.nav-close, .nav-overlap').on('click', function(){
-        $('#user-header').removeClass('is-active');
-        $('.nav-overlap').hide();
-        $('body, html').css('overflow','');
-    });
-    // 모바일: 아코디언 메뉴
-    $('#user-nav .is-accordion-submenu-parent > a').on('click', function(e){
-        e.preventDefault();
-        var $li = $(this).parent();
-        var $nested = $li.find('> .nested');
-        if ($li.attr('aria-expanded') === 'true') {
-            $li.attr('aria-expanded', 'false');
-            $nested.slideUp(200);
-        } else {
-            $('#user-nav .is-accordion-submenu-parent').not($li).attr('aria-expanded', 'false').find('> .nested').slideUp(200);
-            $li.attr('aria-expanded', 'true');
-            $nested.slideDown(200);
-        }
-    });
-    $('#user-nav .menu.nested').hide();
-{% else %}
-    // 명언 롤링
-    $('#roll-text').slick({
-        arrows: false, dots: false, vertical: true, verticalSwiping: true,
-        infinite: true, autoplay: true, speed: 600,
-    });
-    // 검색 버튼 토글
-    $('.sch-btns').on('click', function(){
-        $(this).closest('.user-search').toggleClass('active');
-    });
-    // 메뉴 hover
-    $('#user-menu .secline').hover(
-        function(){ $(this).find('> a').addClass('a-hover'); $(this).find('> ul').stop().slideDown(200); },
-        function(){ $(this).find('> a').removeClass('a-hover'); $(this).find('> ul').stop().slideUp(150); }
-    );
-    // 사이드 네비게이션 열기/닫기
-    var $userHeader = $('#user-header');
-    $('.user-allbtn').on('click', function(){
-        $userHeader.addClass('active');
-        $('.nav-overlap').show();
-        $('body, html').css('overflow','hidden');
-    });
-    $('.nav-close, .nav-overlap').on('click', function(){
-        $userHeader.removeClass('active');
-        $('.nav-overlap').hide();
-        $('body, html').css('overflow','initial');
-    });
-    // 사이드 메뉴 아코디언
-    $('#user-sidenav .is-accordion-submenu-parent > a').on('click', function(e){
-        e.preventDefault();
-        var $li = $(this).parent();
-        var $nested = $li.find('> .nested');
-        if ($li.attr('aria-expanded') === 'true') {
-            $li.attr('aria-expanded', 'false');
-            $nested.slideUp(200);
-        } else {
-            $('#user-sidenav .is-accordion-submenu-parent').not($li).attr('aria-expanded', 'false').find('> .nested').slideUp(200);
-            $li.attr('aria-expanded', 'true');
-            $nested.slideDown(200);
-        }
-    });
-    $('#user-sidenav .menu.nested').hide();
-    // 팝업 표시
-    $('.popup-layer').each(function(){
-        var id = $(this).attr('id');
-        if (document.cookie.indexOf('popup_hide_' + id + '=1') === -1) $(this).show();
-    });
-    $('.popup-close-btn').on('click', function(){
-        var pid = $(this).data('popup-id');
-        var $layer = $('#popup-' + pid);
-        if ($layer.find('.popup-today-close').is(':checked')) {
-            var d = new Date(); d.setHours(23,59,59,0);
-            document.cookie = 'popup_hide_popup-' + pid + '=1;expires=' + d.toUTCString() + ';path=/';
-        }
-        $layer.fadeOut(200);
-    });
-    $('.popup-layer').each(function(){
-        var $el = $(this), startX, startY, origX, origY, dragging = false;
-        $el.find('.popup-footer').on('mousedown', function(e){
-            if ($(e.target).is('input,button')) return;
-            dragging = true; startX = e.clientX; startY = e.clientY;
-            origX = parseInt($el.css('left')); origY = parseInt($el.css('top'));
-            e.preventDefault();
+            // 많이 본 뉴스 탭 전환
+            $(document).on('click', '.tabs [data-tab]', function (e) {
+                e.preventDefault();
+                var tab = $(this).data('tab');
+                var wrap = $(this).closest('.tabs-wrap');
+                wrap.find('.tabs-title').removeClass('is-active');
+                $(this).parent().addClass('is-active');
+                wrap.find('.tabs-popular').hide();
+                wrap.find('.tabs-panel-' + tab).show();
+            });
         });
-        $(document).on('mousemove', function(e){
-            if (!dragging) return;
-            $el.css({left: origX + (e.clientX - startX), top: origY + (e.clientY - startY)});
-        }).on('mouseup', function(){ dragging = false; });
-    });
-{% endif %}
-    // Back to top
-    $(window).scroll(function(){
-        if($(this).scrollTop() > 300) $('#back-to-top').fadeIn();
-        else $('#back-to-top').fadeOut();
-    });
-    $('#back-to-top').click(function(){ $('html, body').animate({scrollTop:0}, 400); });
-
-    // 많이 본 뉴스 탭 전환
-    $(document).on('click', '.tabs [data-tab]', function(e){
-        e.preventDefault();
-        var tab = $(this).data('tab');
-        var wrap = $(this).closest('.tabs-wrap');
-        wrap.find('.tabs-title').removeClass('is-active');
-        $(this).parent().addClass('is-active');
-        wrap.find('.tabs-popular').hide();
-        wrap.find('.tabs-panel-' + tab).show();
-    });
-});
-</script>
-{% block extra_scripts %}{% endblock %}
+    </script>
+    {% block extra_scripts %}{% endblock %}
 </body>
+
 </html>

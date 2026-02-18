@@ -209,7 +209,15 @@ def article_list():
     elif sc_section_code:
         section = Section.query.filter_by(code=sc_section_code).first()
         if section:
-            query = query.filter(Article.section_id == section.id)
+            from app.models import article_extra_section
+            query = query.filter(db.or_(
+                Article.section_id == section.id,
+                Article.id.in_(
+                    db.session.query(article_extra_section.c.article_id).filter(
+                        article_extra_section.c.section_id == section.id
+                    )
+                )
+            ))
 
     if sc_word:
         if sc_area == 'T':

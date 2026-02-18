@@ -153,6 +153,13 @@ class MemberLog(db.Model):
     created_at = db.Column(db.DateTime, default=datetime.now)
 
 
+# 기사-추가섹션 다대다 중간 테이블
+article_extra_section = db.Table('article_extra_section',
+    db.Column('article_id', db.Integer, db.ForeignKey('article.id'), primary_key=True),
+    db.Column('section_id', db.Integer, db.ForeignKey('section.id'), primary_key=True)
+)
+
+
 class Article(db.Model):
     __tablename__ = 'article'
     id = db.Column(db.Integer, primary_key=True)
@@ -167,7 +174,7 @@ class Article(db.Model):
     source = db.Column(db.String(100), default='')  # 기사출처
     level = db.Column(db.String(1), default='B')  # B=일반, I=중요, T=헤드라인
     recognition = db.Column(db.String(1), default='E')  # C=미승인, E=승인, R=반려
-    article_type = db.Column(db.String(1), default='B')  # B=일반, P=카드뉴스, G=갤러리
+    article_type = db.Column(db.String(1), default='B')  # B=일반, P=카드뉴스, G=갤러리, V=동영상
     thumbnail_path = db.Column(db.String(500), default='')
     serial_code_id = db.Column(db.Integer, db.ForeignKey('serial_code.id'), nullable=True)
     keyword = db.Column(db.String(500), default='')
@@ -177,9 +184,11 @@ class Article(db.Model):
     embargo_date = db.Column(db.DateTime, nullable=True)
     is_deleted = db.Column(db.Boolean, default=False)
 
-    section = db.relationship('Section', backref='articles')
+    section = db.relationship('Section', backref='articles', foreign_keys=[section_id])
     subsection = db.relationship('SubSection', backref='articles')
     serial_code = db.relationship('SerialCode', backref='articles')
+    extra_sections = db.relationship('Section', secondary=article_extra_section,
+                                     backref=db.backref('extra_articles', lazy='dynamic'))
     article_relations = db.relationship('ArticleRelation', foreign_keys='ArticleRelation.article_id',
                                         backref='article', lazy='dynamic', cascade='all, delete-orphan')
 

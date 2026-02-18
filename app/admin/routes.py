@@ -270,6 +270,10 @@ def _save_article(article):
     else:
         article.embargo_date = None
 
+    # [Bug 1 fix] 엠바고 날짜가 과거이면 created_at을 엠바고 날짜로 갱신하여 정렬 순서 반영
+    if article.embargo_date and article.embargo_date <= datetime.now():
+        article.created_at = article.embargo_date
+
     # 썸네일 업로드
     thumbnail = request.files.get('thumbnail')
     if thumbnail and thumbnail.filename:
@@ -283,9 +287,11 @@ def _save_article(article):
         else:
             article.thumbnail_path = url
 
-    article.updated_at = datetime.now()
+    # [Bug 4 fix] 동일 datetime 객체를 사용하여 created_at/updated_at 비교 시 오차 방지
+    now = datetime.now()
+    article.updated_at = now
     if is_new:
-        article.created_at = datetime.now()
+        article.created_at = now
         db.session.add(article)
 
     db.session.flush()  # article.id 확보
@@ -305,9 +311,21 @@ def _save_article(article):
                 sort_order=i
             ))
 
+    # 추가 섹션 저장 (다중 섹션 게재)
+    extra_section_ids = request.form.getlist('extra_section_ids')
+    article.extra_sections.clear()
+    for sid in extra_section_ids:
+        try:
+            sec = Section.query.get(int(sid))
+            if sec:
+                article.extra_sections.append(sec)
+        except (ValueError, TypeError):
+            continue
+
     db.session.commit()
     flash('기사가 저장되었습니다.', 'success')
-    return redirect(url_for('admin.article_edit', article_id=article.id))
+    # [Feature 3] 저장 후 기사 목록으로 이동
+    return redirect(url_for('admin.article_list'))
 
 
 @admin_bp.route('/articles')
@@ -444,6 +462,20 @@ def article_restore(article_id):
     db.session.commit()
     flash('기사가 복원되었습니다.', 'success')
     return redirect(url_for('admin.article_list', deleted='1'))
+
+
+@admin_bp.route('/article/<int:article_id>/toggle_level', methods=['POST'])
+@admin_required
+def article_toggle_level(article_id):
+    """기사 등급 토글 (일반 ↔ 헤드라인/중요)"""
+    article = Article.query.get_or_404(article_id)
+    target = request.form.get('level', 'T')
+    if article.level == target:
+        article.level = 'B'  # 이미 해당 등급이면 일반으로
+    else:
+        article.level = target
+    db.session.commit()
+    return jsonify({'ok': True, 'level': article.level})
 
 
 @admin_bp.route('/api/subsections/<int:section_id>')
