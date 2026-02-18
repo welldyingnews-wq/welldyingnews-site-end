@@ -87,7 +87,11 @@ Web 탭에서 **Manual configuration** 으로 앱 생성 후 아래 설정:
 WSGI configuration file 내용을 아래로 교체:
 
 ```python
-import sys, os
+import os, time
+os.environ['TZ'] = 'Asia/Seoul'
+time.tzset()
+
+import sys
 project_home = '/home/USERNAME/welldying-news'
 if project_home not in sys.path:
     sys.path.insert(0, project_home)

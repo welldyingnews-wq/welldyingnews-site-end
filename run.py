@@ -1,3 +1,7 @@
+import os, time
+os.environ.setdefault('TZ', 'Asia/Seoul')
+time.tzset()
+
 from app import create_app
 
 app = create_app()
