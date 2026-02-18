@@ -15,10 +15,7 @@
 
     {% block extra_head %}
     <style type="text/css">
-        {
-            % if is_mobile %
-        }
-
+        {% if is_mobile %}
         /* 모바일: 단일 컬럼, 사이드바 없음 */
         #article-view .article-view-content,
         #article-view .article-view-content>.grid {
@@ -66,10 +63,7 @@
             display: none
         }
 
-            {
-            % else %
-        }
-
+        {% else %}
         #article-view .article-view-content {
             display: table;
             width: 100%;
@@ -151,9 +145,7 @@
             }
         }
 
-            {
-            % endif %
-        }
+        {% endif %}
 
         /* 기사 본문 스타일 */
         #article-view-content-div {
@@ -916,22 +908,9 @@
         #sticky-header .aht-wrapper {
             display: flex;
             align-items: center;
-
-            max-width: {
-                % if is_mobile %
-            }
-
-            728 {
-                % else %
-            }
-
-            1240 {
-                % endif %
-            }
-
-            px;
-            width:100%;
-            padding:10px 60px
+            max-width: {% if is_mobile %}728{% else %}1240{% endif %}px;
+            width: 100%;
+            padding: 10px 60px
         }
 
         #sticky-header .aht-wrapper .item.logo {
@@ -974,10 +953,7 @@
             transition: width .1s linear
         }
 
-            {
-            % if is_mobile %
-        }
-
+        {% if is_mobile %}
         #sticky-header .aht-btn {
             display: none
         }
@@ -985,10 +961,7 @@
         #sticky-header .aht-wrapper {
             padding: 10px 15px
         }
-
-            {
-            % endif %
-        }
+        {% endif %}
 
         /* 글자크기 아이콘 */
         #article-view .quick-tool .font-size {
@@ -1008,15 +981,11 @@
         }
 
         #article-view .quick-tool .font-size.down::before {
-            background-image:url({{ url_for('static', filename='images/font-size-down.svg')
-        }
-        })
+            background-image: url({{ url_for('static', filename='images/font-size-down.svg') }})
         }
 
         #article-view .quick-tool .font-size.up::before {
-            background-image:url({{ url_for('static', filename='images/font-size-up.svg')
-        }
-        })
+            background-image: url({{ url_for('static', filename='images/font-size-up.svg') }})
         }
 
         /* 다른 공유 모달 */
