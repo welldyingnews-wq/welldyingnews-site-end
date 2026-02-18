@@ -1,0 +1,1313 @@
+<!DOCTYPE html>
+<html lang="ko">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>웰다잉뉴스 (Well-dying News)</title>
+    <link rel="stylesheet" as="style" crossorigin
+        href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/static/pretendard.min.css" />
+    <style>
+        /* === CSS 스타일 가이드 === */
+        :root {
+            --primary: #6B3FA0;
+            /* 보라색 메인 */
+            --primary-dark: #4A2B7A;
+            /* 진한 보라 */
+            --accent: #FF6B35;
+            /* 주황 포인트 */
+            --text-primary: #222222;
+            --text-secondary: #666666;
+            --border: #E0E0E0;
+            --bg-gray: #F8F8F8;
+            --font-family: 'Pretendard', 'Noto Sans KR', sans-serif;
+        }
+
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
+
+        body {
+            font-family: var(--font-family);
+            color: var(--text-primary);
+            background-color: #FFFFFF;
+            line-height: 1.5;
+        }
+
+        a {
+            text-decoration: none;
+            color: inherit;
+            transition: color 0.2s;
+        }
+
+        a:hover {
+            color: var(--primary);
+        }
+
+        ul,
+        li {
+            list-style: none;
+        }
+
+        img {
+            display: block;
+            max-width: 100%;
+        }
+
+        /* 레이아웃 유틸리티 */
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 0 15px;
+        }
+
+        .flex {
+            display: flex;
+        }
+
+        .flex-col {
+            flex-direction: column;
+        }
+
+        .items-center {
+            align-items: center;
+        }
+
+        .justify-between {
+            justify-content: space-between;
+        }
+
+        .gap-10 {
+            gap: 10px;
+        }
+
+        .gap-20 {
+            gap: 20px;
+        }
+
+        .mt-20 {
+            margin-top: 20px;
+        }
+
+        .mb-20 {
+            margin-bottom: 20px;
+        }
+
+        .text-sm {
+            font-size: 13px;
+            color: var(--text-secondary);
+        }
+
+        .font-bold {
+            font-weight: 700;
+        }
+
+        .relative {
+            position: relative;
+        }
+
+        .w-full {
+            width: 100%;
+        }
+
+        /* === HEADER === */
+        .util-bar {
+            background-color: #F5F5F5;
+            padding: 8px 0;
+            font-size: 11px;
+            color: #666;
+            border-bottom: 1px solid #eee;
+        }
+
+        .util-bar .slogan {
+            font-weight: 500;
+        }
+
+        .logo-area {
+            padding: 25px 0;
+            text-align: center;
+        }
+
+        .logo-link {
+            display: inline-flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .logo-icon {
+            width: 40px;
+            height: 40px;
+            background: var(--primary);
+            color: #fff;
+            clip-path: polygon(0 0, 100% 0, 50% 100%);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: bold;
+            font-size: 24px;
+        }
+
+        .logo-text {
+            font-size: 36px;
+            font-weight: 800;
+            color: #333;
+            letter-spacing: -1px;
+        }
+
+        /* === GNB === */
+        .gnb {
+            background: var(--primary);
+            height: 45px;
+        }
+
+        .gnb .container {
+            height: 100%;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+        }
+
+        .gnb-menu {
+            display: flex;
+            height: 100%;
+        }
+
+        .gnb-menu li a {
+            display: flex;
+            align-items: center;
+            height: 100%;
+            padding: 0 25px;
+            color: #fff;
+            font-size: 15px;
+            font-weight: 500;
+        }
+
+        .gnb-menu li a:hover {
+            background-color: rgba(255, 255, 255, 0.1);
+            color: #fff;
+        }
+
+        .gnb-right {
+            display: flex;
+            align-items: center;
+            gap: 15px;
+        }
+
+        .newsletter-btn {
+            background: var(--accent);
+            color: #fff;
+            padding: 5px 12px;
+            border-radius: 3px;
+            font-size: 12px;
+            display: flex;
+            align-items: center;
+            gap: 5px;
+        }
+
+        .newsletter-btn:hover {
+            background-color: #ff8559;
+            color: #fff;
+        }
+
+        .gnb-icon {
+            color: #fff;
+            font-size: 18px;
+            cursor: pointer;
+        }
+
+        /* === MAIN LAYOUT === */
+        .main-grid {
+            display: grid;
+            grid-template-columns: 820px 340px;
+            /* 70% : 30% roughly */
+            gap: 40px;
+            margin-top: 30px;
+            margin-bottom: 50px;
+        }
+
+        /* 섹션 헤더 공통 */
+        .section-header {
+            border-bottom: 2px solid var(--primary);
+            padding-bottom: 8px;
+            margin-bottom: 15px;
+            display: flex;
+            justify-content: space-between;
+            align-items: flex-end;
+        }
+
+        .section-title {
+            font-size: 18px;
+            font-weight: 700;
+            color: #222;
+            display: flex;
+            align-items: center;
+            gap: 5px;
+        }
+
+        .more-link {
+            font-size: 12px;
+            color: #999;
+        }
+
+        /* [1] HERO SLIDER */
+        .hero-section {
+            display: grid;
+            grid-template-columns: 2fr 1fr;
+            gap: 20px;
+            height: 380px;
+            margin-bottom: 40px;
+            border-bottom: 1px solid #eee;
+            padding-bottom: 30px;
+        }
+
+        .hero-slider {
+            position: relative;
+            height: 100%;
+            background: #000;
+            overflow: hidden;
+            border-radius: 4px;
+        }
+
+        .slide-item {
+            position: absolute;
+            width: 100%;
+            height: 100%;
+            display: none;
+        }
+
+        .slide-item.active {
+            display: block;
+        }
+
+        .slide-img {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+            opacity: 0.8;
+        }
+
+        .slide-overlay {
+            position: absolute;
+            bottom: 0;
+            left: 0;
+            right: 0;
+            background: linear-gradient(to top, rgba(0, 0, 0, 0.8), transparent);
+            padding: 60px 20px 20px;
+            color: #fff;
+        }
+
+        .slide-title {
+            font-size: 22px;
+            font-weight: 700;
+            margin-bottom: 10px;
+            line-height: 1.3;
+        }
+
+        .slide-controls {
+            position: absolute;
+            bottom: 15px;
+            right: 15px;
+            display: flex;
+            gap: 5px;
+        }
+
+        .dot {
+            width: 8px;
+            height: 8px;
+            background: rgba(255, 255, 255, 0.5);
+            border-radius: 50%;
+            cursor: pointer;
+        }
+
+        .dot.active {
+            background: #fff;
+            width: 20px;
+            border-radius: 4px;
+        }
+
+        .sub-news-rail {
+            display: flex;
+            flex-direction: column;
+            gap: 15px;
+            height: 100%;
+        }
+
+        .sub-card {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            border: 1px solid #eee;
+        }
+
+        .sub-card img {
+            height: 60%;
+            object-fit: cover;
+        }
+
+        .sub-card .txt {
+            padding: 12px;
+            font-size: 14px;
+            font-weight: 600;
+            line-height: 1.4;
+        }
+
+        /* [2] NEWS LIST BELOW HERO */
+        .news-grid-4 {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 20px 40px;
+            margin-bottom: 40px;
+        }
+
+        .news-item-horiz {
+            display: flex;
+            gap: 15px;
+            align-items: center;
+            padding-bottom: 10px;
+            border-bottom: 1px solid #f0f0f0;
+        }
+
+        .news-item-horiz img {
+            width: 80px;
+            height: 60px;
+            object-fit: cover;
+            border-radius: 4px;
+        }
+
+        .news-item-horiz .title {
+            font-size: 15px;
+            font-weight: 500;
+            line-height: 1.4;
+            color: #333;
+        }
+
+        .news-item-horiz:hover .title {
+            color: var(--primary);
+            text-decoration: underline;
+        }
+
+        /* [3] BOOK */
+        .book-slider-wrap {
+            position: relative;
+            background: #fff;
+            padding: 10px 0 30px;
+            overflow: hidden;
+            margin-bottom: 40px;
+        }
+
+        .books-track {
+            display: flex;
+            gap: 20px;
+            transition: transform 0.3s ease;
+        }
+
+        .book-card {
+            min-width: 148px;
+            /* 820 / 5 - gap roughly */
+            text-align: center;
+        }
+
+        .book-cover {
+            width: 110px;
+            height: 160px;
+            object-fit: cover;
+            box-shadow: 2px 2px 8px rgba(0, 0, 0, 0.1);
+            margin: 0 auto 10px;
+            transition: transform 0.2s;
+        }
+
+        .book-card:hover .book-cover {
+            transform: translateY(-5px);
+        }
+
+        .book-title {
+            font-size: 13px;
+            font-weight: 600;
+            line-height: 1.3;
+            height: 34px;
+            overflow: hidden;
+        }
+
+        /* [4] TV SECTION */
+        .tv-grid {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 20px;
+            margin-bottom: 50px;
+        }
+
+        .video-card {
+            position: relative;
+            cursor: pointer;
+        }
+
+        .video-thumb {
+            position: relative;
+            width: 100%;
+            padding-top: 56.25%;
+            /* 16:9 */
+            background: #000;
+            overflow: hidden;
+            margin-bottom: 10px;
+            border-radius: 6px;
+        }
+
+        .video-thumb img {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+            opacity: 0.9;
+            transition: opacity 0.3s;
+        }
+
+        .video-card:hover .video-thumb img {
+            opacity: 0.7;
+        }
+
+        .play-icon {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            width: 40px;
+            height: 40px;
+            background: rgba(0, 0, 0, 0.6);
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .play-icon::after {
+            content: '';
+            border-style: solid;
+            border-width: 8px 0 8px 14px;
+            border-color: transparent transparent transparent #fff;
+            margin-left: 4px;
+        }
+
+        .video-title {
+            font-size: 14px;
+            font-weight: 600;
+            line-height: 1.4;
+            margin-bottom: 5px;
+        }
+
+        .video-date {
+            font-size: 11px;
+            color: #888;
+        }
+
+        /* [5-8] CATEGORY GRIDS */
+        .cat-row {
+            display: grid;
+            grid-template-columns: repeat(4, 1fr);
+            gap: 30px;
+            margin-bottom: 40px;
+            border-bottom: 1px solid #eee;
+            padding-bottom: 40px;
+        }
+
+        .cat-row:last-child {
+            border-bottom: none;
+        }
+
+        .cat-col .section-header {
+            margin-bottom: 15px;
+            border-bottom-width: 2px;
+        }
+
+        .cat-main-article {
+            margin-bottom: 15px;
+        }
+
+        .cat-main-img {
+            width: 100%;
+            height: 120px;
+            object-fit: cover;
+            margin-bottom: 8px;
+            border-radius: 4px;
+        }
+
+        .cat-main-title {
+            font-size: 14px;
+            font-weight: 700;
+            line-height: 1.4;
+            margin-bottom: 5px;
+        }
+
+        .cat-list li {
+            position: relative;
+            padding-left: 8px;
+            margin-bottom: 6px;
+            font-size: 13px;
+            color: #444;
+            line-height: 1.4;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            white-space: nowrap;
+        }
+
+        .cat-list li::before {
+            content: '•';
+            position: absolute;
+            left: 0;
+            color: #999;
+        }
+
+        /* === SIDEBAR === */
+        /* [Side 1] Opinion */
+        .opinion-list {
+            display: flex;
+            flex-direction: column;
+            gap: 15px;
+        }
+
+        .opinion-item {
+            display: flex;
+            gap: 12px;
+            align-items: flex-start;
+            padding-bottom: 15px;
+            border-bottom: 1px dashed #eee;
+        }
+
+        .opinion-item:last-child {
+            border-bottom: none;
+        }
+
+        .profile-img {
+            width: 45px;
+            height: 45px;
+            border-radius: 50%;
+            object-fit: cover;
+            border: 1px solid #eee;
+            flex-shrink: 0;
+        }
+
+        .opinion-title {
+            font-size: 13px;
+            font-weight: 600;
+            line-height: 1.4;
+            color: #333;
+            margin-bottom: 4px;
+        }
+
+        .auth-name {
+            font-size: 11px;
+            color: var(--primary);
+            font-weight: bold;
+        }
+
+        /* [Side 2] Schedule */
+        .schedule-list li {
+            padding: 8px 0;
+            border-bottom: 1px solid #f5f5f5;
+            display: flex;
+            gap: 10px;
+            font-size: 13px;
+        }
+
+        .sched-date {
+            color: var(--accent);
+            font-weight: bold;
+            min-width: 85px;
+        }
+
+        .sched-title {
+            color: #444;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            white-space: nowrap;
+        }
+
+        /* [Side 3] Data */
+        .data-list {
+            background: #F9F9F9;
+            padding: 15px;
+            border-radius: 4px;
+        }
+
+        .data-item {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            margin-bottom: 8px;
+            font-size: 13px;
+            color: #555;
+        }
+
+        .data-item:last-child {
+            margin-bottom: 0;
+        }
+
+        .file-icon {
+            width: 14px;
+            height: 14px;
+            background: #ddd;
+            display: inline-block;
+            border-radius: 2px;
+        }
+
+        /* [Side 4] Popular */
+        .popular-tab {
+            display: flex;
+            gap: 10px;
+            margin-left: auto;
+            font-size: 11px;
+            color: #888;
+        }
+
+        .popular-tab span {
+            cursor: pointer;
+        }
+
+        .popular-tab span.active {
+            color: var(--primary);
+            font-weight: bold;
+            border-bottom: 2px solid var(--primary);
+        }
+
+        .rank-list {
+            counter-reset: rank;
+            margin-top: 10px;
+        }
+
+        .rank-item {
+            display: flex;
+            gap: 10px;
+            padding: 10px 0;
+            border-bottom: 1px solid #f5f5f5;
+            font-size: 14px;
+            align-items: center;
+        }
+
+        .rank-num {
+            font-weight: 800;
+            color: var(--primary);
+            font-style: italic;
+            font-size: 16px;
+            width: 20px;
+            text-align: center;
+        }
+
+        /* === FOOTER === */
+        footer {
+            border-top: 1px solid #ddd;
+            margin-top: 50px;
+        }
+
+        .footer-top {
+            background: #333;
+            padding: 15px 0;
+        }
+
+        .footer-links {
+            display: flex;
+            justify-content: center;
+            gap: 30px;
+            font-size: 13px;
+            color: #bbb;
+        }
+
+        .footer-links a:hover {
+            color: #fff;
+        }
+
+        .footer-bottom {
+            background: #222;
+            padding: 30px 0;
+            color: #777;
+            font-size: 12px;
+        }
+
+        .footer-content {
+            display: flex;
+            justify-content: space-between;
+            align-items: flex-start;
+        }
+
+        .f-logo {
+            font-size: 20px;
+            font-weight: bold;
+            color: #ddd;
+            margin-bottom: 10px;
+            display: inline-block;
+        }
+
+        .f-info p {
+            margin-bottom: 4px;
+        }
+
+        .f-banner {
+            width: 180px;
+            height: 50px;
+            background: #ffeb3b;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: #333;
+            font-weight: bold;
+            font-size: 11px;
+        }
+
+        /* Responsive */
+        @media (max-width: 768px) {
+            .main-grid {
+                grid-template-columns: 1fr;
+                gap: 30px;
+            }
+
+            .hero-section {
+                grid-template-columns: 1fr;
+                height: auto;
+            }
+
+            .sub-news-rail {
+                display: none;
+            }
+
+            /* Mobile hide */
+            .cat-row {
+                grid-template-columns: 1fr 1fr;
+            }
+
+            .gnb-menu {
+                display: none;
+            }
+
+            /* Simplified mobile menu needed */
+            .logo-text {
+                font-size: 24px;
+            }
+        }
+    </style>
+</head>
+
+<body>
+
+    <!-- Header -->
+    <header>
+        <div class="util-bar">
+            <div class="container flex justify-between items-center">
+                <div class="slogan">삶과 죽음의 고유성을 전하는 &nbsp;&nbsp;|&nbsp;&nbsp; 묵음으로 인한 슬픔은 그쳐진 줄을 알겠나이다</div>
+                <div class="links">로그인 | 회원가입 | 즐겨찾기</div>
+            </div>
+        </div>
+        <div class="logo-area">
+            <a href="#" class="logo-link">
+                <div class="logo-icon">V</div>
+                <div class="logo-text">웰다잉뉴스</div>
+            </a>
+        </div>
+        <nav class="gnb">
+            <div class="container">
+                <ul class="gnb-menu">
+                    <li><a href="#">뉴스</a></li>
+                    <li><a href="#">오피니언</a></li>
+                    <li><a href="#">웰다잉TV</a></li>
+                    <li><a href="#">자료실</a></li>
+                    <li><a href="#">주요 일정</a></li>
+                    <li><a href="#">자유게시판</a></li>
+                </ul>
+                <div class="gnb-right">
+                    <a href="#" class="newsletter-btn">
+                        <span>✉️</span> 뉴스레터 구독
+                    </a>
+                    <span class="gnb-icon">🔍</span>
+                    <span class="gnb-icon">☰</span>
+                </div>
+            </div>
+        </nav>
+    </header>
+
+    <div class="container main-grid">
+        <!-- LEFT: Main Article Area (70%) -->
+        <main>
+            <!-- [1] Hero Slider -->
+            <section class="hero-section">
+                <div class="hero-slider">
+                    <!-- Slide 1 -->
+                    <div class="slide-item active">
+                        <img src="https://picsum.photos/600/380?random=1" class="slide-img" alt="Hero 1">
+                        <div class="slide-overlay">
+                            <h2 class="slide-title">생애말기 서비스 가로막는 인센티브 불일치, 산업적 관점의 과감한 규제 혁파 시급</h2>
+                        </div>
+                    </div>
+                    <!-- Slide 2 -->
+                    <div class="slide-item">
+                        <img src="https://picsum.photos/600/380?random=2" class="slide-img" alt="Hero 2">
+                        <div class="slide-overlay">
+                            <h2 class="slide-title">존엄한 마무리를 위한 사회적 합의, 어디까지 왔나?</h2>
+                        </div>
+                    </div>
+                    <div class="slide-controls">
+                        <div class="dot active"></div>
+                        <div class="dot"></div>
+                        <div class="dot"></div>
+                    </div>
+                </div>
+                <!-- Right Side Sub News -->
+                <div class="sub-news-rail">
+                    <div class="sub-card">
+                        <img src="https://picsum.photos/300/200?random=3" alt="Sub 1">
+                        <div class="txt">호스피스 병동의 24시, 그들이 남긴 마지막 미소</div>
+                    </div>
+                    <div class="sub-card">
+                        <img src="https://picsum.photos/300/200?random=4" alt="Sub 2">
+                        <div class="txt">유산 기부 문화 확산, '아름다운 마무리'의 조건</div>
+                    </div>
+                </div>
+            </section>
+
+            <!-- [2] News Grid Below Hero -->
+            <section class="news-grid-4">
+                <div class="news-item-horiz">
+                    <img src="https://picsum.photos/80/60?random=5" alt="News">
+                    <div class="title">전 대통령, '인생의 종단 시 과감한 획기적인 대책'이 시사...</div>
+                </div>
+                <div class="news-item-horiz">
+                    <img src="https://picsum.photos/80/60?random=6" alt="News">
+                    <div class="title">구육점, 이내 씨 서비스 5가지 장치로 직접 처리했다 주목 솔솔...</div>
+                </div>
+                <div class="news-item-horiz">
+                    <img src="https://picsum.photos/80/60?random=7" alt="News">
+                    <div class="title">사회의 직원 '엔데위로 훈공자' 장가치를 향하는 법 활용...</div>
+                </div>
+                <div class="news-item-horiz">
+                    <img src="https://picsum.photos/80/60?random=8" alt="News">
+                    <div class="title">기우리에 빌립 기준으로 선도 방법... 이어 미국 소음 산모 모발 변화</div>
+                </div>
+            </section>
+
+            <!-- [3] Books Section -->
+            <section>
+                <div class="section-header">
+                    <h3 class="section-title">도서·출판</h3>
+                    <a href="#" class="more-link">더보기 +</a>
+                </div>
+                <div class="book-slider-wrap">
+                    <div class="books-track">
+                        <!-- Book Cards -->
+                        <div class="book-card">
+                            <img src="https://picsum.photos/110/160?random=11" class="book-cover" alt="Book">
+                            <div class="book-title">죽음의 에티켓</div>
+                        </div>
+                        <div class="book-card">
+                            <img src="https://picsum.photos/110/160?random=12" class="book-cover" alt="Book">
+                            <div class="book-title">마지막 여행을 위한 안내서</div>
+                        </div>
+                        <div class="book-card">
+                            <img src="https://picsum.photos/110/160?random=13" class="book-cover" alt="Book">
+                            <div class="book-title">떠난 후에 남겨진 것들</div>
+                        </div>
+                        <div class="book-card">
+                            <img src="https://picsum.photos/110/160?random=14" class="book-cover" alt="Book">
+                            <div class="book-title">인생의 마지막 수업</div>
+                        </div>
+                        <div class="book-card">
+                            <img src="https://picsum.photos/110/160?random=15" class="book-cover" alt="Book">
+                            <div class="book-title">상실의 시대</div>
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+            <!-- [4] TV Section -->
+            <section>
+                <div class="section-header" style="border-color: #cc0000;">
+                    <h3 class="section-title">
+                        <span
+                            style="background:#cc0000; color:#fff; padding:2px 6px; border-radius:3px; font-size:12px; margin-right:5px;">▶</span>
+                        웰다잉TV
+                    </h3>
+                    <a href="#" class="more-link">더보기 +</a>
+                </div>
+                <div class="tv-grid">
+                    <div class="video-card">
+                        <div class="video-thumb">
+                            <img src="https://picsum.photos/300/170?random=21" alt="Video">
+                            <div class="play-icon"></div>
+                        </div>
+                        <div class="video-title">2025 호스피스 인력문의 영상공모 선 최우수 수상작 "딸이 아닌 정"</div>
+                        <div class="video-date">2025.01.15</div>
+                    </div>
+                    <div class="video-card">
+                        <div class="video-thumb">
+                            <img src="https://picsum.photos/300/170?random=22" alt="Video">
+                            <div class="play-icon"></div>
+                        </div>
+                        <div class="video-title">2025 호스피스 역전자 영상공모 선 최우수 수상</div>
+                        <div class="video-date">2025.02.01</div>
+                    </div>
+                    <div class="video-card">
+                        <div class="video-thumb">
+                            <img src="https://picsum.photos/300/170?random=23" alt="Video">
+                            <div class="play-icon"></div>
+                        </div>
+                        <div class="video-title">2021년 국내 저서 기증식 현장 스케치</div>
+                        <div class="video-date">2025.02.10</div>
+                    </div>
+                </div>
+            </section>
+
+            <!-- [5] Category Row 1 -->
+            <div class="cat-row">
+                <!-- Col 1 -->
+                <div class="cat-col">
+                    <div class="section-header">
+                        <h4 class="section-title" style="font-size:15px;">정책·사회</h4>
+                    </div>
+                    <div class="cat-main-article">
+                        <img src="https://picsum.photos/200/120?random=31" class="cat-main-img" alt="">
+                        <div class="cat-main-title">고령화 사회, 노인 돌봄의 새로운 패러다임</div>
+                    </div>
+                    <ul class="cat-list">
+                        <li>정부, 고독사 예방 5개년 계획 발표...</li>
+                        <li>장례문화 인식 개선을 위한 시민 토론회</li>
+                        <li>요양병원 간병비 급여화 시범사업 확대</li>
+                    </ul>
+                </div>
+                <!-- Col 2 -->
+                <div class="cat-col">
+                    <div class="section-header">
+                        <h4 class="section-title" style="font-size:15px;">문화·생활</h4>
+                    </div>
+                    <div class="cat-main-article">
+                        <img src="https://picsum.photos/200/120?random=32" class="cat-main-img" alt="">
+                        <div class="cat-main-title">죽음을 기억하라, 메멘토 모리 전시회</div>
+                    </div>
+                    <ul class="cat-list">
+                        <li>웰다잉 연극 '소풍 끝나는 날' 호평</li>
+                        <li>반려동물 장례, 이제는 필수 문화로</li>
+                        <li>나의 장례식 플레이리스트 만들기 열풍</li>
+                    </ul>
+                </div>
+                <!-- Col 3 -->
+                <div class="cat-col">
+                    <div class="section-header">
+                        <h4 class="section-title" style="font-size:15px;">교육·행사</h4>
+                    </div>
+                    <!-- No image style for variety if needed, keeping consistent as requested -->
+                    <div class="cat-main-article">
+                        <img src="https://picsum.photos/200/120?random=33" class="cat-main-img" alt="">
+                        <div class="cat-main-title">제10회 웰다잉 강사 양성 과정 모집</div>
+                    </div>
+                    <ul class="cat-list">
+                        <li>청소년 생명존중 교육 프로그램 안내</li>
+                        <li>호스피스 완화의료 학회 춘계 학술대회</li>
+                        <li>사전연명의료의향서 상담사 보수교육</li>
+                    </ul>
+                </div>
+                <!-- Col 4 -->
+                <div class="cat-col">
+                    <div class="section-header">
+                        <h4 class="section-title" style="font-size:15px;">사건·사고</h4>
+                    </div>
+                    <div class="cat-main-article">
+                        <img src="https://picsum.photos/200/120?random=34" class="cat-main-img" alt="">
+                        <div class="cat-main-title">무연고 사망자 공영장례 지원 조례 통과</div>
+                    </div>
+                    <ul class="cat-list">
+                        <li>독거노인 안전 확인 서비스 강화 필요성</li>
+                        <li>상조 서비스 피해 주의보 발령</li>
+                        <li>장례식장 일회용품 사용 규제 현황</li>
+                    </ul>
+                </div>
+            </div>
+
+            <!-- [6] Category Row 2 -->
+            <div class="cat-row">
+                <div class="cat-col">
+                    <div class="section-header">
+                        <h4 class="section-title" style="font-size:15px;">호스피스</h4>
+                    </div>
+                    <div class="cat-main-article">
+                        <img src="https://picsum.photos/200/120?random=41" class="cat-main-img" alt="">
+                        <div class="cat-main-title">가정형 호스피스 이용률 증가 추세</div>
+                    </div>
+                    <ul class="cat-list">
+                        <li>말기 암 환자를 위한 통증 관리 가이드</li>
+                        <li>호스피스의 날 기념 행사 스케치</li>
+                        <li>완화의료 전문 간호사 인터뷰</li>
+                    </ul>
+                </div>
+                <div class="cat-col">
+                    <div class="section-header">
+                        <h4 class="section-title" style="font-size:15px;">완화의료·말기</h4>
+                    </div>
+                    <div class="cat-main-article">
+                        <img src="https://picsum.photos/200/120?random=42" class="cat-main-img" alt="">
+                        <div class="cat-main-title">말기 신부전 환자의 연명치료 결정</div>
+                    </div>
+                    <ul class="cat-list">
+                        <li>중환자실에서의 존엄한 죽음</li>
+                        <li>사전연명의료의향서 등록 200만 돌파</li>
+                        <li>의료진을 위한 소진 방지 프로그램</li>
+                    </ul>
+                </div>
+                <div class="cat-col">
+                    <div class="section-header">
+                        <h4 class="section-title" style="font-size:15px;">조력사망·안락사</h4>
+                    </div>
+                    <div class="cat-main-article">
+                        <img src="https://picsum.photos/200/120?random=43" class="cat-main-img" alt="">
+                        <div class="cat-main-title">조력 존엄사 법안, 국회 발의 논란</div>
+                    </div>
+                    <ul class="cat-list">
+                        <li>스위스 조력사망 단체 가입자 현황</li>
+                        <li>안락사 합법화 국가 사례 분석</li>
+                        <li>생명윤리와 자기결정권 토론회</li>
+                    </ul>
+                </div>
+                <div class="cat-col">
+                    <div class="section-header">
+                        <h4 class="section-title" style="font-size:15px;">고독사·무연고</h4>
+                    </div>
+                    <div class="cat-main-article">
+                        <img src="https://picsum.photos/200/120?random=44" class="cat-main-img" alt="">
+                        <div class="cat-main-title">청년 고독사 급증, 사회적 연결망 시급</div>
+                    </div>
+                    <ul class="cat-list">
+                        <li>무연고 사망자 유품 정리 서비스</li>
+                        <li>이웃이 이웃을 돌보는 마을 공동체</li>
+                        <li>저소득층 장례비 지원 확대</li>
+                    </ul>
+                </div>
+            </div>
+
+            <!-- [7] Category Row 3 -->
+            <div class="cat-row">
+                <div class="cat-col">
+                    <div class="section-header">
+                        <h4 class="section-title" style="font-size:15px;">자살 예방</h4>
+                    </div>
+                    <ul class="cat-list" style="margin-top:10px;">
+                        <li>생명 지킴이 게이트키퍼 교육</li>
+                        <li>자살 유가족을 위한 치유 모임</li>
+                        <li>24시간 상담 전화 개통</li>
+                        <li>[칼럼] 우울증은 마음의 감기가 아니다</li>
+                    </ul>
+                </div>
+                <div class="cat-col">
+                    <div class="section-header">
+                        <h4 class="section-title" style="font-size:15px;">돌봄·요양</h4>
+                    </div>
+                    <ul class="cat-list" style="margin-top:10px;">
+                        <li>장기요양보험 등급 판정 기준 변경</li>
+                        <li>치매 안심 센터 이용 가이드</li>
+                        <li>요양보호사 처우 개선 목소리</li>
+                        <li>노인 맞춤형 돌봄 서비스 신청</li>
+                    </ul>
+                </div>
+                <div class="cat-col">
+                    <div class="section-header">
+                        <h4 class="section-title" style="font-size:15px;">장례·장사</h4>
+                    </div>
+                    <ul class="cat-list" style="margin-top:10px;">
+                        <li>친환경 장례 문화, 수목장 각광</li>
+                        <li>작은 장례식 실천 운동</li>
+                        <li>봉안당 계약 시 주의사항</li>
+                        <li>해양장(바다장) 합법화 논의</li>
+                    </ul>
+                </div>
+                <div class="cat-col">
+                    <div class="section-header">
+                        <h4 class="section-title" style="font-size:15px;">유언·기부</h4>
+                    </div>
+                    <ul class="cat-list" style="margin-top:10px;">
+                        <li>디지털 유언장 작성법</li>
+                        <li>유류분 반환 청구 소송 판례</li>
+                        <li>장기 기증 희망 등록 캠페인</li>
+                        <li>유산 기부로 학교 짓는 할머니</li>
+                    </ul>
+                </div>
+            </div>
+
+        </main>
+
+        <!-- RIGHT: Sidebar (30%) -->
+        <aside>
+            <!-- [Side 1] Opinion -->
+            <section class="mb-20">
+                <div class="section-header">
+                    <h3 class="section-title">오피니언</h3>
+                    <a href="#" class="more-link">더보기 +</a>
+                </div>
+                <div class="opinion-list">
+                    <div class="opinion-item">
+                        <img src="https://picsum.photos/45/45?random=90" class="profile-img" alt="Profile">
+                        <div>
+                            <div class="opinion-title">[박민순 서울부원] 워 우리의 시간이 어떻게 사용해야 할까봐</div>
+                            <div class="auth-name">박민순 / 서울대학교병원 교수</div>
+                        </div>
+                    </div>
+                    <div class="opinion-item">
+                        <img src="https://picsum.photos/45/45?random=91" class="profile-img" alt="Profile">
+                        <div>
+                            <div class="opinion-title">[고수간] 고수인 호스피스 현장에서의 병적 불일과 자진감사</div>
+                            <div class="auth-name">고수간 / 호스피스 전문간호사</div>
+                        </div>
+                    </div>
+                    <div class="opinion-item">
+                        <img src="https://picsum.photos/45/45?random=92" class="profile-img" alt="Profile">
+                        <div>
+                            <div class="opinion-title">[김도혜] 웰다이 가이닝의 진 알자치, 몰솔이 요...·점이강손</div>
+                            <div class="auth-name">김도혜 / 작가</div>
+                        </div>
+                    </div>
+                    <div class="opinion-item">
+                        <img src="https://picsum.photos/45/45?random=93" class="profile-img" alt="Profile">
+                        <div>
+                            <div class="opinion-title">[사설] 존엄한 죽음을 위한 법적 기반 마련을 촉구하며</div>
+                            <div class="auth-name">웰다잉뉴스 편집부</div>
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+            <!-- [Side 2] Schedule -->
+            <section class="mb-20">
+                <div class="section-header">
+                    <h3 class="section-title">교육·행사</h3>
+                    <a href="#" class="more-link">더보기 +</a>
+                </div>
+                <ul class="schedule-list">
+                    <li><span class="sched-date">[3. 5 ~ 3. 26]</span> <span class="sched-title">삶기의 공감 군포 시민 강좌 (매주
+                            목)</span></li>
+                    <li><span class="sched-date">[1. 12 ~ 3. 8]</span> <span class="sched-title">직접 '싱이있는'을 경험하는
+                            워크샵</span></li>
+                    <li><span class="sched-date">[2026. 1. 21]</span> <span class="sched-title">유신연구 황실이들 원반 영상 이동
+                            상영회</span></li>
+                    <li><span class="sched-date">[2026. 1. 23]</span> <span class="sched-title">유신동등 사회 의원 두 번째
+                            공청회</span></li>
+                    <li><span class="sched-date">[12. 14 ~ 17]</span> <span class="sched-title">2026년 태국에서 웰다잉
+                            컨퍼런스</span></li>
+                </ul>
+            </section>
+
+            <!-- Banner -->
+            <div class="mb-20">
+                <img src="https://picsum.photos/340/120?random=100" style="width:100%; border-radius:4px;" alt="Ad">
+            </div>
+
+            <!-- [Side 3] Data -->
+            <section class="mb-20">
+                <div class="section-header">
+                    <h3 class="section-title">자료실</h3>
+                    <a href="#" class="more-link">더보기 +</a>
+                </div>
+                <div class="data-list">
+                    <div class="data-item"><span class="file-icon"></span> 2025 호스피스 완화의료 사업 안내</div>
+                    <div class="data-item"><span class="file-icon"></span> 연명의료결정법 개정안 전문 (HWP)</div>
+                    <div class="data-item"><span class="file-icon"></span> 사전연명의료의향서 작성 서식</div>
+                    <div class="data-item"><span class="file-icon"></span> 웰다잉 교육 표준 강의안 (PPT)</div>
+                    <div class="data-item"><span class="file-icon"></span> 장사 시설 현황 통계 자료집</div>
+                </div>
+            </section>
+
+            <!-- [Side 4] Popular -->
+            <section class="mb-20">
+                <div class="section-header">
+                    <h3 class="section-title">많이 본 뉴스</h3>
+                    <div class="popular-tab">
+                        <span class="active">오늘</span> | <span>주간</span>
+                    </div>
+                </div>
+                <div class="rank-list">
+                    <div class="rank-item">
+                        <div class="rank-num">1</div>
+                        <div class="title">천기를 넘어 게혁의에 힘이 배우리여서기' 그들의 선택</div>
+                    </div>
+                    <div class="rank-item">
+                        <div class="rank-num">2</div>
+                        <div class="title">저 보조뒤 2023년 차를 여행 보고서 발표 "놀라운 수치"</div>
+                    </div>
+                    <div class="rank-item">
+                        <div class="rank-num">3</div>
+                        <div class="title">부탁 공간에 소빙 선이 밀량한 정보 제공의 한계와 대안</div>
+                    </div>
+                    <div class="rank-item">
+                        <div class="rank-num">4</div>
+                        <div class="title">쌀술 상지에서 소빙 삶이 여긴이 이성이 존재하는가</div>
+                    </div>
+                    <div class="rank-item">
+                        <div class="rank-num">5</div>
+                        <div class="title">생에안기 서비스 초근는 인생년의 불실, 우리는 준비되었나</div>
+                    </div>
+                </div>
+            </section>
+
+            <!-- Sticky Ad or Banner -->
+            <div style="position:sticky; top:20px;">
+                <div
+                    style="background:#eee; height:300px; display:flex; align-items:center; justify-content:center; color:#999;">
+                    Google Ad
+                </div>
+            </div>
+
+        </aside>
+    </div>
+
+    <!-- Footer -->
+    <footer>
+        <div class="footer-top">
+            <div class="container footer-links">
+                <a href="#">회사소개</a>
+                <a href="#">기자에게</a>
+                <a href="#">광고문의</a>
+                <a href="#">이용약관</a>
+                <a href="#">자원봉사자/회원입력</a>
+                <a href="#">청소년보호정책</a>
+                <a href="#">저작권표시/이용방침</a>
+                <a href="#">이메일/무단수집거부</a>
+            </div>
+        </div>
+        <div class="footer-bottom">
+            <div class="container footer-content">
+                <div class="f-left">
+                    <a href="#" class="f-logo">Welldying News</a>
+                    <div class="f-info">
+                        <p>발행인: 홍길동 | 편집인: 김철수 | 등록번호: 서울 아00000</p>
+                        <p>주소: 서울특별시 종로구 무슨로 123 | 전화: 02-1234-5678 | 팩스: 02-1234-5679</p>
+                        <p>이메일: contact@welldyingnews.com | 사업자등록번호: 123-45-67890</p>
+                        <p class="mt-20">Copyright © 2025 Welldying News. All rights reserved.</p>
+                    </div>
+                </div>
+                <div class="f-right">
+                    <div class="f-banner">FAMILY SITE BANNER</div>
+                </div>
+            </div>
+        </div>
+    </footer>
+
+    <script>
+        // Simple manual slider logic
+        let currentSlide = 0;
+        const slides = document.querySelectorAll('.slide-item');
+        const dots = document.querySelectorAll('.dot');
+
+        function showSlide(n) {
+            slides.forEach(s => s.classList.remove('active'));
+            dots.forEach(d => d.classList.remove('active'));
+
+            currentSlide = (n + slides.length) % slides.length;
+            slides[currentSlide].classList.add('active');
+            dots[currentSlide].classList.add('active');
+        }
+
+        setInterval(() => {
+            showSlide(currentSlide + 1);
+        }, 4000);
+
+        dots.forEach((dot, idx) => {
+            dot.addEventListener('click', () => showSlide(idx));
+        });
+    </script>
+</body>
+
+</html>

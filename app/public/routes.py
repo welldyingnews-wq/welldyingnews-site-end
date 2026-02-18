@@ -14,6 +14,12 @@ from app.models import (db, Section, SubSection, Article, ArticleRelation, Artic
 from app.public import public_bp
 
 
+@public_bp.route('/v2')
+def index_v2():
+    return render_template('public/index_v2.html')
+
+
+
 def _get_published_query():
     """승인된 + 삭제되지 않은 + 노출시간 지난 기사만 조회"""
     now = datetime.now()
@@ -114,18 +120,18 @@ def index():
     # 헤드라인/중요 기사 (상단 skin-3 영역: 1 large + 2 small)
     headline_articles = query.filter(
         Article.level.in_(['T', 'I'])
-    ).order_by(Article.created_at.desc()).limit(3).all()
+    ).order_by(db.func.coalesce(Article.embargo_date, Article.created_at).desc()).limit(3).all()
 
     # 부족하면 최신 기사로 채움
     if len(headline_articles) < 3:
         existing_ids = [a.id for a in headline_articles]
         extra = query.filter(
             ~Article.id.in_(existing_ids) if existing_ids else True
-        ).order_by(Article.created_at.desc()).limit(3 - len(headline_articles)).all()
+        ).order_by(db.func.coalesce(Article.embargo_date, Article.created_at).desc()).limit(3 - len(headline_articles)).all()
         headline_articles.extend(extra)
 
     # 최신 기사 (skin-12 그리드: 8개)
-    latest_articles = query.order_by(Article.created_at.desc()).limit(8).all()
+    latest_articles = query.order_by(db.func.coalesce(Article.embargo_date, Article.created_at).desc()).limit(8).all()
 
     # 많이 본 뉴스 (사이드바 랭킹: 5개)
     popular_articles = query.order_by(Article.view_count.desc()).limit(5).all()
@@ -139,7 +145,7 @@ def index():
     for sub in key_subsections[:16]:
         articles = query.filter(
             Article.subsection_id == sub.id
-        ).order_by(Article.created_at.desc()).limit(4).all()
+        ).order_by(db.func.coalesce(Article.embargo_date, Article.created_at).desc()).limit(4).all()
         if articles:
             section_articles[sub] = articles
 
@@ -149,7 +155,7 @@ def index():
     if opinion_section:
         opinion_articles = query.filter(
             Article.section_id == opinion_section.id
-        ).order_by(Article.created_at.desc()).limit(4).all()
+        ).order_by(db.func.coalesce(Article.embargo_date, Article.created_at).desc()).limit(4).all()
 
     # 설문조사 (활성 상태)
     active_poll = Poll.query.filter_by(is_active=True).order_by(Poll.created_at.desc()).first()
@@ -171,7 +177,7 @@ def _get_sidebar_data():
     if opinion_section:
         sidebar_opinion = query.filter(
             Article.section_id == opinion_section.id
-        ).order_by(Article.created_at.desc()).limit(4).all()
+        ).order_by(db.func.coalesce(Article.embargo_date, Article.created_at).desc()).limit(4).all()
     # 많이 본 뉴스: 오늘
     today_start = datetime.now().replace(hour=0, minute=0, second=0, microsecond=0)
     popular_today = _get_published_query().filter(
@@ -231,7 +237,7 @@ def article_list():
                 db.or_(Article.title.contains(sc_word), Article.content.contains(sc_word))
             )
 
-    pagination = query.order_by(Article.created_at.desc()).paginate(
+    pagination = query.order_by(db.func.coalesce(Article.embargo_date, Article.created_at).desc()).paginate(
         page=page, per_page=20, error_out=False
     )
 
@@ -318,7 +324,7 @@ def article_view():
             related = _get_published_query().filter(
                 Article.subsection_id == article.subsection_id,
                 Article.id != article.id
-            ).order_by(Article.created_at.desc()).limit(5).all()
+            ).order_by(db.func.coalesce(Article.embargo_date, Article.created_at).desc()).limit(5).all()
 
     # 이전/다음 기사
     prev_article = _get_published_query().filter(
