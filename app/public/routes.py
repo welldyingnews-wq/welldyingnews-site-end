@@ -112,12 +112,21 @@ def track_visitor():
 def index():
     query = _get_published_query()
 
-    # 헤드라인/중요 기사 (상단 skin-3 영역: 1 large + 2 small)
-    headline_articles = query.filter(
-        Article.level.in_(['T', 'I'])
-    ).order_by(db.func.coalesce(Article.embargo_date, Article.created_at).desc()).limit(3).all()
-
-    # 부족하면 최신 기사로 채움
+    # 1면 헤드 기사 — SiteSetting hero_slot_1~3에서 ID 조회, 없으면 자동 선택
+    headline_articles = []
+    for i in range(1, 4):
+        setting = SiteSetting.query.filter_by(key=f'hero_slot_{i}').first()
+        if setting and setting.value and setting.value.strip().isdigit():
+            art = query.filter(Article.id == int(setting.value)).first()
+            if art:
+                headline_articles.append(art)
+    if len(headline_articles) < 3:
+        existing_ids = [a.id for a in headline_articles]
+        auto = query.filter(
+            Article.level.in_(['T', 'I']),
+            ~Article.id.in_(existing_ids) if existing_ids else True
+        ).order_by(db.func.coalesce(Article.embargo_date, Article.created_at).desc()).limit(3 - len(headline_articles)).all()
+        headline_articles.extend(auto)
     if len(headline_articles) < 3:
         existing_ids = [a.id for a in headline_articles]
         extra = query.filter(
@@ -125,18 +134,21 @@ def index():
         ).order_by(db.func.coalesce(Article.embargo_date, Article.created_at).desc()).limit(3 - len(headline_articles)).all()
         headline_articles.extend(extra)
 
-    # 최신 기사 (skin-12 그리드: 8개)
+    # 최신 기사 (8개)
     latest_articles = query.order_by(db.func.coalesce(Article.embargo_date, Article.created_at).desc()).limit(8).all()
 
-    # 많이 본 뉴스 (사이드바 랭킹: 5개)
-    popular_articles = query.order_by(Article.view_count.desc()).limit(5).all()
+    # 많이 본 뉴스 — 오늘 / 주간
+    today_start = datetime.now().replace(hour=0, minute=0, second=0, microsecond=0)
+    popular_today = _get_published_query().filter(
+        Article.created_at >= today_start
+    ).order_by(Article.view_count.desc()).limit(5).all()
+    popular_week = _get_published_query().order_by(Article.view_count.desc()).limit(5).all()
 
-    # 섹션별 최신 기사 (하단 3열 카테고리 섹션들)
+    # 섹션별 최신 기사 (하단 4열 카테고리)
     section_articles = {}
     key_subsections = SubSection.query.join(Section).filter(
         Section.code == 'S1N1'
     ).order_by(SubSection.sort_order).all()
-
     for sub in key_subsections[:16]:
         articles = query.filter(
             Article.subsection_id == sub.id
@@ -152,15 +164,34 @@ def index():
             Article.section_id == opinion_section.id
         ).order_by(db.func.coalesce(Article.embargo_date, Article.created_at).desc()).limit(4).all()
 
+    # 자료실 (사이드바: 5개)
+    library_section = Section.query.filter_by(code='S1N4').first()
+    library_articles = []
+    if library_section:
+        library_articles = query.filter(
+            Article.section_id == library_section.id
+        ).order_by(db.func.coalesce(Article.embargo_date, Article.created_at).desc()).limit(5).all()
+
+    # 주요 일정 (사이드바: 5개)
+    schedule_section = Section.query.filter_by(code='S1N5').first()
+    schedule_articles = []
+    if schedule_section:
+        schedule_articles = query.filter(
+            Article.section_id == schedule_section.id
+        ).order_by(db.func.coalesce(Article.embargo_date, Article.created_at).desc()).limit(5).all()
+
     # 설문조사 (활성 상태)
     active_poll = Poll.query.filter_by(is_active=True).order_by(Poll.created_at.desc()).first()
 
     return render_template('public/index.html',
                            headline_articles=headline_articles,
                            latest_articles=latest_articles,
-                           popular_articles=popular_articles,
+                           popular_today=popular_today,
+                           popular_week=popular_week,
                            section_articles=section_articles,
                            opinion_articles=opinion_articles,
+                           library_articles=library_articles,
+                           schedule_articles=schedule_articles,
                            active_poll=active_poll)
 
 

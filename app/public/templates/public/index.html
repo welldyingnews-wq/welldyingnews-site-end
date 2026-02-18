@@ -240,35 +240,36 @@
         font-weight: 700
     }
 
-    /* skin-12: article grid */
+    /* skin-12: 최신기사 2열 이미지+텍스트 */
     #skin-12 {
         overflow: hidden
     }
 
-    #skin-12 .auto-article {
+    #skin-12 .latest-item {
+        display: flex;
+        align-items: flex-start;
+        padding: 14px 0;
+        border-bottom: 1px solid rgba(0,0,0,.06);
         float: left;
-        width: calc(25% - 15px);
-        margin-left: 20px
+        width: calc(50% - 10px)
     }
 
-    #skin-12 .auto-article:first-child {
-        margin-left: 0
+    #skin-12 .latest-item:nth-child(odd) {
+        margin-right: 20px
     }
 
-    #skin-12 .auto-article:nth-child(4n+1) {
-        margin-left: 0;
-        clear: left
-    }
-
-    #skin-12 .auto-article:nth-child(n+5) {
-        margin-top: 20px
+    #skin-12 .latest-item:nth-child(-n+2) {
+        padding-top: 0
     }
 
     #skin-12 .thumb-frame {
+        flex-shrink: 0;
         display: block;
-        height: 150px;
+        width: 140px;
+        height: 93px;
         overflow: hidden;
-        position: relative
+        position: relative;
+        margin-right: 14px
     }
 
     #skin-12 .auto-images {
@@ -282,6 +283,11 @@
 
     #skin-12 a:hover .auto-images {
         transform: scale(1.05)
+    }
+
+    #skin-12 .latest-text {
+        flex: 1;
+        min-width: 0
     }
 
     /* skin-11: opinion */
@@ -345,6 +351,17 @@
     #skin-15 .auto-article:nth-child(n+4) .rank {
         background-color: #999
     }
+
+    /* 사이드바 탭 (많이 본 뉴스) */
+    .idx-tabs { display:flex; border-bottom:2px solid #eee; margin-bottom:12px }
+    .idx-tab-btn { flex:1; padding:7px 0; font-size:13px; font-weight:500; color:#999; background:none; border:none; cursor:pointer; border-bottom:2px solid transparent; margin-bottom:-2px }
+    .idx-tab-btn.active { color:#5e1985; border-bottom-color:#5e1985 }
+
+    /* 사이드바 간단 리스트 (자료실/주요일정) */
+    .side-list li { padding:6px 0; border-bottom:1px solid rgba(0,0,0,.05); list-style:none; font-size:13px; line-height:1.4 }
+    .side-list li:last-child { border-bottom:none }
+    .side-list li a { color:#333; display:block; overflow:hidden; text-overflow:ellipsis; white-space:nowrap }
+    .side-list li a:hover { color:#5e1985 }
 
     /* category sections */
     .cat-section {
@@ -602,25 +619,24 @@
 
                 <div class="box-margins height-30"></div>
 
-                <!-- skin-12: 최신기사 그리드 -->
+                <!-- skin-12: 최신기사 (2열 이미지+텍스트) -->
                 {% if latest_articles %}
                 <article class="box-skin">
                     <header class="header"><strong>최신기사</strong></header>
                     <section class="content">
                         <div id="skin-12" class="clearfix" style="margin-top:15px">
                             {% for art in latest_articles[:8] %}
-                            <div class="auto-article">
-                                <a href="{{ url_for('public.article_view', idxno=art.id) }}">
-                                    <span class="thumb-frame">
-                                        <em class="auto-images"
-                                            style="{% if art.thumb_url %}background-image:url({{ art.thumb_url }}){% else %}background-color:#f0f0f0{% endif %}"></em>
-                                    </span>
-                                    <strong
-                                        style="display:block;margin-top:10px;font-size:15px;font-weight:500;line-height:1.4;overflow:hidden;text-overflow:ellipsis;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;color:#222">{{
-                                        art.title }}</strong>
+                            <div class="latest-item">
+                                <a href="{{ url_for('public.article_view', idxno=art.id) }}" class="thumb-frame">
+                                    <em class="auto-images"
+                                        style="{% if art.thumb_url %}background-image:url({{ art.thumb_url }}){% else %}background-color:#f0f0f0{% endif %}"></em>
                                 </a>
-                                <span style="display:block;margin-top:5px;font-size:12px;color:#999">{{ art.author_name
-                                    }} | {{ (art.embargo_date or art.created_at).strftime('%Y.%m.%d') }}</span>
+                                <div class="latest-text">
+                                    <a href="{{ url_for('public.article_view', idxno=art.id) }}">
+                                        <strong style="display:block;font-size:15px;font-weight:500;line-height:1.45;overflow:hidden;text-overflow:ellipsis;display:-webkit-box;-webkit-line-clamp:3;-webkit-box-orient:vertical;color:#222">{{ art.title }}</strong>
+                                    </a>
+                                    <span style="display:block;margin-top:6px;font-size:12px;color:#999">{{ art.author_name }} | {{ (art.embargo_date or art.created_at).strftime('%Y.%m.%d') }}</span>
+                                </div>
                             </div>
                             {% endfor %}
                         </div>
@@ -662,24 +678,76 @@
                 </article>
                 {% endif %}
 
-                <div class="box-margins height-30"></div>
+                <div class="box-margins height-20"></div>
 
-                <!-- skin-15: 많이 본 뉴스 -->
-                {% if popular_articles %}
+                <!-- 자료실 -->
+                {% if library_articles %}
+                <article class="box-skin" style="padding:15px;border:1px solid #eee;border-top:3px solid #5e1985;margin-bottom:0">
+                    <header class="header" style="margin-bottom:10px">
+                        <strong>자료실</strong>
+                        <a href="{{ url_for('public.article_list', sc_section_code='S1N4') }}" style="float:right;font-size:12px;color:#999">더보기</a>
+                    </header>
+                    <ul class="side-list" style="margin:0;padding:0">
+                        {% for art in library_articles %}
+                        <li><a href="{{ url_for('public.article_view', idxno=art.id) }}">{{ art.title }}</a></li>
+                        {% endfor %}
+                    </ul>
+                </article>
+                {% endif %}
+
+                <div class="box-margins height-20"></div>
+
+                <!-- 주요 일정 -->
+                {% if schedule_articles %}
+                <article class="box-skin" style="padding:15px;border:1px solid #eee;border-top:3px solid #5e1985;margin-bottom:0">
+                    <header class="header" style="margin-bottom:10px">
+                        <strong>주요 일정</strong>
+                        <a href="{{ url_for('public.article_list', sc_section_code='S1N5') }}" style="float:right;font-size:12px;color:#999">더보기</a>
+                    </header>
+                    <ul class="side-list" style="margin:0;padding:0">
+                        {% for art in schedule_articles %}
+                        <li><a href="{{ url_for('public.article_view', idxno=art.id) }}">{{ art.title }}</a></li>
+                        {% endfor %}
+                    </ul>
+                </article>
+                {% endif %}
+
+                <div class="box-margins height-20"></div>
+
+                <!-- 많이 본 뉴스 (오늘/주간 탭) -->
+                {% if popular_today or popular_week %}
                 <article class="box-skin" style="padding:15px;border:1px solid #eee;border-top:3px solid #5e1985">
                     <header class="header"><strong>많이 본 뉴스</strong></header>
-                    <section class="content" style="margin-top:10px">
+                    <div class="idx-tabs" style="margin-top:10px">
+                        <button class="idx-tab-btn active" data-panel="pop-today">오늘</button>
+                        <button class="idx-tab-btn" data-panel="pop-week">주간</button>
+                    </div>
+                    <div id="pop-today">
                         <div id="skin-15">
-                            {% for art in popular_articles %}
+                            {% for art in popular_today %}
                             <div class="auto-article">
                                 <span class="rank">{{ loop.index }}</span>
                                 <a href="{{ url_for('public.article_view', idxno=art.id) }}"
-                                    style="flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-size:14px;color:#333">{{
-                                    art.title }}</a>
+                                    style="flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-size:14px;color:#333">{{ art.title }}</a>
                             </div>
+                            {% else %}
+                            <div style="padding:15px 0;text-align:center;font-size:13px;color:#999">오늘 기사가 없습니다.</div>
                             {% endfor %}
                         </div>
-                    </section>
+                    </div>
+                    <div id="pop-week" style="display:none">
+                        <div id="skin-15-week">
+                            {% for art in popular_week %}
+                            <div class="auto-article">
+                                <span class="rank">{{ loop.index }}</span>
+                                <a href="{{ url_for('public.article_view', idxno=art.id) }}"
+                                    style="flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-size:14px;color:#333">{{ art.title }}</a>
+                            </div>
+                            {% else %}
+                            <div style="padding:15px 0;text-align:center;font-size:13px;color:#999">주간 기사가 없습니다.</div>
+                            {% endfor %}
+                        </div>
+                    </div>
                 </article>
                 {% endif %}
 
@@ -688,16 +756,15 @@
 
         <div style="border-top:1px solid #eee;margin:30px 0;padding-top:30px"></div>
 
-        <!-- 하단: 섹션별 기사 (3열) -->
+        <!-- 하단: 섹션별 기사 (4열) -->
         {% if section_articles %}
         {% set items = section_articles.items()|list %}
         <div class="index-row">
-            {% for i in range(0, items|length, 3) %}
-            {% set row_items = items[i:i+3] %}
+            {% for i in range(0, items|length, 4) %}
+            {% set row_items = items[i:i+4] %}
             <div class="clearfix" style="margin-bottom:20px">
                 {% for sub, articles in row_items %}
-                <div
-                    style="float:left;width:315px;{% if not loop.last %}padding-right:20px{% endif %}{% if loop.index == 2 %};margin-left:calc((1240px - 320px - 945px) / 2){% endif %}">
+                <div style="float:left;width:285px;{% if not loop.last %}padding-right:20px;{% endif %}">
                     <div class="cat-section">
                         <div class="cat-header">
                             <strong>{{ sub.name }}</strong>
@@ -710,13 +777,13 @@
                             <div class="cat-thumb">
                                 <em style="background-image:url({{ articles[0].thumb_url }})"></em>
                             </div>
-                            <strong style="display:block;font-size:15px;font-weight:500;line-height:1.5;color:#222">{{
+                            <strong style="display:block;font-size:14px;font-weight:500;line-height:1.4;color:#222;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">{{
                                 articles[0].title }}</strong>
                         </a>
                         {% else %}
                         <a href="{{ url_for('public.article_view', idxno=articles[0].id) }}"
                             style="display:block;margin-bottom:10px">
-                            <strong style="display:block;font-size:15px;font-weight:500;line-height:1.5;color:#222">{{
+                            <strong style="display:block;font-size:14px;font-weight:500;line-height:1.4;color:#222;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">{{
                                 articles[0].title }}</strong>
                         </a>
                         {% endif %}
@@ -742,6 +809,18 @@
 {% endblock %}
 
 {% block extra_scripts %}
+{% if not is_mobile %}
+<script>
+    // 많이 본 뉴스 탭
+    $(document).on('click', '.idx-tab-btn', function () {
+        var panel = $(this).data('panel');
+        $(this).closest('article').find('.idx-tab-btn').removeClass('active');
+        $(this).addClass('active');
+        $(this).closest('article').find('#pop-today, #pop-week').hide();
+        $('#' + panel).show();
+    });
+</script>
+{% endif %}
 {% if is_mobile %}
 <script>
     $(document).ready(function () {

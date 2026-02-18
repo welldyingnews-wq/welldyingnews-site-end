@@ -1158,6 +1158,37 @@ def stats_ranking():
                            sc_date=sc_date)
 
 
+# ── 1면 헤드 편집 ──
+
+@admin_bp.route('/hero-config', methods=['GET', 'POST'])
+@admin_required
+def hero_config():
+    if request.method == 'POST':
+        for i in range(1, 4):
+            key = f'hero_slot_{i}'
+            val = request.form.get(key, '').strip()
+            setting = SiteSetting.query.filter_by(key=key).first()
+            if not setting:
+                setting = SiteSetting(key=key)
+                db.session.add(setting)
+            setting.value = val
+        db.session.commit()
+        flash('1면 헤드 구성이 저장되었습니다.', 'success')
+        return redirect(url_for('admin.hero_config'))
+
+    settings = {}
+    preview = {}
+    for i in range(1, 4):
+        key = f'hero_slot_{i}'
+        s = SiteSetting.query.filter_by(key=key).first()
+        val = s.value if s else ''
+        settings[key] = val
+        if val and val.strip().isdigit():
+            art = Article.query.get(int(val))
+            preview[key] = art  # None이면 못 찾은 것
+    return render_template('admin/hero_config.html', settings=settings, preview=preview)
+
+
 # ── 환경설정 ──
 
 @admin_bp.route('/settings/general', methods=['GET', 'POST'])
