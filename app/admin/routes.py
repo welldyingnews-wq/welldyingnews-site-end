@@ -1230,6 +1230,26 @@ def popular_config():
                            ids_str=ids_str, selected_articles=selected_articles)
 
 
+@admin_bp.route('/settings/quotes', methods=['GET', 'POST'])
+@admin_required
+def settings_quotes():
+    """명언 관리"""
+    if request.method == 'POST':
+        quotes_text = request.form.get('quotes', '').strip()
+        setting = SiteSetting.query.filter_by(key='header_quotes').first()
+        if not setting:
+            setting = SiteSetting(key='header_quotes')
+            db.session.add(setting)
+        setting.value = quotes_text
+        db.session.commit()
+        flash('명언이 저장되었습니다.', 'success')
+        return redirect(url_for('admin.settings_quotes'))
+
+    setting = SiteSetting.query.filter_by(key='header_quotes').first()
+    quotes_text = setting.value if setting else ''
+    return render_template('admin/quotes_config.html', quotes_text=quotes_text)
+
+
 # ── 환경설정 ──
 
 @admin_bp.route('/settings/general', methods=['GET', 'POST'])
@@ -2058,6 +2078,12 @@ def _save_popup(popup):
     popup.width = request.form.get('width', 500, type=int)
     popup.height = request.form.get('height', 400, type=int)
     popup.is_active = request.form.get('is_active') == '1'
+    popup.pos_x = request.form.get('pos_x', 100, type=int)
+    popup.pos_y = request.form.get('pos_y', 100, type=int)
+    sd = request.form.get('start_date', '').strip()
+    ed = request.form.get('end_date', '').strip()
+    popup.start_date = datetime.strptime(sd, '%Y-%m-%dT%H:%M') if sd else None
+    popup.end_date = datetime.strptime(ed, '%Y-%m-%dT%H:%M') if ed else None
     image = request.files.get('image')
     if image and image.filename:
         from app.utils.cloud_storage import upload_file

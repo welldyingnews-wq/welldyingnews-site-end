@@ -166,26 +166,36 @@
 
         #article-view-content-div figure {
             margin: 1.5em 0;
-            text-align: center
+            text-align: center;
+            display: block !important
         }
 
         #article-view-content-div figcaption {
+            display: block !important;
             margin-top: 8px;
+            padding: 0 10px;
             font-size: 13px;
             color: #888;
             line-height: 1.4;
             text-align: center;
-            font-style: normal
+            font-style: normal;
+            word-break: keep-all
         }
 
         #article-view-content-div figure.image {
             margin: 1.5em auto;
-            text-align: center
+            text-align: center;
+            display: block !important
         }
 
         #article-view-content-div figure.image img {
             max-width: 100%;
             height: auto
+        }
+
+        #article-view-content-div figure.image figcaption {
+            display: block !important;
+            caption-side: bottom
         }
 
         /* 관련기사 */

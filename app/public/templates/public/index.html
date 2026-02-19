@@ -671,31 +671,49 @@
                 </div>
                 {% endif %}
 
-                <!-- 웰다잉TV -->
+                <!-- 웰다잉TV (skin-17) -->
                 {% if tv_articles %}
-                <div style="margin:20px 0 0;padding:25px;background:#1a1a2e;border-radius:6px">
-                    <header style="margin-bottom:15px;overflow:hidden">
-                        <strong style="font-size:1.125rem;color:#fff;letter-spacing:-.025em"><span style="color:#ff0000">&#9654;</span> 웰다잉TV</strong>
+                <article class="box-skin" style="margin-top:20px">
+                    <header class="header" style="margin-bottom:15px">
+                        <strong><span style="color:#de0010">&#9654;</span> 웰다잉TV</strong>
                         <a href="{{ url_for('public.article_list', sc_section_code='S1N3') }}" style="float:right;font-size:13px;color:#999">더보기 &#10095;</a>
                     </header>
-                    <div style="display:flex;flex-wrap:wrap;gap:15px">
-                        {% for art in tv_articles[:4] %}
-                        <div style="flex:0 0 calc(50% - 8px);min-width:0">
-                            <a href="{{ url_for('public.article_view', idxno=art.id) }}" style="display:block">
-                                <div style="position:relative;width:100%;padding-bottom:56.25%;overflow:hidden;border-radius:4px;background:#333">
-                                    {% if art.thumb_url %}
-                                    <img src="{{ art.thumb_url }}" alt="{{ art.title }}" style="position:absolute;top:0;left:0;width:100%;height:100%;object-fit:cover">
-                                    {% endif %}
-                                    <div style="position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);width:36px;height:36px;background:rgba(255,0,0,.85);border-radius:6px;display:flex;align-items:center;justify-content:center">
-                                        <span style="color:#fff;font-size:16px;margin-left:2px">&#9654;</span>
-                                    </div>
+                    <section class="content">
+                        <style type="text/css">
+                        #skin-17 .wrapper {display:flex;flex-wrap:wrap;margin:0 -8px}
+                        #skin-17 .wrapper > .item {position:relative;flex:0 0 21%;max-width:21%;padding:0 8px}
+                        #skin-17 .wrapper > .item.large {flex:0 0 37%;max-width:37%;padding-right:22px}
+                        #skin-17 .wrapper > .item > a {overflow:hidden;position:relative;display:block}
+                        #skin-17 .frame {border-radius:3px;overflow:hidden;position:relative}
+                        #skin-17 .frame > i[class^="icon-"] {overflow:hidden;position:absolute;z-index:15;left:15px;bottom:15px;width:30px;height:30px;font-size:1.25rem;line-height:30px;color:#fff;background-color:#de0010;text-align:center;border-radius:50%}
+                        #skin-17 .item.large .frame > i[class^="icon-"] {bottom:40px;width:45px;height:45px;font-size:34px;line-height:45px}
+                        #skin-17 .large .frame {border-radius:5px 5px 0 0}
+                        #skin-17 .large .frame::before {content:'';overflow:hidden;position:absolute;z-index:2;left:0;top:50%;bottom:0;width:100%;background:linear-gradient(rgba(34,40,49,0), rgb(34,40,49))}
+                        #skin-17 .frame + .auto-titles {max-width:85%}
+                        #skin-17 .large .frame + .auto-titles {position:relative;z-index:10;margin-top:-22px}
+                        </style>
+                        <div id="skin-17" class="auto-article">
+                            <div class="wrapper">
+                                {% for art in tv_articles[:4] %}
+                                <div class="item{% if loop.first %} large{% endif %}">
+                                    <a href="{{ url_for('public.article_view', idxno=art.id) }}">
+                                        <span class="frame{% if not loop.first %} marbtm-15{% endif %}">
+                                            <i class="icon-play"></i>
+                                            <em class="auto-images" style="{% if art.thumb_url %}background-image:url({{ art.thumb_url }}){% else %}background-color:#333{% endif %}"></em>
+                                        </span>
+                                        {% if loop.first %}
+                                        <h2 class="auto-titles weight-700 auto-fontF onload size-18 line-4x2"><strong>{{ art.title }}</strong></h2>
+                                        {% else %}
+                                        <h2 class="auto-titles line-4x2 auto-fontF onload size-14">{{ art.title }}</h2>
+                                        <em class="auto-name martop-12 size-12 weight-400 line-3x1 auto-fontJ">{{ (art.embargo_date or art.created_at).strftime('%Y-%m-%d') }}</em>
+                                        {% endif %}
+                                    </a>
                                 </div>
-                                <strong style="display:block;margin-top:8px;font-size:13px;color:#ccc;font-weight:400;overflow:hidden;text-overflow:ellipsis;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;line-height:1.4">{{ art.title }}</strong>
-                            </a>
+                                {% endfor %}
+                            </div>
                         </div>
-                        {% endfor %}
-                    </div>
-                </div>
+                    </section>
+                </article>
                 {% endif %}
 
             </div><!-- /grid-1 -->

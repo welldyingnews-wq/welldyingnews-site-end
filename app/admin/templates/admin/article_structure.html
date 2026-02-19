@@ -37,6 +37,7 @@ document.querySelectorAll('.editable-name').forEach(function(el) {
         var type = this.dataset.type;
         var id = this.dataset.id;
         var span = this;
+        var saving = false;
 
         var input = document.createElement('input');
         input.type = 'text';
@@ -48,43 +49,50 @@ document.querySelectorAll('.editable-name').forEach(function(el) {
         input.focus();
         input.select();
 
+        function restore(text) {
+            span.textContent = text;
+            if (input.parentNode) input.replaceWith(span);
+        }
+
         function save() {
+            if (saving) return;
+            saving = true;
             var newName = input.value.trim();
             if (!newName || newName === current) {
-                span.textContent = current;
-                input.replaceWith(span);
+                restore(current);
                 return;
             }
             var url = type === 'section'
-                ? '{{ url_for("admin.section_edit", section_id=0) }}'.replace('/0', '/' + id)
-                : '{{ url_for("admin.subsection_edit", sub_id=0) }}'.replace('/0', '/' + id);
+                ? '{{ url_for("admin.section_edit", section_id=0) }}'.replace('/0/', '/' + id + '/')
+                : '{{ url_for("admin.subsection_edit", sub_id=0) }}'.replace('/0/', '/' + id + '/');
 
             var formData = new FormData();
             formData.append('name', newName);
             formData.append('ajax', '1');
 
-            fetch(url, { method: 'POST', body: formData })
-                .then(function(res) { return res.json(); })
+            fetch(url, { method: 'POST', body: formData, credentials: 'same-origin' })
+                .then(function(res) {
+                    if (!res.ok) throw new Error('HTTP ' + res.status);
+                    return res.json();
+                })
                 .then(function(data) {
                     if (data.success) {
-                        span.textContent = newName;
+                        restore(newName);
                     } else {
-                        span.textContent = current;
+                        restore(current);
                         alert(data.message || '저장 실패');
                     }
-                    input.replaceWith(span);
                 })
-                .catch(function() {
-                    span.textContent = current;
-                    input.replaceWith(span);
-                    alert('저장 중 오류가 발생했습니다.');
+                .catch(function(err) {
+                    restore(current);
+                    alert('저장 중 오류가 발생했습니다: ' + err.message);
                 });
         }
 
         input.addEventListener('blur', save);
         input.addEventListener('keydown', function(e) {
             if (e.key === 'Enter') { e.preventDefault(); save(); }
-            if (e.key === 'Escape') { span.textContent = current; input.replaceWith(span); }
+            if (e.key === 'Escape') { e.preventDefault(); saving = true; restore(current); }
         });
     });
 });

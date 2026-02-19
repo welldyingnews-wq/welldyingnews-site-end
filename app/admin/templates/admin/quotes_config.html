@@ -1,0 +1,43 @@
+{% extends "admin/base.html" %}
+{% block nav_title %}명언 관리{% endblock %}
+{% block content %}
+<div class="row justify-content-center">
+    <div class="col-lg-8">
+        <div class="card">
+            <div class="card-header"><strong>헤더 명언 관리</strong></div>
+            <div class="card-body">
+                <form method="post">
+                    <div class="mb-3">
+                        <label class="form-label fw-bold">명언 목록</label>
+                        <p class="text-muted" style="font-size:13px">한 줄에 하나의 명언을 입력하세요. HTML 태그(&lt;br&gt;) 사용 가능합니다.</p>
+                        <textarea name="quotes" class="form-control" rows="12" placeholder="잘 보낸 하루가 편안한 잠을 주듯이&lt;br&gt;잘 쓰인 일생은 평안한 죽음을 준다.">{{ quotes_text }}</textarea>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label fw-bold">미리보기</label>
+                        <div id="preview-list" class="border rounded p-3" style="background:#f8f9fa;min-height:60px"></div>
+                    </div>
+                    <div class="d-grid"><button type="submit" class="btn btn-primary"><i class="bi bi-save"></i> 저장</button></div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_scripts %}
+<script>
+var textarea = document.querySelector('textarea[name="quotes"]');
+var preview = document.getElementById('preview-list');
+function updatePreview() {
+    var lines = textarea.value.split('\n').filter(function(l) { return l.trim(); });
+    if (!lines.length) { preview.innerHTML = '<span class="text-muted">명언을 입력하세요.</span>'; return; }
+    var html = '';
+    lines.forEach(function(line, i) {
+        html += '<div style="padding:6px 0;' + (i > 0 ? 'border-top:1px solid #eee;' : '') + 'font-size:14px">' + (i + 1) + '. ' + line + '</div>';
+    });
+    preview.innerHTML = html;
+}
+textarea.addEventListener('input', updatePreview);
+updatePreview();
+</script>
+{% endblock %}

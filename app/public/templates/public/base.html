@@ -609,19 +609,9 @@
                                                 <div class="mode-inner">
                                                     <div class="user-banner text-left text">
                                                         <div id="roll-text">
-                                                            <div class="item dis-none line-3x2">잘 보낸 하루가 편안한 잠을 주듯이
-                                                                <br>잘 쓰인 일생은 평안한 죽음을 준다.</div>
-                                                            <div class="item dis-none line-3x2">사람은 어떻게 죽느냐가 문제가 아니라<br>
-                                                                어떻게 사느냐가 문제다.</div>
-                                                            <div class="item dis-none line-3x2">항상 죽을 각오를 하고 있는<br> 사람만이
-                                                                참으로 자유로운 인간이다.</div>
-                                                            <div class="item dis-none line-3x2">죽음은 마지막 성장의 기회다.</div>
-                                                            <div class="item dis-none line-3x2">인생은 입구에서 볼 때만 멀고 아늑하다.
-                                                                <br>인생은 출구에서 볼 때는 오히려 너무 짧다.</div>
-                                                            <div class="item dis-none line-3x2">삶을 깊이 이해하면 할수록<br> 죽음으로
-                                                                인한 슬픔은 그만큼 줄어들 것입니다.</div>
-                                                            <div class="item dis-none line-3x2">죽음을 알려고 하지 말고<br> 내가
-                                                                어디에서 왔는지를 알아야 한다.</div>
+                                                            {% for quote in header_quotes %}
+                                                            <div class="item dis-none line-3x2">{{ quote|safe }}</div>
+                                                            {% endfor %}
                                                         </div>
                                                     </div>
 

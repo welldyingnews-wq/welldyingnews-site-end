@@ -61,11 +61,12 @@
                 </li>
 
                 <!-- 편집 -->
-                <li class="nav-group {% if 'edit_layout' in ep or ep == 'admin.hero_config' %}open{% endif %}">
+                <li class="nav-group {% if 'edit_layout' in ep or ep == 'admin.hero_config' or ep == 'admin.settings_quotes' %}open{% endif %}">
                     <a href="#" class="nav-group-toggle"><i class="bi bi-layout-text-window"></i> 편집 <i class="bi bi-chevron-down ms-auto"></i></a>
                     <ul class="nav-sub">
                         <li class="{% if ep == 'admin.hero_config' %}active{% endif %}"><a href="{{ url_for('admin.hero_config') }}">1면 헤드 편집</a></li>
                         <li class="{% if ep == 'admin.popular_config' %}active{% endif %}"><a href="{{ url_for('admin.popular_config') }}">많이 본 뉴스</a></li>
+                        <li class="{% if ep == 'admin.settings_quotes' %}active{% endif %}"><a href="{{ url_for('admin.settings_quotes') }}">명언 관리</a></li>
                         <li class="{% if ep == 'admin.edit_layout_main' %}active{% endif %}"><a href="{{ url_for('admin.edit_layout_main') }}">메인</a></li>
                         <li class="{% if ep == 'admin.edit_layout_mobile' %}active{% endif %}"><a href="{{ url_for('admin.edit_layout_mobile') }}">모바일메인</a></li>
                         <li class="{% if ep == 'admin.edit_layout_article_view' %}active{% endif %}"><a href="{{ url_for('admin.edit_layout_article_view') }}">기사뷰</a></li>

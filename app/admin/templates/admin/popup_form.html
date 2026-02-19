@@ -23,6 +23,14 @@
                         <div class="col"><label class="form-label fw-bold">가로</label><input type="number" name="width" class="form-control" value="{{ popup.width if popup else 500 }}"></div>
                         <div class="col"><label class="form-label fw-bold">세로</label><input type="number" name="height" class="form-control" value="{{ popup.height if popup else 400 }}"></div>
                     </div>
+                    <div class="row mb-3">
+                        <div class="col"><label class="form-label fw-bold">X 위치 (px)</label><input type="number" name="pos_x" class="form-control" value="{{ popup.pos_x if popup else 100 }}"></div>
+                        <div class="col"><label class="form-label fw-bold">Y 위치 (px)</label><input type="number" name="pos_y" class="form-control" value="{{ popup.pos_y if popup else 100 }}"></div>
+                    </div>
+                    <div class="row mb-3">
+                        <div class="col"><label class="form-label fw-bold">시작일</label><input type="datetime-local" name="start_date" class="form-control" value="{{ popup.start_date.strftime('%Y-%m-%dT%H:%M') if popup and popup.start_date else '' }}"></div>
+                        <div class="col"><label class="form-label fw-bold">종료일</label><input type="datetime-local" name="end_date" class="form-control" value="{{ popup.end_date.strftime('%Y-%m-%dT%H:%M') if popup and popup.end_date else '' }}"></div>
+                    </div>
                     <div class="mb-3">
                         <label class="form-label fw-bold">이미지</label>
                         {% if popup and popup.image_path %}<div class="mb-2"><img src="{{ popup.image_path if popup.image_path.startswith(('http', '/')) else url_for('static', filename=popup.image_path) }}" class="img-fluid rounded" style="max-height:150px"></div>{% endif %}

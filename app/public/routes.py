@@ -68,9 +68,24 @@ def inject_sections():
     member_id = session.get('member_id')
     if member_id:
         current_member = Member.query.get(member_id)
+    # 헤더 명언
+    quotes_setting = SiteSetting.query.filter_by(key='header_quotes').first()
+    header_quotes = []
+    if quotes_setting and quotes_setting.value:
+        header_quotes = [q.strip() for q in quotes_setting.value.split('\n') if q.strip()]
+    if not header_quotes:
+        header_quotes = [
+            '잘 보낸 하루가 편안한 잠을 주듯이<br>잘 쓰인 일생은 평안한 죽음을 준다.',
+            '사람은 어떻게 죽느냐가 문제가 아니라<br>어떻게 사느냐가 문제다.',
+            '항상 죽을 각오를 하고 있는<br>사람만이 참으로 자유로운 인간이다.',
+            '죽음은 마지막 성장의 기회다.',
+            '인생은 입구에서 볼 때만 멀고 아늑하다.<br>인생은 출구에서 볼 때는 오히려 너무 짧다.',
+            '삶을 깊이 이해하면 할수록<br>죽음으로 인한 슬픔은 그만큼 줄어들 것입니다.',
+            '죽음을 알려고 하지 말고<br>내가 어디에서 왔는지를 알아야 한다.',
+        ]
     return {'nav_sections': sections, 'nav_boards': boards, 'updated_time': updated_time,
             'banners': banners_by_pos, 'popups': active_popups, 'is_mobile': is_mobile,
-            'current_member': current_member}
+            'current_member': current_member, 'header_quotes': header_quotes}
 
 
 def _detect_device():
@@ -137,21 +152,43 @@ def index():
     # 최신 기사 (8개)
     latest_articles = query.order_by(db.func.coalesce(Article.embargo_date, Article.created_at).desc()).limit(8).all()
 
-    # 많이 본 뉴스 — 오늘 / 주간
-    today_start = datetime.now().replace(hour=0, minute=0, second=0, microsecond=0)
-    popular_today = _get_published_query().filter(
-        Article.created_at >= today_start
-    ).order_by(Article.view_count.desc()).limit(5).all()
-    popular_week = _get_published_query().order_by(Article.view_count.desc()).limit(5).all()
+    # 많이 본 뉴스 — 수동 설정 우선, 없으면 자동
+    popular_setting = SiteSetting.query.filter_by(key='popular_article_ids').first()
+    manual_popular = []
+    if popular_setting and popular_setting.value:
+        for aid in popular_setting.value.split(','):
+            aid = aid.strip()
+            if aid.isdigit():
+                art = Article.query.get(int(aid))
+                if art and not art.is_deleted and art.recognition == 'E':
+                    manual_popular.append(art)
+
+    if manual_popular:
+        popular_today = manual_popular[:5]
+        popular_week = manual_popular[:5]
+    else:
+        today_start = datetime.now().replace(hour=0, minute=0, second=0, microsecond=0)
+        popular_today = _get_published_query().filter(
+            Article.created_at >= today_start
+        ).order_by(Article.view_count.desc()).limit(5).all()
+        popular_week = _get_published_query().order_by(Article.view_count.desc()).limit(5).all()
 
     # 섹션별 최신 기사 (하단 4열 카테고리)
+    from app.models import article_extra_subsection
     section_articles = {}
     key_subsections = SubSection.query.join(Section).filter(
         Section.code == 'S1N1'
     ).order_by(SubSection.sort_order).all()
     for sub in key_subsections[:16]:
         articles = query.filter(
-            Article.subsection_id == sub.id
+            db.or_(
+                Article.subsection_id == sub.id,
+                Article.id.in_(
+                    db.session.query(article_extra_subsection.c.article_id).filter(
+                        article_extra_subsection.c.subsection_id == sub.id
+                    )
+                )
+            )
         ).order_by(db.func.coalesce(Article.embargo_date, Article.created_at).desc()).limit(4).all()
         if articles:
             section_articles[sub] = articles
@@ -199,11 +236,15 @@ def index():
             Article.section_id == tv_section.id
         ).order_by(db.func.coalesce(Article.embargo_date, Article.created_at).desc()).limit(8).all()
 
+    # 모바일용 popular_articles (오늘 + 주간 합쳐서 상위 5개)
+    popular_articles = popular_today if popular_today else popular_week
+
     return render_template('public/index.html',
                            headline_articles=headline_articles,
                            latest_articles=latest_articles,
                            popular_today=popular_today,
                            popular_week=popular_week,
+                           popular_articles=popular_articles,
                            section_articles=section_articles,
                            opinion_articles=opinion_articles,
                            library_articles=library_articles,
@@ -261,7 +302,7 @@ def article_list():
     sc_sub_section_code = request.args.get('sc_sub_section_code', '')
     sc_area = request.args.get('sc_area', 'A')
     sc_word = request.args.get('sc_word', '').strip()
-    view_type = request.args.get('view_type', '')
+    view_type = request.args.get('view_type', 'sm')
 
     query = _get_published_query()
 
@@ -271,7 +312,15 @@ def article_list():
     if sc_sub_section_code:
         subsection = SubSection.query.filter_by(code=sc_sub_section_code).first()
         if subsection:
-            query = query.filter(Article.subsection_id == subsection.id)
+            from app.models import article_extra_subsection
+            query = query.filter(db.or_(
+                Article.subsection_id == subsection.id,
+                Article.id.in_(
+                    db.session.query(article_extra_subsection.c.article_id).filter(
+                        article_extra_subsection.c.subsection_id == subsection.id
+                    )
+                )
+            ))
             section = subsection.section
     elif sc_section_code:
         section = Section.query.filter_by(code=sc_section_code).first()
