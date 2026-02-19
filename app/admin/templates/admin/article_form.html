@@ -15,19 +15,21 @@
 
     /* 이미지 캡션 스타일 */
     .ck-editor__editable figcaption {
-        background: #f8f8f8;
-        border: 1px dashed #ccc;
-        padding: 6px 10px;
+        background: #fffbe6 !important;
+        border: 2px dashed #e0c760 !important;
+        padding: 8px 12px !important;
         font-size: 13px;
-        color: #666;
+        color: #555;
         text-align: center;
-        min-height: 28px;
+        min-height: 32px;
+        display: block !important;
     }
 
-    .ck-editor__editable figcaption:empty::before {
-        content: '사진설명을 입력하세요';
-        color: #aaa;
-        font-style: italic;
+    .ck-content .ck-editor__editable_inline figcaption.ck-placeholder::before,
+    .ck-editor__editable figcaption.ck-placeholder::before {
+        content: '▼ 여기에 사진설명(캡션)을 입력하세요' !important;
+        color: #c0a020 !important;
+        font-style: normal !important;
     }
 
     /* 전체화면 모드 */
@@ -724,7 +726,38 @@
                 if (el) window.toggleFullscreen();
             }
         });
+        // 이미지 업로드 후 자동으로 캡션 ON
+        editor.model.document.on('change:data', function () {
+            editor.model.change(function (writer) {
+                var root = editor.model.document.getRoot();
+                for (var child of root.getChildren()) {
+                    if (child.is('element', 'imageBlock') && !child.getAttribute('hasCaption')) {
+                        writer.setAttribute('hasCaption', true, child);
+                        // caption 자식이 없으면 생성
+                        var hasCaption = false;
+                        for (var c of child.getChildren()) {
+                            if (c.is('element', 'caption')) { hasCaption = true; break; }
+                        }
+                        if (!hasCaption) {
+                            var caption = writer.createElement('caption');
+                            writer.append(caption, child);
+                        }
+                    }
+                }
+            });
+        });
+
     }).catch(error => console.error('[CKEditor] 초기화 실패:', error));
+
+    // 이미지+캡션 삽입 헬퍼 (Dropzone, 포토DB 공용)
+    function insertImageWithCaption(editor, url) {
+        editor.model.change(function (writer) {
+            var img = writer.createElement('imageBlock', { src: url });
+            var caption = writer.createElement('caption');
+            writer.append(caption, img);
+            editor.model.insertContent(img);
+        });
+    }
 
     // form submit 시 CKEditor 내용을 textarea로 동기화
     document.querySelector('form').addEventListener('submit', function () {
@@ -766,11 +799,7 @@
                     console.log('[Dropzone] 클릭 — 본문 삽입, isImage:', isImage, 'isVideo:', isVideo);
                     if (window.editorInstance) {
                         if (isImage) {
-                            // 모델 API로 블록 이미지 삽입 (캡션 지원)
-                            window.editorInstance.model.change(function(writer) {
-                                var img = writer.createElement('imageBlock', { src: response.url });
-                                window.editorInstance.model.insertContent(img);
-                            });
+                            insertImageWithCaption(window.editorInstance, response.url);
                         } else if (isVideo) {
                             var html = '<figure class="media"><div data-oembed-url="' + response.url + '">' +
                                 '<video controls style="max-width:100%"><source src="' + response.url + '"></video>' +
@@ -991,10 +1020,7 @@
     }
     function insertPhotoToEditor(url) {
         if (window.editorInstance) {
-            window.editorInstance.model.change(function (writer) {
-                var img = writer.createElement('imageBlock', { src: url });
-                window.editorInstance.model.insertContent(img);
-            });
+            insertImageWithCaption(window.editorInstance, url);
         }
         bootstrap.Modal.getInstance(document.getElementById('photoDbModal')).hide();
     }
