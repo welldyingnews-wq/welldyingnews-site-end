@@ -13,6 +13,23 @@
         border-color: #5e1985 !important;
     }
 
+    /* 이미지 캡션 스타일 */
+    .ck-editor__editable figcaption {
+        background: #f8f8f8;
+        border: 1px dashed #ccc;
+        padding: 6px 10px;
+        font-size: 13px;
+        color: #666;
+        text-align: center;
+        min-height: 28px;
+    }
+
+    .ck-editor__editable figcaption:empty::before {
+        content: '사진설명을 입력하세요';
+        color: #aaa;
+        font-style: italic;
+    }
+
     /* 전체화면 모드 */
     .ck-editor-fullscreen {
         position: fixed !important;
@@ -649,7 +666,8 @@
             ]
         },
         image: {
-            toolbar: ['imageStyle:inline', 'imageStyle:block', 'imageStyle:side', '|',
+            insert: { type: 'block' },
+            toolbar: ['imageStyle:block', 'imageStyle:side', '|',
                 'toggleImageCaption', 'imageTextAlternative', '|',
                 'resizeImage:25', 'resizeImage:50', 'resizeImage:75', 'resizeImage:original'],
             resizeOptions: [
@@ -666,7 +684,15 @@
             previewsInData: true
         },
         htmlSupport: {
-            allow: [{ name: /.*/, attributes: true, classes: true, styles: true }]
+            allow: [{
+                name: /^(?!figure|img|figcaption|table|thead|tbody|tr|td|th|caption|ol|ul|li|a|blockquote|h[1-6]).*$/,
+                attributes: true, classes: true, styles: true
+            }],
+            disallow: [
+                { name: 'figure' },
+                { name: 'figcaption' },
+                { name: 'img' }
+            ]
         }
     }).then(editor => {
         window.editorInstance = editor;
@@ -739,19 +765,25 @@
                 div.addEventListener('click', function () {
                     console.log('[Dropzone] 클릭 — 본문 삽입, isImage:', isImage, 'isVideo:', isVideo);
                     if (window.editorInstance) {
-                        var html;
                         if (isImage) {
-                            html = '<figure class="image"><img src="' + response.url + '"></figure>';
+                            // 모델 API로 블록 이미지 삽입 (캡션 지원)
+                            window.editorInstance.model.change(function(writer) {
+                                var img = writer.createElement('imageBlock', { src: response.url });
+                                window.editorInstance.model.insertContent(img);
+                            });
                         } else if (isVideo) {
-                            html = '<figure class="media"><div data-oembed-url="' + response.url + '">' +
+                            var html = '<figure class="media"><div data-oembed-url="' + response.url + '">' +
                                 '<video controls style="max-width:100%"><source src="' + response.url + '"></video>' +
                                 '</div></figure>';
+                            var viewFragment = window.editorInstance.data.processor.toView(html);
+                            var modelFragment = window.editorInstance.data.toModel(viewFragment);
+                            window.editorInstance.model.insertContent(modelFragment);
                         } else {
-                            html = '<p><a href="' + response.url + '" target="_blank">📎 ' + displayName + '</a></p>';
+                            var html = '<p><a href="' + response.url + '" target="_blank">' + displayName + '</a></p>';
+                            var viewFragment = window.editorInstance.data.processor.toView(html);
+                            var modelFragment = window.editorInstance.data.toModel(viewFragment);
+                            window.editorInstance.model.insertContent(modelFragment);
                         }
-                        var viewFragment = window.editorInstance.data.processor.toView(html);
-                        var modelFragment = window.editorInstance.data.toModel(viewFragment);
-                        window.editorInstance.model.insertContent(modelFragment);
                         window.editorInstance.editing.view.focus();
                     }
                 });
