@@ -163,14 +163,27 @@ def index():
                 if art and not art.is_deleted and art.recognition == 'E':
                     manual_popular.append(art)
 
+    weekly_setting = SiteSetting.query.filter_by(key='popular_weekly_article_ids').first()
+    manual_weekly = []
+    if weekly_setting and weekly_setting.value:
+        for aid in weekly_setting.value.split(','):
+            aid = aid.strip()
+            if aid.isdigit():
+                art = Article.query.get(int(aid))
+                if art and not art.is_deleted and art.recognition == 'E':
+                    manual_weekly.append(art)
+
     if manual_popular:
         popular_today = manual_popular[:5]
-        popular_week = manual_popular[:5]
     else:
         today_start = datetime.now().replace(hour=0, minute=0, second=0, microsecond=0)
         popular_today = _get_published_query().filter(
             Article.created_at >= today_start
         ).order_by(Article.view_count.desc()).limit(5).all()
+
+    if manual_weekly:
+        popular_week = manual_weekly[:5]
+    else:
         popular_week = _get_published_query().order_by(Article.view_count.desc()).limit(5).all()
 
     # 섹션별 최신 기사 (하단 4열 카테고리)
@@ -275,16 +288,30 @@ def _get_sidebar_data():
                 if art and not art.is_deleted and art.recognition == 'E':
                     manual_popular.append(art)
 
+    weekly_setting = SiteSetting.query.filter_by(key='popular_weekly_article_ids').first()
+    manual_weekly = []
+    if weekly_setting and weekly_setting.value:
+        for aid in weekly_setting.value.split(','):
+            aid = aid.strip()
+            if aid.isdigit():
+                art = Article.query.get(int(aid))
+                if art and not art.is_deleted and art.recognition == 'E':
+                    manual_weekly.append(art)
+
     if manual_popular:
         popular_today = manual_popular[:5]
-        popular_week = manual_popular[:5]
     else:
         # 많이 본 뉴스: 오늘
         today_start = datetime.now().replace(hour=0, minute=0, second=0, microsecond=0)
         popular_today = _get_published_query().filter(
             Article.created_at >= today_start
         ).order_by(Article.view_count.desc()).limit(5).all()
+
+    if manual_weekly:
+        popular_week = manual_weekly[:5]
+    else:
         # 많이 본 뉴스: 주간
+        today_start = datetime.now().replace(hour=0, minute=0, second=0, microsecond=0)
         week_start = today_start - timedelta(days=7)
         popular_week = _get_published_query().filter(
             Article.created_at >= week_start

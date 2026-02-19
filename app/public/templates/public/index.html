@@ -673,10 +673,10 @@
 
                 <!-- 웰다잉TV (skin-17) -->
                 {% if tv_articles %}
-                <article class="box-skin" style="margin-top:20px">
+                <article class="box-skin" style="margin-top:20px;background:#1a1a2e;padding:20px;border-radius:5px">
                     <header class="header" style="margin-bottom:15px">
-                        <strong><span style="color:#de0010">&#9654;</span> 웰다잉TV</strong>
-                        <a href="{{ url_for('public.article_list', sc_section_code='S1N3') }}" style="float:right;font-size:13px;color:#999">더보기 &#10095;</a>
+                        <strong style="color:#fff"><span style="color:#de0010">&#9654;</span> 웰다잉TV</strong>
+                        <a href="{{ url_for('public.article_list', sc_section_code='S1N3') }}" style="float:right;font-size:13px;color:#aaa">더보기 &#10095;</a>
                     </header>
                     <section class="content">
                         <style type="text/css">
@@ -691,6 +691,8 @@
                         #skin-17 .large .frame::before {content:'';overflow:hidden;position:absolute;z-index:2;left:0;top:50%;bottom:0;width:100%;background:linear-gradient(rgba(34,40,49,0), rgb(34,40,49))}
                         #skin-17 .frame + .auto-titles {max-width:85%}
                         #skin-17 .large .frame + .auto-titles {position:relative;z-index:10;margin-top:-22px}
+                        #skin-17 .auto-titles, #skin-17 .auto-titles strong {color:#fff}
+                        #skin-17 .auto-name {color:#aaa}
                         </style>
                         <div id="skin-17" class="auto-article">
                             <div class="wrapper">

@@ -448,6 +448,10 @@
                     {% endif %}
                     <input type="file" name="thumbnail" class="form-control" accept="image/*">
                     <small class="text-muted d-block mt-1">권장: 가로 800px 이상, JPG/PNG, 최대 5MB</small>
+                    <div class="mt-2">
+                        <label class="form-label fw-bold small">사진설명 (캡션)</label>
+                        <textarea name="photo_caption" class="form-control form-control-sm" rows="2" placeholder="사진설명을 입력하세요">{{ article.photo_caption if article and article.photo_caption else '' }}</textarea>
+                    </div>
                 </div>
             </div>
 

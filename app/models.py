@@ -182,6 +182,7 @@ class Article(db.Model):
     recognition = db.Column(db.String(1), default='E')  # C=미승인, E=승인, R=반려
     article_type = db.Column(db.String(1), default='B')  # B=일반, P=카드뉴스, G=갤러리, V=동영상
     thumbnail_path = db.Column(db.String(500), default='')
+    photo_caption = db.Column(db.Text, default='')  # 사진설명(캡션)
     serial_code_id = db.Column(db.Integer, db.ForeignKey('serial_code.id'), nullable=True)
     keyword = db.Column(db.String(500), default='')
     view_count = db.Column(db.Integer, default=0)

@@ -250,6 +250,7 @@ def _save_article(article):
     article.recognition = request.form.get('recognition', 'E')
     article.article_type = request.form.get('article_type', 'B')
     article.source = request.form.get('source', '')
+    article.photo_caption = request.form.get('photo_caption', '')
 
     serial_code_id = request.form.get('serial_code_id')
     article.serial_code_id = int(serial_code_id) if serial_code_id else None
@@ -1206,12 +1207,22 @@ def hero_config():
 @admin_required
 def popular_config():
     if request.method == 'POST':
+        # 오늘 탭
         ids = request.form.get('popular_ids', '').strip()
         setting = SiteSetting.query.filter_by(key='popular_article_ids').first()
         if not setting:
             setting = SiteSetting(key='popular_article_ids')
             db.session.add(setting)
         setting.value = ids
+
+        # 주간 탭
+        weekly_ids = request.form.get('popular_weekly_ids', '').strip()
+        weekly_setting = SiteSetting.query.filter_by(key='popular_weekly_article_ids').first()
+        if not weekly_setting:
+            weekly_setting = SiteSetting(key='popular_weekly_article_ids')
+            db.session.add(weekly_setting)
+        weekly_setting.value = weekly_ids
+
         db.session.commit()
         flash('많이 본 뉴스 설정이 저장되었습니다.', 'success')
         return redirect(url_for('admin.popular_config'))
@@ -1226,8 +1237,21 @@ def popular_config():
                 art = Article.query.get(int(aid))
                 if art:
                     selected_articles.append(art)
+
+    weekly_setting = SiteSetting.query.filter_by(key='popular_weekly_article_ids').first()
+    weekly_ids_str = weekly_setting.value if weekly_setting else ''
+    weekly_selected_articles = []
+    if weekly_ids_str:
+        for aid in weekly_ids_str.split(','):
+            aid = aid.strip()
+            if aid.isdigit():
+                art = Article.query.get(int(aid))
+                if art:
+                    weekly_selected_articles.append(art)
+
     return render_template('admin/popular_config.html',
-                           ids_str=ids_str, selected_articles=selected_articles)
+                           ids_str=ids_str, selected_articles=selected_articles,
+                           weekly_ids_str=weekly_ids_str, weekly_selected_articles=weekly_selected_articles)
 
 
 @admin_bp.route('/settings/quotes', methods=['GET', 'POST'])
@@ -1574,9 +1598,9 @@ def article_structure():
         subs = []
         for sub in sec.subsections:
             count = Article.query.filter_by(subsection_id=sub.id, is_deleted=False).count()
-            subs.append({'name': sub.name, 'code': sub.code, 'count': count})
+            subs.append({'id': sub.id, 'name': sub.name, 'code': sub.code, 'count': count})
         sec_count = Article.query.filter_by(section_id=sec.id, is_deleted=False).count()
-        structure.append({'name': sec.name, 'code': sec.code, 'count': sec_count, 'subs': subs})
+        structure.append({'id': sec.id, 'name': sec.name, 'code': sec.code, 'count': sec_count, 'subs': subs})
     return render_template('admin/article_structure.html', structure=structure)
 
 

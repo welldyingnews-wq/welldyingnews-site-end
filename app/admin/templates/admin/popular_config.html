@@ -13,38 +13,74 @@
 </div>
 {% endfor %}{% endif %}{% endwith %}
 
-<div class="card">
-    <div class="card-header"><strong>기사 선택</strong> <small class="text-muted ms-2">— 기사 ID를 쉼표로 구분하여 입력하면 사이드바 '많이 본 뉴스'에 고정됩니다. 비워두면 조회수 기준 자동 선택.</small></div>
-    <div class="card-body">
-        <form method="POST">
-            <div class="mb-3">
-                <label class="form-label fw-bold">기사 ID 목록 (쉼표 구분)</label>
-                <input type="text" name="popular_ids" class="form-control" value="{{ ids_str }}" placeholder="예: 1714, 1710, 1705, 1700, 1695">
-            </div>
-            {% if selected_articles %}
-            <div class="mb-3">
-                <label class="form-label fw-bold small">현재 선택된 기사</label>
-                <div class="table-responsive">
-                    <table class="table table-sm">
-                        <thead class="table-light">
-                            <tr><th style="width:60px">#</th><th>제목</th><th style="width:80px">조회수</th></tr>
-                        </thead>
-                        <tbody>
-                            {% for art in selected_articles %}
-                            <tr>
-                                <td>{{ loop.index }}</td>
-                                <td>{{ art.title }}</td>
-                                <td>{{ art.view_count }}</td>
-                            </tr>
-                            {% endfor %}
-                        </tbody>
-                    </table>
+<form method="POST">
+<div class="row">
+    <div class="col-lg-6">
+        <div class="card mb-3">
+            <div class="card-header"><strong>오늘 탭</strong> <small class="text-muted ms-2">— 비워두면 오늘 조회수 기준 자동 선택</small></div>
+            <div class="card-body">
+                <div class="mb-3">
+                    <label class="form-label fw-bold">기사 ID 목록 (쉼표 구분)</label>
+                    <input type="text" name="popular_ids" class="form-control" value="{{ ids_str }}" placeholder="예: 1714, 1710, 1705, 1700, 1695">
                 </div>
+                {% if selected_articles %}
+                <div class="mb-3">
+                    <label class="form-label fw-bold small">현재 선택된 기사</label>
+                    <div class="table-responsive">
+                        <table class="table table-sm">
+                            <thead class="table-light">
+                                <tr><th style="width:60px">#</th><th>제목</th><th style="width:80px">조회수</th></tr>
+                            </thead>
+                            <tbody>
+                                {% for art in selected_articles %}
+                                <tr>
+                                    <td>{{ loop.index }}</td>
+                                    <td>{{ art.title }}</td>
+                                    <td>{{ art.view_count }}</td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+                {% endif %}
             </div>
-            {% endif %}
-            <button type="submit" class="btn btn-primary"><i class="bi bi-save"></i> 저장</button>
-            <a href="{{ url_for('public.index') }}" target="_blank" class="btn btn-outline-secondary ms-2"><i class="bi bi-eye"></i> 사이트 확인</a>
-        </form>
+        </div>
+    </div>
+    <div class="col-lg-6">
+        <div class="card mb-3">
+            <div class="card-header"><strong>주간 탭</strong> <small class="text-muted ms-2">— 비워두면 주간 조회수 기준 자동 선택</small></div>
+            <div class="card-body">
+                <div class="mb-3">
+                    <label class="form-label fw-bold">기사 ID 목록 (쉼표 구분)</label>
+                    <input type="text" name="popular_weekly_ids" class="form-control" value="{{ weekly_ids_str }}" placeholder="예: 1714, 1710, 1705, 1700, 1695">
+                </div>
+                {% if weekly_selected_articles %}
+                <div class="mb-3">
+                    <label class="form-label fw-bold small">현재 선택된 기사</label>
+                    <div class="table-responsive">
+                        <table class="table table-sm">
+                            <thead class="table-light">
+                                <tr><th style="width:60px">#</th><th>제목</th><th style="width:80px">조회수</th></tr>
+                            </thead>
+                            <tbody>
+                                {% for art in weekly_selected_articles %}
+                                <tr>
+                                    <td>{{ loop.index }}</td>
+                                    <td>{{ art.title }}</td>
+                                    <td>{{ art.view_count }}</td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+                {% endif %}
+            </div>
+        </div>
     </div>
 </div>
+<button type="submit" class="btn btn-primary"><i class="bi bi-save"></i> 저장</button>
+<a href="{{ url_for('public.index') }}" target="_blank" class="btn btn-outline-secondary ms-2"><i class="bi bi-eye"></i> 사이트 확인</a>
+</form>
 {% endblock %}

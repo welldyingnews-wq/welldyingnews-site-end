@@ -1171,6 +1171,14 @@
                             </div>
                             {% endif %}
 
+                            <!-- 대표사진 + 캡션 -->
+                            {% if article.thumb_url and article.photo_caption %}
+                            <figure style="margin:0 0 20px 0;text-align:center">
+                                <img src="{{ article.thumb_url }}" alt="{{ article.title }}" style="max-width:100%;height:auto">
+                                <figcaption style="margin-top:8px;font-size:13px;color:#888;line-height:1.4;text-align:center">{{ article.photo_caption }}</figcaption>
+                            </figure>
+                            {% endif %}
+
                             <!-- 기사 본문 -->
                             <article id="article-view-content-div" class="article-veiw-body view-page">
                                 {{ article.content|safe }}
