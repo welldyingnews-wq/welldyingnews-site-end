@@ -212,7 +212,7 @@ class Article(db.Model):
     def thumb_url(self):
         """썸네일 URL 반환: thumbnail_path → 본문 이미지 → YouTube 썸네일 순서"""
         if self.thumbnail_path and '/' in self.thumbnail_path:
-            if self.thumbnail_path.startswith('http'):
+            if self.thumbnail_path.startswith(('http', '/')):
                 return self.thumbnail_path
             return '/static/' + self.thumbnail_path
         import re

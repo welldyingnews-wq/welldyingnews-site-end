@@ -26,7 +26,7 @@
                     </div>
                     <div class="mb-3">
                         <label class="form-label fw-bold">이미지</label>
-                        {% if banner and banner.image_path %}<div class="mb-2"><img src="{{ banner.image_path if banner.image_path.startswith('http') else url_for('static', filename=banner.image_path) }}" class="img-fluid rounded" style="max-height:150px"></div>{% endif %}
+                        {% if banner and banner.image_path %}<div class="mb-2"><img src="{{ banner.image_path if banner.image_path.startswith(('http', '/')) else url_for('static', filename=banner.image_path) }}" class="img-fluid rounded" style="max-height:150px"></div>{% endif %}
                         <input type="file" name="image" class="form-control" accept="image/*">
                     </div>
                     <div class="mb-3">
