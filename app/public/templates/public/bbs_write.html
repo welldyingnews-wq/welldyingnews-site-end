@@ -20,6 +20,10 @@
 .bbs-write-form .form-row .input-cell input[type="password"] {width:100%;max-width:300px;height:38px;padding:0 10px;border:1px solid #ddd;border-radius:3px;font-size:14px}
 .bbs-write-form .form-row .input-cell input.full-width {max-width:100%}
 .bbs-write-form .form-row .input-cell textarea {width:100%;height:400px;padding:12px;border:1px solid #ddd;border-radius:3px;font-size:14px;line-height:1.6;resize:vertical}
+.editor-mode-tabs {display:flex;gap:0;margin-bottom:-1px;position:relative;z-index:1}
+.editor-mode-tabs .mode-tab {padding:6px 16px;font-size:13px;border:1px solid #ddd;border-bottom:none;background:#f5f5f5;color:#666;cursor:pointer;border-radius:3px 3px 0 0}
+.editor-mode-tabs .mode-tab.active {background:#fff;color:#333;font-weight:600;border-bottom:1px solid #fff}
+.html-preview {width:100%;height:400px;padding:12px;border:1px solid #ddd;border-radius:0 3px 3px 3px;font-size:14px;line-height:1.6;overflow-y:auto;background:#fff;display:none}
 .bbs-write-actions {display:flex;justify-content:center;gap:8px;margin-top:20px}
 .bbs-write-actions .btn {display:inline-block;padding:10px 30px;font-size:14px;border:1px solid #ddd;border-radius:3px;color:#333;background:#fff;cursor:pointer;text-decoration:none}
 .bbs-write-actions .btn:hover {border-color:#999}
@@ -91,7 +95,12 @@
         <div class="form-row">
             <div class="label-cell">내용</div>
             <div class="input-cell">
-                <textarea name="content" placeholder="내용을 입력하세요" required>{{ edit_post.content if edit_post else '' }}</textarea>
+                <div class="editor-mode-tabs">
+                    <span class="mode-tab active" data-mode="text">일반</span>
+                    <span class="mode-tab" data-mode="html">HTML</span>
+                </div>
+                <textarea name="content" id="bbs-content" placeholder="내용을 입력하세요" required>{{ edit_post.content if edit_post else '' }}</textarea>
+                <div class="html-preview" id="bbs-preview"></div>
             </div>
         </div>
         {% if not edit_post %}
@@ -118,11 +127,57 @@
 {% block extra_scripts %}
 <script>
 function validateForm() {
+    var ta = document.getElementById('bbs-content');
+    var preview = document.getElementById('bbs-preview');
+    // HTML 미리보기 모드일 때 textarea가 숨겨져 있으므로 내용 동기화
+    if (ta.style.display === 'none') {
+        ta.value = preview.innerHTML;
+    }
     var title = document.querySelector('input[name="title"]').value.trim();
-    var content = document.querySelector('textarea[name="content"]').value.trim();
+    var content = ta.value.trim();
     if (!title) { alert('제목을 입력해주세요.'); return false; }
     if (!content) { alert('내용을 입력해주세요.'); return false; }
     return true;
 }
+
+// HTML 모드 전환
+$(document).ready(function() {
+    var currentMode = 'text';
+    $('.editor-mode-tabs .mode-tab').on('click', function() {
+        var mode = $(this).data('mode');
+        if (mode === currentMode) return;
+        currentMode = mode;
+        $('.editor-mode-tabs .mode-tab').removeClass('active');
+        $(this).addClass('active');
+        var $ta = $('#bbs-content');
+        var $preview = $('#bbs-preview');
+        if (mode === 'html') {
+            // HTML 모드: textarea에 HTML 직접 입력, 미리보기 영역에 렌더링 표시
+            $ta.attr('placeholder', 'HTML 코드를 입력하세요. 예: <b>굵게</b>, <br> 줄바꿈');
+            $preview.html($ta.val().replace(/\n/g, '<br>')).show();
+            $ta.css('border-radius', '0 0 0 3px');
+            $preview.css({'border-radius': '0 3px 3px 0', 'border-left': '1px dashed #ccc'});
+            // 나란히 배치
+            $ta.parent().css('display', 'grid');
+            $ta.parent().css('grid-template-columns', '1fr 1fr');
+            $ta.parent().css('grid-template-rows', 'auto 1fr');
+            $('.editor-mode-tabs').css('grid-column', '1 / -1');
+            $ta.show();
+            $preview.show();
+            // 실시간 미리보기
+            $ta.off('input.htmlpreview').on('input.htmlpreview', function() {
+                $preview.html($(this).val());
+            });
+        } else {
+            // 일반 모드로 복귀
+            $ta.attr('placeholder', '내용을 입력하세요');
+            $ta.off('input.htmlpreview');
+            $preview.hide();
+            $ta.show();
+            $ta.parent().css({'display': '', 'grid-template-columns': '', 'grid-template-rows': ''});
+            $ta.css('border-radius', '');
+        }
+    });
+});
 </script>
 {% endblock %}

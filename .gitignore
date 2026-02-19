@@ -1,3 +1,9 @@
+# Environment
+.env
+
+# Python
+__pycache__/
+*.pyc
 app/static/uploads/
 .venv/
 __pycache__/

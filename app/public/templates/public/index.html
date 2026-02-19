@@ -728,7 +728,7 @@
                             <div class="auto-article">
                                 <span class="rank">{{ loop.index }}</span>
                                 <a href="{{ url_for('public.article_view', idxno=art.id) }}"
-                                    style="flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-size:14px;color:#333">{{ art.title }}</a>
+                                    style="flex:1;font-size:14px;color:#333;overflow:hidden;text-overflow:ellipsis;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;line-height:1.5">{{ art.title }}</a>
                             </div>
                             {% else %}
                             <div style="padding:15px 0;text-align:center;font-size:13px;color:#999">오늘 기사가 없습니다.</div>
@@ -741,7 +741,7 @@
                             <div class="auto-article">
                                 <span class="rank">{{ loop.index }}</span>
                                 <a href="{{ url_for('public.article_view', idxno=art.id) }}"
-                                    style="flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-size:14px;color:#333">{{ art.title }}</a>
+                                    style="flex:1;font-size:14px;color:#333;overflow:hidden;text-overflow:ellipsis;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;line-height:1.5">{{ art.title }}</a>
                             </div>
                             {% else %}
                             <div style="padding:15px 0;text-align:center;font-size:13px;color:#999">주간 기사가 없습니다.</div>
@@ -754,7 +754,62 @@
             </div><!-- /grid-3 -->
         </div><!-- /anchorBodyA -->
 
-        <div style="border-top:1px solid #eee;margin:30px 0;padding-top:30px"></div>
+        <!-- 도서·출판 슬라이더 -->
+        {% if book_articles %}
+        <div style="margin:30px 0;padding:30px 0;background:#1a1a2e;border-radius:0;margin-left:-50px;margin-right:-50px;padding-left:50px;padding-right:50px">
+            <header style="margin-bottom:15px"><strong style="font-size:1.125rem;color:#fff;letter-spacing:-.025em">도서 · 출판</strong></header>
+            <div id="book-slider" class="clearfix" style="overflow:hidden;position:relative">
+                <div class="book-track" style="display:flex;transition:transform 0.5s ease">
+                    {% for art in book_articles %}
+                    <div style="flex:0 0 180px;margin-right:20px">
+                        <a href="{{ url_for('public.article_view', idxno=art.id) }}" style="display:block">
+                            {% if art.thumb_url %}
+                            <div style="width:180px;height:250px;overflow:hidden;border-radius:4px;background:#333">
+                                <img src="{{ art.thumb_url }}" alt="{{ art.title }}" style="width:100%;height:100%;object-fit:cover">
+                            </div>
+                            {% else %}
+                            <div style="width:180px;height:250px;background:#333;border-radius:4px;display:flex;align-items:center;justify-content:center;color:#666;font-size:13px">No Image</div>
+                            {% endif %}
+                            <strong style="display:block;margin-top:8px;font-size:13px;color:#ccc;font-weight:400;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">{{ art.title }}</strong>
+                        </a>
+                    </div>
+                    {% endfor %}
+                </div>
+                <button class="book-prev" style="position:absolute;left:-10px;top:50%;transform:translateY(-70%);width:36px;height:36px;border-radius:50%;border:none;background:rgba(255,255,255,.9);cursor:pointer;font-size:18px;display:flex;align-items:center;justify-content:center;box-shadow:0 2px 6px rgba(0,0,0,.3)">&#10094;</button>
+                <button class="book-next" style="position:absolute;right:-10px;top:50%;transform:translateY(-70%);width:36px;height:36px;border-radius:50%;border:none;background:rgba(255,255,255,.9);cursor:pointer;font-size:18px;display:flex;align-items:center;justify-content:center;box-shadow:0 2px 6px rgba(0,0,0,.3)">&#10095;</button>
+            </div>
+        </div>
+        {% endif %}
+
+        <!-- 웰다잉TV -->
+        {% if tv_articles %}
+        <div style="margin:0 0 30px 0;padding:30px 0;background:#1a1a2e;border-radius:0;margin-left:-50px;margin-right:-50px;padding-left:50px;padding-right:50px">
+            <header style="margin-bottom:15px;overflow:hidden">
+                <strong style="font-size:1.125rem;color:#fff;letter-spacing:-.025em"><span style="color:#ff0000">&#9654;</span> 웰다잉TV</strong>
+                <a href="{{ url_for('public.article_list', sc_section_code='S1N3') }}" style="float:right;font-size:13px;color:#999">더보기 &#10095;</a>
+            </header>
+            <div style="display:flex;flex-wrap:wrap;gap:20px">
+                {% for art in tv_articles[:4] %}
+                <div style="flex:0 0 calc(25% - 15px);min-width:0">
+                    <a href="{{ url_for('public.article_view', idxno=art.id) }}" style="display:block">
+                        <div style="position:relative;width:100%;padding-bottom:56.25%;overflow:hidden;border-radius:4px;background:#333">
+                            {% if art.thumb_url %}
+                            <img src="{{ art.thumb_url }}" alt="{{ art.title }}" style="position:absolute;top:0;left:0;width:100%;height:100%;object-fit:cover">
+                            {% endif %}
+                            <div style="position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);width:40px;height:40px;background:rgba(255,0,0,.85);border-radius:8px;display:flex;align-items:center;justify-content:center">
+                                <span style="color:#fff;font-size:18px;margin-left:2px">&#9654;</span>
+                            </div>
+                        </div>
+                        <strong style="display:block;margin-top:8px;font-size:14px;color:#ccc;font-weight:400;overflow:hidden;text-overflow:ellipsis;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;line-height:1.4">{{ art.title }}</strong>
+                        <span style="display:block;margin-top:4px;font-size:12px;color:#666">{{ (art.embargo_date or art.created_at).strftime('%Y-%m-%d') }}</span>
+                    </a>
+                </div>
+                {% endfor %}
+            </div>
+        </div>
+        {% endif %}
+
+        <div style="border-top:1px solid #eee;margin:0 0 30px 0;padding-top:30px"></div>
 
         <!-- 하단: 섹션별 기사 (4열) -->
         {% if section_articles %}
@@ -790,8 +845,7 @@
                         <div class="cat-list">
                             {% for art in articles[1:] %}
                             <div class="item">
-                                <span class="date">{{ (art.embargo_date or art.created_at).strftime('%m.%d') }}</span>
-                                <a href="{{ url_for('public.article_view', idxno=art.id) }}">{{ art.title }}</a>
+                                <a href="{{ url_for('public.article_view', idxno=art.id) }}" style="display:block;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">{{ art.title }}</a>
                             </div>
                             {% endfor %}
                         </div>
@@ -819,6 +873,26 @@
         $(this).closest('article').find('#pop-today, #pop-week').hide();
         $('#' + panel).show();
     });
+
+    // 도서출판 슬라이더
+    (function() {
+        var track = document.querySelector('.book-track');
+        if (!track) return;
+        var pos = 0, itemW = 200; // 180px + 20px gap
+        var maxScroll = Math.max(0, track.scrollWidth - track.parentElement.offsetWidth);
+        var autoTimer;
+        function slide(dir) {
+            pos += dir * itemW * 2;
+            if (pos < 0) pos = 0;
+            if (pos > maxScroll) pos = 0;
+            track.style.transform = 'translateX(-' + pos + 'px)';
+        }
+        function startAuto() { autoTimer = setInterval(function(){ slide(1); }, 3000); }
+        function stopAuto() { clearInterval(autoTimer); }
+        document.querySelector('.book-prev')?.addEventListener('click', function(){ stopAuto(); slide(-1); startAuto(); });
+        document.querySelector('.book-next')?.addEventListener('click', function(){ stopAuto(); slide(1); startAuto(); });
+        startAuto();
+    })();
 </script>
 {% endif %}
 {% if is_mobile %}

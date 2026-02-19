@@ -183,6 +183,22 @@ def index():
     # 설문조사 (활성 상태)
     active_poll = Poll.query.filter_by(is_active=True).order_by(Poll.created_at.desc()).first()
 
+    # 도서·출판 (2차섹션 S2N17)
+    book_subsection = SubSection.query.filter_by(code='S2N17').first()
+    book_articles = []
+    if book_subsection:
+        book_articles = query.filter(
+            Article.subsection_id == book_subsection.id
+        ).order_by(db.func.coalesce(Article.embargo_date, Article.created_at).desc()).limit(10).all()
+
+    # 웰다잉TV (섹션 S1N3)
+    tv_section = Section.query.filter_by(code='S1N3').first()
+    tv_articles = []
+    if tv_section:
+        tv_articles = query.filter(
+            Article.section_id == tv_section.id
+        ).order_by(db.func.coalesce(Article.embargo_date, Article.created_at).desc()).limit(8).all()
+
     return render_template('public/index.html',
                            headline_articles=headline_articles,
                            latest_articles=latest_articles,
@@ -192,7 +208,9 @@ def index():
                            opinion_articles=opinion_articles,
                            library_articles=library_articles,
                            schedule_articles=schedule_articles,
-                           active_poll=active_poll)
+                           active_poll=active_poll,
+                           book_articles=book_articles,
+                           tv_articles=tv_articles)
 
 
 def _get_sidebar_data():
@@ -204,16 +222,33 @@ def _get_sidebar_data():
         sidebar_opinion = query.filter(
             Article.section_id == opinion_section.id
         ).order_by(db.func.coalesce(Article.embargo_date, Article.created_at).desc()).limit(4).all()
-    # 많이 본 뉴스: 오늘
-    today_start = datetime.now().replace(hour=0, minute=0, second=0, microsecond=0)
-    popular_today = _get_published_query().filter(
-        Article.created_at >= today_start
-    ).order_by(Article.view_count.desc()).limit(5).all()
-    # 많이 본 뉴스: 주간
-    week_start = today_start - timedelta(days=7)
-    popular_week = _get_published_query().filter(
-        Article.created_at >= week_start
-    ).order_by(Article.view_count.desc()).limit(5).all()
+
+    # 대시보드에서 수동 선택한 기사 우선
+    popular_setting = SiteSetting.query.filter_by(key='popular_article_ids').first()
+    manual_popular = []
+    if popular_setting and popular_setting.value:
+        for aid in popular_setting.value.split(','):
+            aid = aid.strip()
+            if aid.isdigit():
+                art = Article.query.get(int(aid))
+                if art and not art.is_deleted and art.recognition == 'E':
+                    manual_popular.append(art)
+
+    if manual_popular:
+        popular_today = manual_popular[:5]
+        popular_week = manual_popular[:5]
+    else:
+        # 많이 본 뉴스: 오늘
+        today_start = datetime.now().replace(hour=0, minute=0, second=0, microsecond=0)
+        popular_today = _get_published_query().filter(
+            Article.created_at >= today_start
+        ).order_by(Article.view_count.desc()).limit(5).all()
+        # 많이 본 뉴스: 주간
+        week_start = today_start - timedelta(days=7)
+        popular_week = _get_published_query().filter(
+            Article.created_at >= week_start
+        ).order_by(Article.view_count.desc()).limit(5).all()
+
     # 오늘 데이터가 부족하면 전체로 채움
     sidebar_popular = popular_today if len(popular_today) >= 3 else popular_week
     return sidebar_opinion, sidebar_popular, popular_today, popular_week

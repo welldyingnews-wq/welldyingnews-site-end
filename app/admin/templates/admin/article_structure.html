@@ -1,20 +1,23 @@
 {% extends "admin/base.html" %}
 {% block nav_title %}기사구조{% endblock %}
 {% block content %}
-<h4 class="mb-3">기사구조 (섹션별 기사 현황)</h4>
+<h4 class="mb-3">기사구조 (섹션별 기사 현황) <small class="text-muted" style="font-size:13px">— 이름을 클릭하면 수정할 수 있습니다</small></h4>
 <div class="row">
 {% for sec in structure %}
 <div class="col-lg-4 mb-3">
     <div class="card">
-        <div class="card-header d-flex justify-content-between">
-            <strong>{{ sec.name }}</strong>
+        <div class="card-header d-flex justify-content-between align-items-center">
+            <strong class="editable-name" data-type="section" data-id="{{ sec.id }}" title="클릭하여 수정" style="cursor:pointer;border-bottom:1px dashed #aaa">{{ sec.name }}</strong>
             <span class="badge bg-primary">{{ sec.count }}건</span>
         </div>
         {% if sec.subs %}
         <ul class="list-group list-group-flush">
             {% for sub in sec.subs %}
             <li class="list-group-item d-flex justify-content-between align-items-center">
-                <span>{{ sub.name }} <small class="text-muted">{{ sub.code }}</small></span>
+                <span>
+                    <span class="editable-name" data-type="subsection" data-id="{{ sub.id }}" title="클릭하여 수정" style="cursor:pointer;border-bottom:1px dashed #aaa">{{ sub.name }}</span>
+                    <small class="text-muted ms-1">{{ sub.code }}</small>
+                </span>
                 <span class="badge bg-secondary">{{ sub.count }}</span>
             </li>
             {% endfor %}
@@ -24,4 +27,66 @@
 </div>
 {% endfor %}
 </div>
+{% endblock %}
+
+{% block extra_scripts %}
+<script>
+document.querySelectorAll('.editable-name').forEach(function(el) {
+    el.addEventListener('click', function() {
+        var current = this.textContent.trim();
+        var type = this.dataset.type;
+        var id = this.dataset.id;
+        var span = this;
+
+        var input = document.createElement('input');
+        input.type = 'text';
+        input.value = current;
+        input.className = 'form-control form-control-sm';
+        input.style.cssText = 'display:inline-block;width:auto;min-width:120px;font-weight:bold';
+
+        span.replaceWith(input);
+        input.focus();
+        input.select();
+
+        function save() {
+            var newName = input.value.trim();
+            if (!newName || newName === current) {
+                span.textContent = current;
+                input.replaceWith(span);
+                return;
+            }
+            var url = type === 'section'
+                ? '{{ url_for("admin.section_edit", section_id=0) }}'.replace('/0', '/' + id)
+                : '{{ url_for("admin.subsection_edit", sub_id=0) }}'.replace('/0', '/' + id);
+
+            var formData = new FormData();
+            formData.append('name', newName);
+            formData.append('ajax', '1');
+
+            fetch(url, { method: 'POST', body: formData })
+                .then(function(res) { return res.json(); })
+                .then(function(data) {
+                    if (data.success) {
+                        span.textContent = newName;
+                    } else {
+                        span.textContent = current;
+                        alert(data.message || '저장 실패');
+                    }
+                    input.replaceWith(span);
+                })
+                .catch(function() {
+                    span.textContent = current;
+                    input.replaceWith(span);
+                    alert('저장 중 오류가 발생했습니다.');
+                });
+        }
+
+        input.addEventListener('blur', save);
+        input.addEventListener('keydown', function(e) {
+            if (e.key === 'Enter') { e.preventDefault(); save(); }
+            if (e.key === 'Escape') { span.textContent = current; input.replaceWith(span); }
+        });
+    });
+});
+</script>
 {% endblock %}

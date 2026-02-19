@@ -323,6 +323,17 @@ def _save_article(article):
         except (ValueError, TypeError):
             continue
 
+    # 추가 2차 섹션 저장
+    extra_subsection_ids = request.form.getlist('extra_subsection_ids')
+    article.extra_subsections.clear()
+    for sid in extra_subsection_ids:
+        try:
+            sub = SubSection.query.get(int(sid))
+            if sub:
+                article.extra_subsections.append(sub)
+        except (ValueError, TypeError):
+            continue
+
     db.session.commit()
     flash('기사가 저장되었습니다.', 'success')
     # [Feature 3] 저장 후 기사 목록으로 이동
@@ -1189,6 +1200,36 @@ def hero_config():
     return render_template('admin/hero_config.html', settings=settings, preview=preview)
 
 
+# ── 많이 본 뉴스 관리 ──
+
+@admin_bp.route('/popular-config', methods=['GET', 'POST'])
+@admin_required
+def popular_config():
+    if request.method == 'POST':
+        ids = request.form.get('popular_ids', '').strip()
+        setting = SiteSetting.query.filter_by(key='popular_article_ids').first()
+        if not setting:
+            setting = SiteSetting(key='popular_article_ids')
+            db.session.add(setting)
+        setting.value = ids
+        db.session.commit()
+        flash('많이 본 뉴스 설정이 저장되었습니다.', 'success')
+        return redirect(url_for('admin.popular_config'))
+
+    setting = SiteSetting.query.filter_by(key='popular_article_ids').first()
+    ids_str = setting.value if setting else ''
+    selected_articles = []
+    if ids_str:
+        for aid in ids_str.split(','):
+            aid = aid.strip()
+            if aid.isdigit():
+                art = Article.query.get(int(aid))
+                if art:
+                    selected_articles.append(art)
+    return render_template('admin/popular_config.html',
+                           ids_str=ids_str, selected_articles=selected_articles)
+
+
 # ── 환경설정 ──
 
 @admin_bp.route('/settings/general', methods=['GET', 'POST'])
@@ -1246,6 +1287,8 @@ def section_edit(section_id):
     sec = Section.query.get_or_404(section_id)
     sec.name = request.form.get('name', sec.name).strip()
     db.session.commit()
+    if request.form.get('ajax'):
+        return jsonify(success=True)
     flash('섹션이 수정되었습니다.', 'success')
     return redirect(url_for('admin.settings_sections'))
 
@@ -1286,6 +1329,8 @@ def subsection_edit(sub_id):
     sub = SubSection.query.get_or_404(sub_id)
     sub.name = request.form.get('name', sub.name).strip()
     db.session.commit()
+    if request.form.get('ajax'):
+        return jsonify(success=True)
     flash('2차 섹션이 수정되었습니다.', 'success')
     return redirect(url_for('admin.settings_sections'))
 

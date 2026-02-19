@@ -159,6 +159,12 @@ article_extra_section = db.Table('article_extra_section',
     db.Column('section_id', db.Integer, db.ForeignKey('section.id'), primary_key=True)
 )
 
+# 기사-추가 2차 섹션 다대다 중간 테이블
+article_extra_subsection = db.Table('article_extra_subsection',
+    db.Column('article_id', db.Integer, db.ForeignKey('article.id'), primary_key=True),
+    db.Column('subsection_id', db.Integer, db.ForeignKey('sub_section.id'), primary_key=True)
+)
+
 
 class Article(db.Model):
     __tablename__ = 'article'
@@ -189,6 +195,8 @@ class Article(db.Model):
     serial_code = db.relationship('SerialCode', backref='articles')
     extra_sections = db.relationship('Section', secondary=article_extra_section,
                                      backref=db.backref('extra_articles', lazy='dynamic'))
+    extra_subsections = db.relationship('SubSection', secondary=article_extra_subsection,
+                                        backref=db.backref('extra_articles', lazy='dynamic'))
     article_relations = db.relationship('ArticleRelation', foreign_keys='ArticleRelation.article_id',
                                         backref='article', lazy='dynamic', cascade='all, delete-orphan')
 
@@ -202,13 +210,22 @@ class Article(db.Model):
 
     @property
     def thumb_url(self):
-        """썸네일 URL 반환: thumbnail_path가 유효한 파일이면 사용, 아니면 본문 첫 이미지 추출"""
+        """썸네일 URL 반환: thumbnail_path → 본문 이미지 → YouTube 썸네일 순서"""
         if self.thumbnail_path and '/' in self.thumbnail_path:
+            if self.thumbnail_path.startswith('http'):
+                return self.thumbnail_path
             return '/static/' + self.thumbnail_path
         import re
         match = re.search(r'<img[^>]+src=["\']([^"\']+)["\']', self.content or '')
         if match:
             return match.group(1)
+        # YouTube 썸네일 자동 추출
+        yt = re.search(
+            r'(?:youtube\.com/(?:watch\?v=|embed/)|youtu\.be/)([\w-]{11})',
+            self.content or ''
+        )
+        if yt:
+            return 'https://img.youtube.com/vi/' + yt.group(1) + '/hqdefault.jpg'
         return ''
 
 

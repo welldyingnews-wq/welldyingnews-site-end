@@ -14,7 +14,7 @@
             {% for b in banners %}
             <tr>
                 <td>{{ b.id }}</td>
-                <td>{% if b.image_path %}<img src="{{ url_for('static', filename=b.image_path) }}" style="width:60px;height:40px;object-fit:cover" class="rounded">{% else %}-{% endif %}</td>
+                <td>{% if b.image_path %}<img src="{{ b.image_path if b.image_path.startswith('http') else url_for('static', filename=b.image_path) }}" style="width:60px;height:40px;object-fit:cover" class="rounded">{% else %}-{% endif %}</td>
                 <td>{{ b.name }}</td><td>{{ b.position or '-' }}</td>
                 <td><small>{{ b.link_url|truncate(40) }}</small></td>
                 <td>{{ b.click_count }}</td>

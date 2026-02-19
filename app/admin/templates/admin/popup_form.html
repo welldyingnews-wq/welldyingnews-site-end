@@ -25,7 +25,7 @@
                     </div>
                     <div class="mb-3">
                         <label class="form-label fw-bold">이미지</label>
-                        {% if popup and popup.image_path %}<div class="mb-2"><img src="{{ url_for('static', filename=popup.image_path) }}" class="img-fluid rounded" style="max-height:150px"></div>{% endif %}
+                        {% if popup and popup.image_path %}<div class="mb-2"><img src="{{ popup.image_path if popup.image_path.startswith('http') else url_for('static', filename=popup.image_path) }}" class="img-fluid rounded" style="max-height:150px"></div>{% endif %}
                         <input type="file" name="image" class="form-control" accept="image/*">
                     </div>
                     <div class="mb-3">
