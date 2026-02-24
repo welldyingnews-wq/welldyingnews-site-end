@@ -1,0 +1,326 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="description" content="삶과 죽음의 존엄성을 전하는 웰다잉뉴스">
+<meta property="og:type" content="website">
+<meta property="og:title" content="웰다잉뉴스">
+<meta property="og:site_name" content="웰다잉뉴스">
+<meta property="og:description" content="삶과 죽음의 존엄성을 전하는 웰다잉뉴스">
+<meta property="og:url" content="{{ request.url }}">
+<meta property="og:image" content="{{ url_for('static', filename='images/og_default.png', _external=True) }}">
+<meta name="twitter:card" content="summary_large_image">
+{% block meta %}{% endblock %}
+<title>{% block title %}웰다잉뉴스{% endblock %}</title>
+<link rel="preconnect" href="https://cdn.jsdelivr.net">
+<link href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/variable/pretendardvariable-dynamic-subset.min.css" rel="stylesheet">
+<link href="https://cdn.jsdelivr.net/npm/swiper@11/swiper-bundle.min.css" rel="stylesheet">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+<link href="https://fonts.googleapis.com/css2?family=Noto+Serif+KR:wght@400;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="{{ url_for('static', filename='css/public_new.css') }}">
+{% block extra_head %}{% endblock %}
+</head>
+<body>
+
+<!-- Scroll Progress -->
+<div id="scrollProgress"></div>
+
+<!-- Toast -->
+<div class="toast" id="toast"></div>
+
+<!-- =========== TOP BAR =========== -->
+<div class="topbar">
+  <div class="topbar__inner">
+    <div class="topbar__left">
+      <span class="topbar__clock" id="liveClock"></span>
+      <span class="topbar__sep"></span>
+      <span>UPDATED. {{ updated_time }}</span>
+    </div>
+    <div class="topbar__right">
+      <div class="font-ctrl">
+        <span>글꼴</span>
+        <button class="fs-s" onclick="setFont('small',this)" title="작게">가</button>
+        <button class="fs-m on" onclick="setFont('medium',this)" title="보통">가</button>
+        <button class="fs-l" onclick="setFont('large',this)" title="크게">가</button>
+      </div>
+      <span class="topbar__sep"></span>
+      {% if current_member %}
+      <a href="{{ url_for('public.member_mypage') }}">{{ current_member.name }}</a>
+      <span class="topbar__sep"></span>
+      <a href="{{ url_for('public.member_logout') }}">로그아웃</a>
+      {% else %}
+      <a href="{{ url_for('public.member_login') }}">로그인</a>
+      <span class="topbar__sep"></span>
+      <a href="{{ url_for('public.member_index') }}">회원가입</a>
+      {% endif %}
+    </div>
+  </div>
+</div>
+
+<!-- =========== BREAKING TICKER =========== -->
+{% block ticker %}{% endblock %}
+
+<!-- =========== HEADER =========== -->
+<header class="header">
+  <div class="header__inner">
+    <a href="{{ url_for('public.index') }}" class="header__logo">
+      <span class="header__title">웰다잉뉴스</span>
+      <span class="header__sub">삶과 죽음의 존엄성을 전하는</span>
+    </a>
+    <div class="header__right">
+      <div class="header__search">
+        <form method="get" action="{{ url_for('public.article_list') }}" style="display:flex;align-items:center;gap:0.5rem;width:100%">
+          <input type="hidden" name="sc_area" value="A">
+          <input type="hidden" name="view_type" value="sm">
+          <input type="text" name="sc_word" placeholder="기사 검색..." id="searchInput">
+          <button type="submit"><i class="fa-solid fa-magnifying-glass"></i></button>
+        </form>
+      </div>
+    </div>
+  </div>
+</header>
+
+<!-- =========== NAVIGATION =========== -->
+<nav class="nav" id="nav">
+  <div class="nav__inner">
+    <button class="nav__hamburger" onclick="toggleMob()" aria-label="메뉴"><span></span><span></span><span></span></button>
+    <ul class="nav__menu">
+      {% for sec in nav_sections %}
+      {% if sec.code != 'S1N6' %}
+      <li class="nav__item">
+        <a href="{{ url_for('public.article_list', sc_section_code=sec.code) }}" class="nav__link{% if sec.code == 'S1N1' %} nav__link--active{% endif %}">{{ sec.name }}</a>
+        {% if sec.subsections.count() > 0 %}
+        <div class="nav__drop">
+          {% for sub in sec.subsections %}
+          <a href="{{ url_for('public.article_list', sc_sub_section_code=sub.code) }}">{{ sub.name }}</a>
+          {% endfor %}
+        </div>
+        {% endif %}
+      </li>
+      {% endif %}
+      {% endfor %}
+      {% for board in nav_boards %}
+      <li class="nav__item">
+        <a href="{{ url_for('public.bbs_list', table=board.code) }}" class="nav__link">{{ board.name }}</a>
+      </li>
+      {% endfor %}
+      {% for sec in nav_sections %}
+      {% if sec.code == 'S1N6' %}
+      <li class="nav__item">
+        <a href="{{ url_for('public.article_list', sc_section_code=sec.code) }}" class="nav__link nav__link--hl"><i class="fa-regular fa-envelope"></i>{{ sec.name }}</a>
+      </li>
+      {% endif %}
+      {% endfor %}
+    </ul>
+    <div class="nav__right">
+      <button class="nav__icon-btn" onclick="window.print()" title="인쇄"><i class="fa-solid fa-print"></i></button>
+    </div>
+  </div>
+</nav>
+
+<!-- Mobile Nav -->
+<div class="mob-overlay" id="mobOverlay" onclick="toggleMob()"></div>
+<nav class="mob-nav" id="mobNav">
+  <div class="mob-nav__head">
+    <span class="mob-nav__logo">웰다잉뉴스</span>
+    <button onclick="toggleMob()"><i class="fa-solid fa-xmark"></i></button>
+  </div>
+  {% for sec in nav_sections %}
+  {% if sec.code != 'S1N6' %}
+  <div class="mob-nav__item">
+    {% if sec.subsections.count() > 0 %}
+    <div class="mob-nav__link" onclick="toggleSub(this)">{{ sec.name }} <i class="fa-solid fa-chevron-down" style="font-size:0.7rem"></i></div>
+    <div class="mob-nav__sub">
+      <a href="{{ url_for('public.article_list', sc_section_code=sec.code) }}">전체</a>
+      {% for sub in sec.subsections %}
+      <a href="{{ url_for('public.article_list', sc_sub_section_code=sub.code) }}">{{ sub.name }}</a>
+      {% endfor %}
+    </div>
+    {% else %}
+    <a href="{{ url_for('public.article_list', sc_section_code=sec.code) }}" class="mob-nav__link">{{ sec.name }}</a>
+    {% endif %}
+  </div>
+  {% endif %}
+  {% endfor %}
+  {% for board in nav_boards %}
+  <div class="mob-nav__item"><a href="{{ url_for('public.bbs_list', table=board.code) }}" class="mob-nav__link">{{ board.name }}</a></div>
+  {% endfor %}
+  {% for sec in nav_sections %}
+  {% if sec.code == 'S1N6' %}
+  <div class="mob-nav__item"><a href="{{ url_for('public.article_list', sc_section_code=sec.code) }}" class="mob-nav__link" style="color:var(--c-primary)"><i class="fa-regular fa-envelope" style="margin-right:0.3rem"></i>{{ sec.name }}</a></div>
+  {% endif %}
+  {% endfor %}
+</nav>
+
+<!-- =========== MAIN =========== -->
+<main>
+{% block content %}{% endblock %}
+</main>
+
+<!-- =========== FOOTER =========== -->
+<footer class="footer">
+  <div class="footer__top">
+    <div>
+      <div class="footer__logo">웰다잉뉴스</div>
+      <p class="footer__desc">삶과 죽음의 존엄성을 전하는 웰다잉뉴스<br>호스피스, 연명의료, 장례문화, 애도, 자살예방 등<br>웰다잉 분야의 전문 뉴스를 전달합니다.</p>
+    </div>
+    <div>
+      <h4 class="footer__col-title">뉴스 카테고리</h4>
+      <nav>
+        {% for sec in nav_sections %}
+        {% if sec.code == 'S1N1' %}
+        {% for sub in sec.subsections %}
+        {% if loop.index <= 6 %}
+        <a href="{{ url_for('public.article_list', sc_sub_section_code=sub.code) }}" class="footer__link">{{ sub.name }}</a>
+        {% endif %}
+        {% endfor %}
+        {% endif %}
+        {% endfor %}
+      </nav>
+    </div>
+    <div>
+      <h4 class="footer__col-title">서비스</h4>
+      <nav>
+        {% for sec in nav_sections %}
+        {% if sec.code != 'S1N1' and sec.code != 'S1N6' %}
+        <a href="{{ url_for('public.article_list', sc_section_code=sec.code) }}" class="footer__link">{{ sec.name }}</a>
+        {% endif %}
+        {% endfor %}
+        {% for board in nav_boards %}
+        <a href="{{ url_for('public.bbs_list', table=board.code) }}" class="footer__link">{{ board.name }}</a>
+        {% endfor %}
+      </nav>
+    </div>
+    <div>
+      <h4 class="footer__col-title">웰다잉뉴스</h4>
+      <nav>
+        <a href="{{ url_for('public.com_page', page_code='com-1') }}" class="footer__link">회사소개</a>
+        <a href="{{ url_for('public.com_page', page_code='ad') }}" class="footer__link">광고안내</a>
+        <a href="{{ url_for('public.com_page', page_code='jb') }}" class="footer__link">제보 및 문의</a>
+        <a href="{{ url_for('public.com_page', page_code='kd') }}" class="footer__link">구독안내</a>
+        <a href="{{ url_for('public.com_page', page_code='privacy') }}" class="footer__link">개인정보처리방침</a>
+        <a href="{{ url_for('public.com_page', page_code='service') }}" class="footer__link">이용약관</a>
+      </nav>
+    </div>
+  </div>
+  <div class="footer__bottom">
+    <div class="footer__copy">
+      법인명 : 웰다잉미디어 | 제호 : 웰다잉뉴스 | 등록번호 : 서울 아 04366<br>
+      등록일 : 2017-02-13 | 발행일 : 2016-12-01 | 발행·편집인 : 김동하<br>
+      Copyright &copy; 2026 웰다잉뉴스. All rights reserved.
+    </div>
+  </div>
+</footer>
+
+<!-- Back to Top -->
+<button class="btt" id="btt" onclick="window.scrollTo({top:0,behavior:'smooth'})" aria-label="맨 위로"><i class="fa-solid fa-chevron-up"></i></button>
+
+<!-- Keyboard shortcut hint -->
+<div class="kbd-hint"><kbd>/</kbd> 검색 · <kbd>T</kbd> 맨위</div>
+
+<!-- =========== POPUPS =========== -->
+{% if popups %}
+{% for popup in popups %}
+<div class="popup-layer" id="popup-{{ popup.id }}" style="position:fixed;z-index:99999;left:50%;top:50%;transform:translate(-50%,-50%);max-width:400px;width:calc(100vw - 40px);display:none">
+  <div style="background:#fff;border:1px solid #333;box-shadow:0 4px 20px rgba(0,0,0,.3);border-radius:var(--radius);overflow:hidden">
+    {% if popup.image_path %}
+    <div>
+      {% if popup.link_url %}<a href="{{ popup.link_url }}" target="_blank" rel="noopener">{% endif %}
+        <img src="{{ popup.image_path if popup.image_path.startswith(('http', '/')) else url_for('static', filename=popup.image_path) }}" alt="{{ popup.name }}" style="display:block;width:100%">
+      {% if popup.link_url %}</a>{% endif %}
+    </div>
+    {% endif %}
+    {% if popup.content %}
+    <div style="padding:15px;font-size:0.88rem;line-height:1.6;color:var(--c-text)">{{ popup.content|safe }}</div>
+    {% endif %}
+    <div style="display:flex;justify-content:space-between;align-items:center;padding:8px 12px;background:#f5f5f5;border-top:1px solid #ddd;font-size:0.72rem">
+      <label style="cursor:pointer;color:#666;display:flex;align-items:center;gap:5px">
+        <input type="checkbox" class="popup-today-close" data-popup-id="{{ popup.id }}"> 오늘 하루 보지 않기
+      </label>
+      <button type="button" class="popup-close-btn" data-popup-id="{{ popup.id }}" style="padding:4px 14px;background:var(--c-primary);color:#fff;border:none;border-radius:3px;font-size:0.72rem;cursor:pointer">닫기</button>
+    </div>
+  </div>
+</div>
+{% endfor %}
+{% endif %}
+
+<!-- =========== SCRIPTS =========== -->
+<script>
+/* ── Live Clock ── */
+function updateClock(){
+  var now=new Date(),days=['일','월','화','수','목','금','토'];
+  var pad=function(n){return String(n).padStart(2,'0')};
+  document.getElementById('liveClock').textContent=
+    now.getFullYear()+'.'+pad(now.getMonth()+1)+'.'+pad(now.getDate())+' '+days[now.getDay()]+' '+pad(now.getHours())+':'+pad(now.getMinutes())+':'+pad(now.getSeconds());
+}
+updateClock();setInterval(updateClock,1000);
+
+/* ── Toast ── */
+var toastTimer;
+function showToast(msg){
+  var t=document.getElementById('toast');
+  t.textContent=msg;t.classList.add('show');
+  clearTimeout(toastTimer);
+  toastTimer=setTimeout(function(){t.classList.remove('show')},2500);
+}
+
+/* ── Font Size ── */
+function setFont(size,btn){
+  document.documentElement.setAttribute('data-fontsize',size);
+  localStorage.setItem('fontsize',size);
+  document.querySelectorAll('.font-ctrl button').forEach(function(b){b.classList.remove('on')});
+  btn.classList.add('on');
+}
+(function(){var s=localStorage.getItem('fontsize');if(s)document.documentElement.setAttribute('data-fontsize',s)})();
+
+/* ── Scroll ── */
+window.addEventListener('scroll',function(){
+  var y=window.scrollY,h=document.documentElement.scrollHeight-window.innerHeight;
+  if(h>0)document.getElementById('scrollProgress').style.width=(y/h*100)+'%';
+  document.getElementById('btt').classList.toggle('show',y>400);
+  document.getElementById('nav').classList.toggle('scrolled',y>10);
+});
+
+/* ── Mobile Nav ── */
+function toggleMob(){
+  document.getElementById('mobNav').classList.toggle('on');
+  document.getElementById('mobOverlay').classList.toggle('on');
+  document.body.style.overflow=document.getElementById('mobNav').classList.contains('on')?'hidden':'';
+}
+function toggleSub(el){var s=el.nextElementSibling;if(s)s.classList.toggle('on')}
+
+/* ── Popup ── */
+document.querySelectorAll('.popup-layer').forEach(function(el){
+  var id=el.getAttribute('id');
+  if(document.cookie.indexOf('popup_hide_'+id+'=1')===-1)el.style.display='block';
+});
+document.querySelectorAll('.popup-close-btn').forEach(function(btn){
+  btn.addEventListener('click',function(){
+    var pid=this.getAttribute('data-popup-id');
+    var layer=document.getElementById('popup-'+pid);
+    if(layer.querySelector('.popup-today-close').checked){
+      var d=new Date();d.setHours(23,59,59,0);
+      document.cookie='popup_hide_popup-'+pid+'=1;expires='+d.toUTCString()+';path=/';
+    }
+    layer.style.display='none';
+  });
+});
+
+/* ── Keyboard Shortcuts ── */
+document.addEventListener('keydown',function(e){
+  if(e.target.tagName==='INPUT'||e.target.tagName==='TEXTAREA')return;
+  if(e.key==='/'){e.preventDefault();document.getElementById('searchInput').focus()}
+  if(e.key==='t'||e.key==='T')window.scrollTo({top:0,behavior:'smooth'});
+  if(e.key==='Escape'){document.getElementById('searchInput').blur();if(document.getElementById('mobNav').classList.contains('on'))toggleMob()}
+});
+
+/* ── Scroll Animations ── */
+var obs=new IntersectionObserver(function(entries){
+  entries.forEach(function(e){if(e.isIntersecting)e.target.classList.add('in')});
+},{threshold:0.1});
+document.querySelectorAll('.anim').forEach(function(el){obs.observe(el)});
+</script>
+{% block extra_scripts %}{% endblock %}
+</body>
+</html>

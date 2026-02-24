@@ -123,6 +123,244 @@ def track_visitor():
         db.session.commit()
 
 
+@public_bp.route('/main1/')
+def index_main1():
+    """main1 디자인 (base_new.html 기반)"""
+    query = _get_published_query()
+    headline_articles = []
+    for i in range(1, 4):
+        setting = SiteSetting.query.filter_by(key=f'hero_slot_{i}').first()
+        if setting and setting.value and setting.value.strip().isdigit():
+            art = query.filter(Article.id == int(setting.value)).first()
+            if art:
+                headline_articles.append(art)
+    if len(headline_articles) < 3:
+        existing_ids = [a.id for a in headline_articles]
+        auto = query.filter(
+            Article.level.in_(['T', 'I']),
+            ~Article.id.in_(existing_ids) if existing_ids else True
+        ).order_by(db.func.coalesce(Article.embargo_date, Article.created_at).desc()).limit(3 - len(headline_articles)).all()
+        headline_articles.extend(auto)
+    if len(headline_articles) < 3:
+        existing_ids = [a.id for a in headline_articles]
+        extra = query.filter(
+            ~Article.id.in_(existing_ids) if existing_ids else True
+        ).order_by(db.func.coalesce(Article.embargo_date, Article.created_at).desc()).limit(3 - len(headline_articles)).all()
+        headline_articles.extend(extra)
+    latest_articles = query.order_by(db.func.coalesce(Article.embargo_date, Article.created_at).desc()).limit(8).all()
+    popular_setting = SiteSetting.query.filter_by(key='popular_article_ids').first()
+    manual_popular = []
+    if popular_setting and popular_setting.value:
+        for aid in popular_setting.value.split(','):
+            aid = aid.strip()
+            if aid.isdigit():
+                art = Article.query.get(int(aid))
+                if art and not art.is_deleted and art.recognition == 'E':
+                    manual_popular.append(art)
+    weekly_setting = SiteSetting.query.filter_by(key='popular_weekly_article_ids').first()
+    manual_weekly = []
+    if weekly_setting and weekly_setting.value:
+        for aid in weekly_setting.value.split(','):
+            aid = aid.strip()
+            if aid.isdigit():
+                art = Article.query.get(int(aid))
+                if art and not art.is_deleted and art.recognition == 'E':
+                    manual_weekly.append(art)
+    if manual_popular:
+        popular_today = manual_popular[:5]
+    else:
+        today_start = datetime.now().replace(hour=0, minute=0, second=0, microsecond=0)
+        popular_today = _get_published_query().filter(
+            Article.created_at >= today_start
+        ).order_by(Article.view_count.desc()).limit(5).all()
+    if manual_weekly:
+        popular_week = manual_weekly[:5]
+    else:
+        popular_week = _get_published_query().order_by(Article.view_count.desc()).limit(5).all()
+    from app.models import article_extra_subsection
+    section_articles = {}
+    key_subsections = SubSection.query.join(Section).filter(
+        Section.code == 'S1N1'
+    ).order_by(SubSection.sort_order).all()
+    for sub in key_subsections[:16]:
+        articles = query.filter(
+            db.or_(
+                Article.subsection_id == sub.id,
+                Article.id.in_(
+                    db.session.query(article_extra_subsection.c.article_id).filter(
+                        article_extra_subsection.c.subsection_id == sub.id
+                    )
+                )
+            )
+        ).order_by(db.func.coalesce(Article.embargo_date, Article.created_at).desc()).limit(4).all()
+        if articles:
+            section_articles[sub] = articles
+    opinion_section = Section.query.filter_by(code='S1N2').first()
+    opinion_articles = []
+    if opinion_section:
+        opinion_articles = query.filter(
+            Article.section_id == opinion_section.id
+        ).order_by(db.func.coalesce(Article.embargo_date, Article.created_at).desc()).limit(4).all()
+    library_section = Section.query.filter_by(code='S1N4').first()
+    library_articles = []
+    if library_section:
+        library_articles = query.filter(
+            Article.section_id == library_section.id
+        ).order_by(db.func.coalesce(Article.embargo_date, Article.created_at).desc()).limit(5).all()
+    schedule_section = Section.query.filter_by(code='S1N5').first()
+    schedule_articles = []
+    if schedule_section:
+        schedule_articles = query.filter(
+            Article.section_id == schedule_section.id
+        ).order_by(db.func.coalesce(Article.embargo_date, Article.created_at).desc()).limit(5).all()
+    active_poll = Poll.query.filter_by(is_active=True).order_by(Poll.created_at.desc()).first()
+    book_subsection = SubSection.query.filter_by(code='S2N17').first()
+    book_articles = []
+    if book_subsection:
+        book_articles = query.filter(
+            Article.subsection_id == book_subsection.id
+        ).order_by(db.func.coalesce(Article.embargo_date, Article.created_at).desc()).limit(10).all()
+    tv_section = Section.query.filter_by(code='S1N3').first()
+    tv_articles = []
+    if tv_section:
+        tv_articles = query.filter(
+            Article.section_id == tv_section.id
+        ).order_by(db.func.coalesce(Article.embargo_date, Article.created_at).desc()).limit(8).all()
+    popular_articles = popular_today if popular_today else popular_week
+    return render_template('public/index_main1.html',
+                           headline_articles=headline_articles,
+                           latest_articles=latest_articles,
+                           popular_today=popular_today,
+                           popular_week=popular_week,
+                           popular_articles=popular_articles,
+                           section_articles=section_articles,
+                           opinion_articles=opinion_articles,
+                           library_articles=library_articles,
+                           schedule_articles=schedule_articles,
+                           active_poll=active_poll,
+                           book_articles=book_articles,
+                           tv_articles=tv_articles)
+
+
+@public_bp.route('/v1/')
+def index_v1():
+    """첫번째 디자인 (원본 base.html 기반)"""
+    query = _get_published_query()
+    headline_articles = []
+    for i in range(1, 4):
+        setting = SiteSetting.query.filter_by(key=f'hero_slot_{i}').first()
+        if setting and setting.value and setting.value.strip().isdigit():
+            art = query.filter(Article.id == int(setting.value)).first()
+            if art:
+                headline_articles.append(art)
+    if len(headline_articles) < 3:
+        existing_ids = [a.id for a in headline_articles]
+        auto = query.filter(
+            Article.level.in_(['T', 'I']),
+            ~Article.id.in_(existing_ids) if existing_ids else True
+        ).order_by(db.func.coalesce(Article.embargo_date, Article.created_at).desc()).limit(3 - len(headline_articles)).all()
+        headline_articles.extend(auto)
+    if len(headline_articles) < 3:
+        existing_ids = [a.id for a in headline_articles]
+        extra = query.filter(
+            ~Article.id.in_(existing_ids) if existing_ids else True
+        ).order_by(db.func.coalesce(Article.embargo_date, Article.created_at).desc()).limit(3 - len(headline_articles)).all()
+        headline_articles.extend(extra)
+    latest_articles = query.order_by(db.func.coalesce(Article.embargo_date, Article.created_at).desc()).limit(8).all()
+    popular_setting = SiteSetting.query.filter_by(key='popular_article_ids').first()
+    manual_popular = []
+    if popular_setting and popular_setting.value:
+        for aid in popular_setting.value.split(','):
+            aid = aid.strip()
+            if aid.isdigit():
+                art = Article.query.get(int(aid))
+                if art and not art.is_deleted and art.recognition == 'E':
+                    manual_popular.append(art)
+    weekly_setting = SiteSetting.query.filter_by(key='popular_weekly_article_ids').first()
+    manual_weekly = []
+    if weekly_setting and weekly_setting.value:
+        for aid in weekly_setting.value.split(','):
+            aid = aid.strip()
+            if aid.isdigit():
+                art = Article.query.get(int(aid))
+                if art and not art.is_deleted and art.recognition == 'E':
+                    manual_weekly.append(art)
+    if manual_popular:
+        popular_today = manual_popular[:5]
+    else:
+        today_start = datetime.now().replace(hour=0, minute=0, second=0, microsecond=0)
+        popular_today = _get_published_query().filter(
+            Article.created_at >= today_start
+        ).order_by(Article.view_count.desc()).limit(5).all()
+    if manual_weekly:
+        popular_week = manual_weekly[:5]
+    else:
+        popular_week = _get_published_query().order_by(Article.view_count.desc()).limit(5).all()
+    from app.models import article_extra_subsection
+    section_articles = {}
+    key_subsections = SubSection.query.join(Section).filter(
+        Section.code == 'S1N1'
+    ).order_by(SubSection.sort_order).all()
+    for sub in key_subsections[:16]:
+        articles = query.filter(
+            db.or_(
+                Article.subsection_id == sub.id,
+                Article.id.in_(
+                    db.session.query(article_extra_subsection.c.article_id).filter(
+                        article_extra_subsection.c.subsection_id == sub.id
+                    )
+                )
+            )
+        ).order_by(db.func.coalesce(Article.embargo_date, Article.created_at).desc()).limit(4).all()
+        if articles:
+            section_articles[sub] = articles
+    opinion_section = Section.query.filter_by(code='S1N2').first()
+    opinion_articles = []
+    if opinion_section:
+        opinion_articles = query.filter(
+            Article.section_id == opinion_section.id
+        ).order_by(db.func.coalesce(Article.embargo_date, Article.created_at).desc()).limit(4).all()
+    library_section = Section.query.filter_by(code='S1N4').first()
+    library_articles = []
+    if library_section:
+        library_articles = query.filter(
+            Article.section_id == library_section.id
+        ).order_by(db.func.coalesce(Article.embargo_date, Article.created_at).desc()).limit(5).all()
+    schedule_section = Section.query.filter_by(code='S1N5').first()
+    schedule_articles = []
+    if schedule_section:
+        schedule_articles = query.filter(
+            Article.section_id == schedule_section.id
+        ).order_by(db.func.coalesce(Article.embargo_date, Article.created_at).desc()).limit(5).all()
+    active_poll = Poll.query.filter_by(is_active=True).order_by(Poll.created_at.desc()).first()
+    book_subsection = SubSection.query.filter_by(code='S2N17').first()
+    book_articles = []
+    if book_subsection:
+        book_articles = query.filter(
+            Article.subsection_id == book_subsection.id
+        ).order_by(db.func.coalesce(Article.embargo_date, Article.created_at).desc()).limit(10).all()
+    tv_section = Section.query.filter_by(code='S1N3').first()
+    tv_articles = []
+    if tv_section:
+        tv_articles = query.filter(
+            Article.section_id == tv_section.id
+        ).order_by(db.func.coalesce(Article.embargo_date, Article.created_at).desc()).limit(8).all()
+    popular_articles = popular_today if popular_today else popular_week
+    return render_template('public/index_v1.html',
+                           headline_articles=headline_articles,
+                           latest_articles=latest_articles,
+                           popular_today=popular_today,
+                           popular_week=popular_week,
+                           popular_articles=popular_articles,
+                           section_articles=section_articles,
+                           opinion_articles=opinion_articles,
+                           library_articles=library_articles,
+                           schedule_articles=schedule_articles,
+                           active_poll=active_poll,
+                           book_articles=book_articles,
+                           tv_articles=tv_articles)
+
+
 @public_bp.route('/')
 def index():
     query = _get_published_query()
@@ -253,6 +491,125 @@ def index():
     popular_articles = popular_today if popular_today else popular_week
 
     return render_template('public/index.html',
+                           headline_articles=headline_articles,
+                           latest_articles=latest_articles,
+                           popular_today=popular_today,
+                           popular_week=popular_week,
+                           popular_articles=popular_articles,
+                           section_articles=section_articles,
+                           opinion_articles=opinion_articles,
+                           library_articles=library_articles,
+                           schedule_articles=schedule_articles,
+                           active_poll=active_poll,
+                           book_articles=book_articles,
+                           tv_articles=tv_articles)
+
+
+@public_bp.route('/v2/')
+def index_v2():
+    """v2 디자인 (Atlantic/STAT/Pressian 참고)"""
+    query = _get_published_query()
+    headline_articles = []
+    for i in range(1, 4):
+        setting = SiteSetting.query.filter_by(key=f'hero_slot_{i}').first()
+        if setting and setting.value and setting.value.strip().isdigit():
+            art = query.filter(Article.id == int(setting.value)).first()
+            if art:
+                headline_articles.append(art)
+    if len(headline_articles) < 3:
+        existing_ids = [a.id for a in headline_articles]
+        auto = query.filter(
+            Article.level.in_(['T', 'I']),
+            ~Article.id.in_(existing_ids) if existing_ids else True
+        ).order_by(db.func.coalesce(Article.embargo_date, Article.created_at).desc()).limit(3 - len(headline_articles)).all()
+        headline_articles.extend(auto)
+    if len(headline_articles) < 3:
+        existing_ids = [a.id for a in headline_articles]
+        extra = query.filter(
+            ~Article.id.in_(existing_ids) if existing_ids else True
+        ).order_by(db.func.coalesce(Article.embargo_date, Article.created_at).desc()).limit(3 - len(headline_articles)).all()
+        headline_articles.extend(extra)
+    latest_articles = query.order_by(db.func.coalesce(Article.embargo_date, Article.created_at).desc()).limit(8).all()
+    popular_setting = SiteSetting.query.filter_by(key='popular_article_ids').first()
+    manual_popular = []
+    if popular_setting and popular_setting.value:
+        for aid in popular_setting.value.split(','):
+            aid = aid.strip()
+            if aid.isdigit():
+                art = Article.query.get(int(aid))
+                if art and not art.is_deleted and art.recognition == 'E':
+                    manual_popular.append(art)
+    weekly_setting = SiteSetting.query.filter_by(key='popular_weekly_article_ids').first()
+    manual_weekly = []
+    if weekly_setting and weekly_setting.value:
+        for aid in weekly_setting.value.split(','):
+            aid = aid.strip()
+            if aid.isdigit():
+                art = Article.query.get(int(aid))
+                if art and not art.is_deleted and art.recognition == 'E':
+                    manual_weekly.append(art)
+    if manual_popular:
+        popular_today = manual_popular[:5]
+    else:
+        today_start = datetime.now().replace(hour=0, minute=0, second=0, microsecond=0)
+        popular_today = _get_published_query().filter(
+            Article.created_at >= today_start
+        ).order_by(Article.view_count.desc()).limit(5).all()
+    if manual_weekly:
+        popular_week = manual_weekly[:5]
+    else:
+        popular_week = _get_published_query().order_by(Article.view_count.desc()).limit(5).all()
+    from app.models import article_extra_subsection
+    section_articles = {}
+    key_subsections = SubSection.query.join(Section).filter(
+        Section.code == 'S1N1'
+    ).order_by(SubSection.sort_order).all()
+    for sub in key_subsections[:16]:
+        articles = query.filter(
+            db.or_(
+                Article.subsection_id == sub.id,
+                Article.id.in_(
+                    db.session.query(article_extra_subsection.c.article_id).filter(
+                        article_extra_subsection.c.subsection_id == sub.id
+                    )
+                )
+            )
+        ).order_by(db.func.coalesce(Article.embargo_date, Article.created_at).desc()).limit(4).all()
+        if articles:
+            section_articles[sub] = articles
+    opinion_section = Section.query.filter_by(code='S1N2').first()
+    opinion_articles = []
+    if opinion_section:
+        opinion_articles = query.filter(
+            Article.section_id == opinion_section.id
+        ).order_by(db.func.coalesce(Article.embargo_date, Article.created_at).desc()).limit(4).all()
+    library_section = Section.query.filter_by(code='S1N4').first()
+    library_articles = []
+    if library_section:
+        library_articles = query.filter(
+            Article.section_id == library_section.id
+        ).order_by(db.func.coalesce(Article.embargo_date, Article.created_at).desc()).limit(5).all()
+    schedule_section = Section.query.filter_by(code='S1N5').first()
+    schedule_articles = []
+    if schedule_section:
+        schedule_articles = query.filter(
+            Article.section_id == schedule_section.id
+        ).order_by(db.func.coalesce(Article.embargo_date, Article.created_at).desc()).limit(5).all()
+    active_poll = Poll.query.filter_by(is_active=True).order_by(Poll.created_at.desc()).first()
+    book_subsection = SubSection.query.filter_by(code='S2N17').first()
+    book_articles = []
+    if book_subsection:
+        book_articles = query.filter(
+            Article.subsection_id == book_subsection.id
+        ).order_by(db.func.coalesce(Article.embargo_date, Article.created_at).desc()).limit(10).all()
+    tv_section = Section.query.filter_by(code='S1N3').first()
+    tv_articles = []
+    if tv_section:
+        tv_articles = query.filter(
+            Article.section_id == tv_section.id
+        ).order_by(db.func.coalesce(Article.embargo_date, Article.created_at).desc()).limit(8).all()
+    popular_articles = popular_today if popular_today else popular_week
+    return render_template('public/index_v2.html',
                            headline_articles=headline_articles,
                            latest_articles=latest_articles,
                            popular_today=popular_today,
@@ -497,7 +854,12 @@ def article_view():
             ArticleComment.parent_id == None
         ).order_by(ArticleComment.like_count.desc()).limit(3).all()
 
-    return render_template('public/article_view.html',
+    # v2 디자인 선택 시 Atlantic 스타일 템플릿 사용
+    template = 'public/article_view.html'
+    if request.args.get('design') == 'v2':
+        template = 'public/article_view_v2.html'
+
+    return render_template(template,
                            article=article,
                            related_articles=related,
                            prev_article=prev_article,

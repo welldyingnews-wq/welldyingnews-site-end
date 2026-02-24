@@ -1,0 +1,350 @@
+{% extends "public/base_v2.html" %}
+{% block title %}{{ article.title }} — 웰다잉뉴스{% endblock %}
+{% block meta %}
+<meta property="og:type" content="article">
+<meta property="og:title" content="{{ article.title }}">
+<meta property="og:description" content="{{ article.summary_text|truncate(200) }}">
+<meta property="og:url" content="{{ request.url }}">
+{% if article.thumb_url %}
+<meta property="og:image" content="{{ article.thumb_url }}">
+{% endif %}
+<meta name="twitter:card" content="summary_large_image">
+<meta name="twitter:title" content="{{ article.title }}">
+{% endblock %}
+
+{% block extra_head %}
+<style>
+/* Article body content */
+.article-v2__body p { margin-bottom: 1.5em; }
+.article-v2__body img { max-width: 100%; height: auto; }
+.article-v2__body figure { margin: 2em -1.5rem; text-align: center; }
+@media (min-width: 768px) { .article-v2__body figure { margin: 2em -4rem; } }
+.article-v2__body figure img { width: 100%; }
+.article-v2__body figcaption {
+  margin-top: 0.5rem; padding: 0 1.5rem;
+  font-size: 0.8125rem; color: #999; line-height: 1.5; font-style: normal;
+}
+.article-v2__body a { color: var(--accent); text-decoration: underline; text-underline-offset: 3px; }
+.article-v2__body a:hover { color: var(--primary); }
+.article-v2__body blockquote {
+  border-left: 3px solid var(--accent); margin: 1.5em 0; padding: 0.5em 1.5em;
+  color: #555; font-style: italic;
+}
+.article-v2__body h2, .article-v2__body h3, .article-v2__body h4 {
+  margin: 2em 0 0.75em; font-family: var(--serif); line-height: 1.35;
+}
+
+/* Related articles */
+.article-v2__related {
+  margin: 3rem 0; padding: 1.5rem; background: #f8f8f6; border-radius: var(--radius-lg);
+}
+.article-v2__related h3 { font-size: 1rem; font-weight: 700; margin-bottom: 1rem; }
+.article-v2__related ul { list-style: none; }
+.article-v2__related li { padding: 0.375rem 0; font-size: 0.9375rem; line-height: 1.6; }
+.article-v2__related li::before { content: '→'; margin-right: 0.5rem; color: var(--accent); }
+.article-v2__related li a:hover { color: var(--accent); }
+
+/* Writer info */
+.article-v2__writer {
+  display: flex; align-items: center; gap: 1rem;
+  padding: 1.5rem 0; border-top: 1px solid var(--border); border-bottom: 1px solid var(--border);
+  margin: 2.5rem 0;
+}
+.article-v2__writer-avatar {
+  width: 50px; height: 50px; border-radius: 50%;
+  background: var(--primary); color: var(--primary-fg);
+  display: flex; align-items: center; justify-content: center;
+  font-family: var(--serif); font-weight: 700; font-size: 1.125rem;
+  flex-shrink: 0; overflow: hidden;
+}
+.article-v2__writer-avatar img { width: 100%; height: 100%; object-fit: cover; }
+.article-v2__writer-info { flex: 1; }
+.article-v2__writer-name { font-size: 0.9375rem; font-weight: 700; }
+.article-v2__writer-email { font-size: 0.8125rem; color: var(--muted-fg); margin-top: 0.125rem; }
+
+/* Prev/Next */
+.article-v2__nav {
+  display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; margin: 2rem 0;
+}
+.article-v2__nav a {
+  display: block; padding: 1rem; background: var(--secondary); border-radius: var(--radius-lg);
+  transition: background var(--transition);
+}
+.article-v2__nav a:hover { background: var(--muted); }
+.article-v2__nav-label { font-size: 0.75rem; color: var(--muted-fg); margin-bottom: 0.25rem; }
+.article-v2__nav-title { font-size: 0.875rem; font-weight: 500; line-height: 1.5; }
+.article-v2__nav--next { text-align: right; }
+
+/* Copyright */
+.article-v2__copyright {
+  margin: 2rem 0; padding: 1rem; text-align: center;
+  font-size: 0.8125rem; color: #999; background: #fafaf8; border-radius: var(--radius);
+}
+
+/* Comments */
+.article-v2__comments { margin: 3rem 0; }
+.cmt-header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 1.25rem; }
+.cmt-header .titles { font-size: 1.125rem; font-weight: 600; }
+.cmt-header .comment-count { color: var(--accent); }
+.cmt-sort { display: flex; gap: 0; }
+.sort-btn {
+  padding: 0.25rem 0.625rem; font-size: 0.8125rem; color: var(--muted-fg);
+  border: none; background: none; cursor: pointer;
+}
+.sort-btn.active { color: var(--accent); font-weight: 700; }
+.sort-btn + .sort-btn { border-left: 1px solid var(--border); }
+
+.comment-write {
+  background: var(--card); border: 1px solid var(--border); border-radius: var(--radius-lg);
+  margin-bottom: 1.5rem; overflow: hidden;
+}
+.comment-write .wrt-header { padding: 1rem 1.25rem; }
+#comment-guest { display: flex; gap: 0.375rem; }
+#comment-guest input {
+  height: 2rem; padding: 0 0.75rem; font-size: 0.8125rem;
+  border: 1px solid var(--border); border-radius: 999px; outline: none; width: 140px;
+}
+#comment-guest input:focus { border-color: var(--accent); }
+#comment-member { font-size: 0.9375rem; font-weight: 500; }
+.comment-write .comment-content {
+  display: block; min-height: 80px; width: 100%; padding: 0 1.25rem;
+  font-size: 0.9375rem; line-height: 1.6; border: none; resize: vertical; outline: none;
+}
+.comment-write .wrt-footer {
+  display: flex; align-items: center; justify-content: space-between;
+  padding: 0.5rem 1.25rem; border-top: 1px solid var(--border-light);
+}
+.comment-write .wrt-footer .cur--length { font-size: 0.75rem; color: var(--muted-fg); }
+.comment-write .wrt-footer .comment-text-cur { color: var(--fg); font-weight: 500; }
+.comment-write .wrt-footer .btn-comment-save {
+  height: 2rem; padding: 0 1rem; font-size: 0.8125rem; color: #fff;
+  border: none; border-radius: var(--radius); background: var(--primary); cursor: pointer;
+}
+.comment-write .wrt-footer .btn-comment-save:hover { background: var(--accent); }
+
+.comment-item .first {
+  padding: 1rem 0; border-top: 1px solid var(--border-light);
+}
+.comment-item .first::after { content: ''; display: table; clear: both; }
+.comment-item .photo { float: left; }
+.comment-item .photo > .pfile {
+  width: 40px; height: 40px; background: var(--muted); border-radius: 50%;
+}
+.comment-item .photo + .user-textbox { float: right; width: calc(100% - 55px); }
+.comment-item .textbox-info > .name { font-size: 0.875rem; font-weight: 600; }
+.comment-item .textbox-info > .datetime { font-size: 0.8125rem; color: var(--muted-fg); margin-left: 0.5rem; }
+.comment-item .comment-content-view {
+  font-size: 0.9375rem; line-height: 1.5; color: var(--fg); white-space: pre-wrap; word-break: break-word;
+}
+.comment-empty { padding: 2.5rem 0; text-align: center; font-size: 0.9375rem; color: var(--muted-fg); }
+
+/* Vote buttons */
+.comment-vote { display: inline-flex; gap: 0.375rem; margin-top: 0.5rem; }
+.comment-vote button {
+  display: inline-flex; align-items: center; gap: 0.25rem;
+  padding: 0.25rem 0.5rem; font-size: 0.75rem; border: 1px solid var(--border);
+  border-radius: var(--radius); color: var(--muted-fg); background: transparent; cursor: pointer;
+}
+.comment-vote button:hover { border-color: var(--accent); color: var(--accent); }
+
+/* Reply */
+.reply-item { margin-left: 2.5rem; }
+.reply-item .first { border-top: 1px dashed var(--border-light); }
+</style>
+{% endblock %}
+
+{% block content %}
+<article class="article-v2">
+  <!-- Section tag -->
+  {% if article.section %}
+  <div class="article-v2__section">
+    <a href="/news/articleList.html?sc_section_code={{ article.section.code }}">{{ article.section.name }}</a>
+  </div>
+  {% endif %}
+
+  <!-- Title -->
+  <h1 class="article-v2__title">{{ article.title }}</h1>
+
+  <!-- Subtitle -->
+  {% if article.subtitle %}
+  <p class="article-v2__subtitle">{{ article.subtitle }}</p>
+  {% endif %}
+
+  <!-- Byline -->
+  <p class="article-v2__byline">By {{ article.author_name or '웰다잉뉴스' }}</p>
+
+  <!-- Hero image -->
+  {% if article.thumb_url %}
+  <div class="article-v2__hero-img">
+    <img src="{{ article.thumb_url }}" alt="{{ article.title }}">
+  </div>
+  {% if article.photo_caption %}
+  <p class="article-v2__caption">{{ article.photo_caption }}</p>
+  {% endif %}
+  {% endif %}
+
+  <!-- Meta bar -->
+  <div class="article-v2__meta">
+    <time>{{ article.created_at.strftime('%Y년 %m월 %d일 %H:%M') if article.created_at else '' }}</time>
+    <div class="article-v2__meta-actions">
+      <button onclick="navigator.share && navigator.share({title:'{{ article.title }}', url:location.href})">
+        <i class="fa-solid fa-arrow-up-from-bracket"></i> 공유
+      </button>
+    </div>
+  </div>
+
+  <!-- Body -->
+  <div class="article-v2__body" id="article-view-content-div">
+    {{ article.content | safe }}
+  </div>
+
+  <!-- Related articles -->
+  {% if related_articles %}
+  <div class="article-v2__related">
+    <h3>관련 기사</h3>
+    <ul>
+      {% for rel in related_articles %}
+      <li><a href="/news/articleView.html?idxno={{ rel.id }}">{{ rel.title }}</a></li>
+      {% endfor %}
+    </ul>
+  </div>
+  {% endif %}
+
+  <!-- Writer -->
+  <div class="article-v2__writer">
+    <div class="article-v2__writer-avatar">
+      {{ article.author_name[:1] if article.author_name else '기' }}
+    </div>
+    <div class="article-v2__writer-info">
+      <div class="article-v2__writer-name">{{ article.author_name or '웰다잉뉴스' }}</div>
+      {% if article.author_email %}
+      <div class="article-v2__writer-email">{{ article.author_email }}</div>
+      {% endif %}
+    </div>
+  </div>
+
+  <!-- Copyright -->
+  <div class="article-v2__copyright">
+    Copyright &copy; 웰다잉뉴스. 무단전재 및 재배포 금지.
+  </div>
+
+  <!-- Prev/Next -->
+  <div class="article-v2__nav">
+    {% if prev_article %}
+    <a href="/news/articleView.html?idxno={{ prev_article.id }}">
+      <div class="article-v2__nav-label"><i class="fa-solid fa-chevron-left" style="font-size:0.625rem"></i> 이전 기사</div>
+      <div class="article-v2__nav-title line-clamp-2">{{ prev_article.title }}</div>
+    </a>
+    {% else %}<div></div>{% endif %}
+    {% if next_article %}
+    <a href="/news/articleView.html?idxno={{ next_article.id }}" class="article-v2__nav--next">
+      <div class="article-v2__nav-label">다음 기사 <i class="fa-solid fa-chevron-right" style="font-size:0.625rem"></i></div>
+      <div class="article-v2__nav-title line-clamp-2">{{ next_article.title }}</div>
+    </a>
+    {% else %}<div></div>{% endif %}
+  </div>
+
+  <!-- Comments -->
+  {% if comment_use != 'N' %}
+  <div class="article-v2__comments" id="comment">
+    <div class="cmt-header">
+      <span class="titles">댓글 <span class="comment-count">{{ comment_count }}</span></span>
+      <div class="cmt-sort">
+        <a href="?idxno={{ article.id }}&csort=newest#comment" class="sort-btn {% if comment_sort == 'newest' %}active{% endif %}">최신순</a>
+        <a href="?idxno={{ article.id }}&csort=oldest#comment" class="sort-btn {% if comment_sort == 'oldest' %}active{% endif %}">등록순</a>
+      </div>
+    </div>
+
+    <!-- Write comment -->
+    <form method="post" action="/news/comment/write" class="comment-write">
+      <div class="wrt-header">
+        {% if current_member %}
+        <div id="comment-member">{{ current_member.name }}님</div>
+        {% else %}
+        <div id="comment-guest">
+          <input type="text" name="author_name" placeholder="이름" maxlength="20">
+          <input type="password" name="password" placeholder="비밀번호" maxlength="20">
+        </div>
+        {% endif %}
+      </div>
+      <input type="hidden" name="article_id" value="{{ article.id }}">
+      <textarea name="content" class="comment-content" placeholder="댓글을 입력하세요..." maxlength="{{ comment_max_length }}" id="commentTextarea"></textarea>
+      <div class="wrt-footer">
+        <span class="cur--length"><span class="comment-text-cur" id="commentCur">0</span> / {{ comment_max_length }}</span>
+        <button type="submit" class="btn-comment-save">등록</button>
+      </div>
+    </form>
+
+    <!-- Comment list -->
+    <div id="comment-list">
+      {% if not comments %}
+      <div class="comment-empty">아직 댓글이 없습니다. 첫 댓글을 남겨보세요!</div>
+      {% endif %}
+      <div class="normal-content">
+        {% for cmt in comments %}
+        <div class="comment-item">
+          <div class="first">
+            <div class="photo"><div class="pfile"></div></div>
+            <div class="user-textbox">
+              <div class="textbox-header">
+                <div class="textbox-info">
+                  <span class="name">{{ cmt.author_name }}</span>
+                  <span class="datetime">{{ cmt.created_at.strftime('%Y.%m.%d %H:%M') if cmt.created_at else '' }}</span>
+                </div>
+              </div>
+              <div class="comment-content-view">{{ cmt.content }}</div>
+              <div class="comment-vote">
+                <button onclick="voteComment({{ cmt.id }},'like')"><i class="fa-regular fa-thumbs-up"></i> <span id="clike{{ cmt.id }}">{{ cmt.like_count or 0 }}</span></button>
+                <button onclick="voteComment({{ cmt.id }},'dislike')"><i class="fa-regular fa-thumbs-down"></i> <span id="cdislike{{ cmt.id }}">{{ cmt.dislike_count or 0 }}</span></button>
+              </div>
+            </div>
+          </div>
+          {% for reply in cmt.children.filter_by(is_hidden=False).all() %}
+          <div class="comment-item reply-item">
+            <div class="first">
+              <div class="photo"><div class="pfile"></div></div>
+              <div class="user-textbox">
+                <div class="textbox-header">
+                  <div class="textbox-info">
+                    <span class="name">{{ reply.author_name }}</span>
+                    <span class="datetime">{{ reply.created_at.strftime('%Y.%m.%d %H:%M') if reply.created_at else '' }}</span>
+                  </div>
+                </div>
+                <div class="comment-content-view">{{ reply.content }}</div>
+              </div>
+            </div>
+          </div>
+          {% endfor %}
+        </div>
+        {% endfor %}
+      </div>
+    </div>
+  </div>
+  {% endif %}
+</article>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+/* Comment char counter */
+var ta = document.getElementById('commentTextarea');
+var cur = document.getElementById('commentCur');
+if (ta && cur) {
+  ta.addEventListener('input', function(){ cur.textContent = ta.value.length; });
+}
+
+/* Comment vote */
+function voteComment(id, type) {
+  var fd = new FormData();
+  fd.append('comment_id', id);
+  fd.append('vote_type', type);
+  fetch('/news/comment/vote', { method: 'POST', body: fd })
+    .then(function(r){ return r.json(); })
+    .then(function(d){
+      if (d.error === 'already_voted') { alert('이미 투표하셨습니다.'); }
+      document.getElementById('clike'+id).textContent = d.like || 0;
+      document.getElementById('cdislike'+id).textContent = d.dislike || 0;
+    });
+}
+</script>
+{% endblock %}

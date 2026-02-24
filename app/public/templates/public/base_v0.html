@@ -1,0 +1,184 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="description" content="삶과 죽음의 존엄성을 전하는 웰다잉뉴스">
+<meta property="og:type" content="website">
+<meta property="og:title" content="웰다잉뉴스">
+<meta property="og:site_name" content="웰다잉뉴스">
+<meta property="og:description" content="삶과 죽음의 존엄성을 전하는 웰다잉뉴스">
+<meta property="og:url" content="{{ request.url }}">
+<meta property="og:image" content="{{ request.url_root }}static/images/og_default.png">
+<meta name="twitter:card" content="summary_large_image">
+
+<title>{% block title %}웰다잉뉴스 — 존엄한 삶의 마무리를 위한 전문 미디어{% endblock %}</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@300;400;500;700&family=Noto+Serif+KR:wght@400;600;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+<link rel="stylesheet" href="/static/css/public_v0.css">
+{% block extra_css %}{% endblock %}
+</head>
+<body>
+
+<!-- =========== UTILITY BAR =========== -->
+<div class="utilbar">
+  <div class="utilbar__inner">
+    <span class="utilbar__slogan">존엄한 삶의 마무리를 위한 전문 미디어</span>
+    <div class="utilbar__links">
+      <a href="/news/articleList.html?sc_section_code=S1N6">뉴스레터 구독</a>
+      <a href="#">소개</a>
+    </div>
+  </div>
+</div>
+
+<!-- =========== HEADER =========== -->
+<header class="header">
+  <div class="header__main">
+    <!-- Mobile hamburger -->
+    <button class="header__hamburger" onclick="toggleMob()" aria-label="메뉴 열기">
+      <i class="fa-solid fa-bars"></i>
+    </button>
+
+    <!-- Logo -->
+    <a href="/" class="header__logo">
+      <span class="header__logo-title">웰다잉뉴스</span>
+      <span class="header__logo-sub">WellDying News</span>
+    </a>
+
+    <!-- Right actions -->
+    <div class="header__actions">
+      <button class="header__icon-btn" onclick="toggleSearch()" aria-label="검색">
+        <i class="fa-solid fa-magnifying-glass"></i>
+      </button>
+      <a href="/news/articleList.html?sc_section_code=S1N6" class="header__cta">뉴스레터 구독</a>
+    </div>
+  </div>
+
+  <!-- Search bar (toggle) -->
+  <div class="header__search" id="headerSearch">
+    <div class="header__search-wrap">
+      <i class="fa-solid fa-magnifying-glass"></i>
+      <form method="get" action="/news/articleList.html">
+        <input type="hidden" name="sc_area" value="A">
+        <input type="hidden" name="view_type" value="sm">
+        <input type="text" name="sc_word" placeholder="기사 검색..." autofocus>
+      </form>
+    </div>
+  </div>
+
+  <!-- Desktop category nav -->
+  <nav class="catnav" aria-label="카테고리 네비게이션">
+    <div class="catnav__inner">
+      <ul class="catnav__list">
+        {% for sec in nav_sections %}
+        <li>
+          <a href="/news/articleList.html?sc_section_code={{ sec.code }}"
+             class="catnav__link{% if loop.first %} catnav__link--active{% endif %}">{{ sec.name }}</a>
+        </li>
+        {% endfor %}
+        {% for board in nav_boards %}
+        <li>
+          <a href="/bbs/list.html?table={{ board.id }}" class="catnav__link">{{ board.name }}</a>
+        </li>
+        {% endfor %}
+      </ul>
+    </div>
+  </nav>
+</header>
+
+<!-- =========== MOBILE NAV =========== -->
+<div class="mobnav-overlay" id="mobOverlay" onclick="toggleMob()"></div>
+<nav class="mobnav" id="mobNav">
+  <div class="mobnav__head">
+    <span class="mobnav__logo">웰다잉뉴스</span>
+    <button class="mobnav__close" onclick="toggleMob()"><i class="fa-solid fa-xmark"></i></button>
+  </div>
+  <div class="mobnav__body">
+    {% for sec in nav_sections %}
+    <a href="/news/articleList.html?sc_section_code={{ sec.code }}" class="mobnav__link"
+       onclick="toggleMob()">{{ sec.name }}</a>
+    {% endfor %}
+    {% for board in nav_boards %}
+    <a href="/bbs/list.html?table={{ board.id }}" class="mobnav__link"
+       onclick="toggleMob()">{{ board.name }}</a>
+    {% endfor %}
+    <div class="mobnav__divider"></div>
+    <a href="/news/articleList.html?sc_section_code=S1N6" class="mobnav__link" onclick="toggleMob()">뉴스레터 구독</a>
+    <a href="#" class="mobnav__link" onclick="toggleMob()">소개</a>
+  </div>
+</nav>
+
+<!-- =========== MAIN CONTENT =========== -->
+<main>
+{% block content %}{% endblock %}
+</main>
+
+<!-- =========== FOOTER =========== -->
+<footer class="footer">
+  <div class="footer__inner">
+    <div class="footer__grid">
+      <!-- Branding -->
+      <div>
+        <div class="footer__brand-title">웰다잉뉴스</div>
+        <p class="footer__brand-desc">존엄한 삶의 마무리를 위한 전문 미디어</p>
+      </div>
+      <!-- Categories -->
+      <div>
+        <div class="footer__col-title">카테고리</div>
+        {% for sec in nav_sections[:5] %}
+        <a href="/news/articleList.html?sc_section_code={{ sec.code }}" class="footer__link">{{ sec.name }}</a>
+        {% endfor %}
+      </div>
+      <!-- More -->
+      <div>
+        <div class="footer__col-title">더보기</div>
+        {% for sec in nav_sections[5:] %}
+        <a href="/news/articleList.html?sc_section_code={{ sec.code }}" class="footer__link">{{ sec.name }}</a>
+        {% endfor %}
+        {% for board in nav_boards[:3] %}
+        <a href="/bbs/list.html?table={{ board.id }}" class="footer__link">{{ board.name }}</a>
+        {% endfor %}
+      </div>
+      <!-- Info -->
+      <div>
+        <div class="footer__col-title">웰다잉뉴스</div>
+        <a href="#" class="footer__link">소개</a>
+        <a href="/news/articleList.html?sc_section_code=S1N6" class="footer__link">뉴스레터</a>
+        <a href="/news/articleList.html?sc_section_code=S1N4" class="footer__link">자료실</a>
+        {% if current_member %}
+        <a href="/member/mypage.html" class="footer__link">마이페이지</a>
+        {% endif %}
+        <a href="/admin/login" class="footer__link">관리자</a>
+      </div>
+    </div>
+    <div class="footer__bottom">
+      <p class="footer__copy">Copyright {{ "2026" }} 웰다잉뉴스. All rights reserved.</p>
+      <div class="footer__legal">
+        <a href="#">개인정보처리방침</a>
+        <a href="#">이용약관</a>
+      </div>
+    </div>
+  </div>
+</footer>
+
+<!-- =========== SCRIPTS =========== -->
+<script>
+/* Mobile nav */
+function toggleMob() {
+  document.getElementById('mobNav').classList.toggle('open');
+  document.getElementById('mobOverlay').classList.toggle('open');
+}
+
+/* Search toggle */
+function toggleSearch() {
+  const s = document.getElementById('headerSearch');
+  s.classList.toggle('open');
+  if (s.classList.contains('open')) {
+    s.querySelector('input[name="sc_word"]').focus();
+  }
+}
+</script>
+{% block extra_js %}{% endblock %}
+</body>
+</html>

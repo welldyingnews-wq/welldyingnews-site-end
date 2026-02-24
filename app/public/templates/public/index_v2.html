@@ -1,0 +1,434 @@
+{% extends "public/base_v2.html" %}
+
+{% block content %}
+
+<!-- =========== BREAKING TICKER =========== -->
+{% if headline_articles %}
+<div class="ticker">
+  <div class="ticker__inner">
+    <span class="ticker__badge">속보</span>
+    <div class="ticker__track">
+      <div class="ticker__scroll" id="tickerScroll">
+        {% for art in headline_articles %}
+        <span class="ticker__item"><a href="/news/articleView.html?idxno={{ art.id }}">{{ art.title }}</a></span>
+        {% endfor %}
+        {% for art in headline_articles %}
+        <span class="ticker__item"><a href="/news/articleView.html?idxno={{ art.id }}">{{ art.title }}</a></span>
+        {% endfor %}
+      </div>
+    </div>
+  </div>
+</div>
+{% endif %}
+
+<!-- =========== HERO SLIDER (image-driven) =========== -->
+{% if headline_articles %}
+<section class="hero" id="heroSection">
+  {% for art in headline_articles %}
+  <div class="hero__bg" id="heroBg{{ loop.index0 }}"
+       style="background-image: url('{{ art.thumb_url or '/static/images/og_default.png' }}');{% if not loop.first %} opacity:0;{% endif %}">
+  </div>
+  {% endfor %}
+
+  <div class="hero__inner">
+    {% for art in headline_articles %}
+    <div class="hero__content hero__slide" {% if not loop.first %}style="display:none"{% endif %}>
+      <span class="hero__tag">{% if art.section %}{{ art.section.name }}{% endif %}</span>
+      <h2 class="hero__title">{{ art.title }}</h2>
+      {% if art.subtitle %}
+      <p class="hero__excerpt">{{ art.subtitle }}</p>
+      {% endif %}
+      <div class="hero__meta">
+        <span class="hero__date">{{ art.created_at.strftime('%Y.%m.%d') if art.created_at else '' }}</span>
+        <a href="/news/articleView.html?idxno={{ art.id }}" class="hero__link">자세히 보기</a>
+      </div>
+    </div>
+    {% endfor %}
+  </div>
+
+  <div class="hero__dots">
+    {% for art in headline_articles %}
+    <button class="hero__dot{% if loop.first %} hero__dot--active{% endif %}" onclick="heroGo({{ loop.index0 }})" aria-label="슬라이드 {{ loop.index }}"></button>
+    {% endfor %}
+  </div>
+
+  <div class="hero__nav">
+    <button class="hero__nav-btn" onclick="heroNav(-1)" aria-label="이전"><i class="fa-solid fa-chevron-left"></i></button>
+    <span class="hero__nav-count" id="heroCount">1 / {{ headline_articles|length }}</span>
+    <button class="hero__nav-btn" onclick="heroNav(1)" aria-label="다음"><i class="fa-solid fa-chevron-right"></i></button>
+  </div>
+</section>
+{% endif %}
+
+<!-- =========== MAIN: LATEST + SIDEBAR =========== -->
+<div class="container section-gap">
+  <div class="main-grid">
+
+    <!-- Content -->
+    <div>
+      <div class="sec-head">
+        <span class="sec-head__title">최신 기사</span>
+        <span class="sec-head__line"></span>
+      </div>
+      <div class="latest-list">
+        {% for art in latest_articles %}
+        <a href="/news/articleView.html?idxno={{ art.id }}" class="latest-item">
+          <div class="latest-item__body">
+            <div class="latest-item__meta">
+              <span class="latest-item__cat">{% if art.subsection %}{{ art.subsection.name }}{% elif art.section %}{{ art.section.name }}{% endif %}</span>
+              {% if loop.index <= 2 %}<span class="latest-item__new">NEW</span>{% endif %}
+            </div>
+            <h4 class="latest-item__title line-clamp-2">{{ art.title }}</h4>
+          </div>
+          <time class="latest-item__date tabular-nums">{{ art.created_at.strftime('%Y.%m.%d') if art.created_at else '' }}</time>
+        </a>
+        {% endfor %}
+      </div>
+    </div>
+
+    <!-- Sidebar -->
+    <aside>
+      {% if popular_today or popular_week %}
+      <div class="sec-head">
+        <span class="sec-head__title">인기 기사</span>
+      </div>
+      <div class="pop-tabs">
+        <button class="pop-tab pop-tab--active" onclick="switchPop(this,'popWeek')">주간</button>
+        <button class="pop-tab" onclick="switchPop(this,'popToday')">오늘</button>
+      </div>
+      <div class="pop-list" id="popWeek">
+        {% for art in popular_week %}
+        <a href="/news/articleView.html?idxno={{ art.id }}" class="pop-item">
+          <span class="pop-num {{ 'pop-num--top' if loop.index <= 3 else 'pop-num--rest' }}">{{ loop.index }}</span>
+          {% if art.thumb_url %}<span class="pop-thumb"><img src="{{ art.thumb_url }}" alt="" loading="lazy"></span>{% endif %}
+          <span class="pop-title line-clamp-2">{{ art.title }}</span>
+        </a>
+        {% endfor %}
+      </div>
+      <div class="pop-list" id="popToday" style="display:none">
+        {% for art in popular_today %}
+        <a href="/news/articleView.html?idxno={{ art.id }}" class="pop-item">
+          <span class="pop-num {{ 'pop-num--top' if loop.index <= 3 else 'pop-num--rest' }}">{{ loop.index }}</span>
+          {% if art.thumb_url %}<span class="pop-thumb"><img src="{{ art.thumb_url }}" alt="" loading="lazy"></span>{% endif %}
+          <span class="pop-title line-clamp-2">{{ art.title }}</span>
+        </a>
+        {% endfor %}
+      </div>
+      {% endif %}
+    </aside>
+
+  </div>
+</div>
+
+<!-- =========== CATEGORY SECTIONS =========== -->
+{% if section_articles %}
+<div class="container section-gap" style="border-top: 1px solid var(--border); padding-top: 2.5rem;">
+  <div class="sec-head">
+    <span class="sec-head__title">카테고리별 기사</span>
+    <span class="sec-head__line"></span>
+  </div>
+
+  <div class="cat-pills" id="catPills">
+    {% for sub, arts in section_articles.items() %}
+    <button class="cat-pill{% if loop.first %} cat-pill--active{% endif %}" data-cat="{{ sub.code }}" onclick="switchCat(this)">{{ sub.name }}</button>
+    {% endfor %}
+  </div>
+
+  {% for sub, arts in section_articles.items() %}
+  <div class="cat-panel" data-cat="{{ sub.code }}" {% if not loop.first %}style="display:none"{% endif %}>
+    <div class="card-grid">
+      {% for art in arts[:3] %}
+      <a href="/news/articleView.html?idxno={{ art.id }}" class="v2-card">
+        <div class="v2-card__cat">{% if art.subsection %}{{ art.subsection.name }}{% elif art.section %}{{ art.section.name }}{% endif %}</div>
+        <h4 class="v2-card__title line-clamp-2">{{ art.title }}</h4>
+        {% if art.subtitle %}<p class="v2-card__excerpt line-clamp-2">{{ art.subtitle }}</p>{% endif %}
+        <div class="v2-card__date">{{ art.created_at.strftime('%Y.%m.%d') if art.created_at else '' }}</div>
+      </a>
+      {% endfor %}
+    </div>
+    <div style="text-align:center; margin-top:1.5rem;">
+      <a href="/news/articleList.html?sc_sub_section_code={{ sub.code }}" class="viewall">{{ sub.name }} 전체보기</a>
+    </div>
+  </div>
+  {% endfor %}
+</div>
+{% endif %}
+
+<!-- =========== COLUMNISTS (오피니언) =========== -->
+{% if opinion_articles %}
+<div class="container section-gap">
+  <div class="sec-head">
+    <span class="sec-head__title">칼럼니스트</span>
+    <span class="sec-head__line"></span>
+  </div>
+  <div class="col-grid">
+    {% for art in opinion_articles %}
+    <a href="/news/articleView.html?idxno={{ art.id }}" class="col-card">
+      <div class="col-avatar">
+        {% if art.thumb_url %}<img src="{{ art.thumb_url }}" alt="">{% else %}{{ art.author_name[:1] if art.author_name else '필' }}{% endif %}
+      </div>
+      <div class="col-info">
+        <div>
+          <span class="col-name">{{ art.author_name or '웰다잉뉴스' }}</span>
+          {% if art.subsection %}<span class="col-role">{{ art.subsection.name }}</span>{% endif %}
+        </div>
+        <h4 class="col-title line-clamp-2">{{ art.title }}</h4>
+      </div>
+    </a>
+    {% endfor %}
+  </div>
+</div>
+{% endif %}
+
+<!-- =========== BOOKS — Pressian-inspired =========== -->
+{% if book_articles %}
+<div class="books-section-wrap">
+  <div class="container">
+    <div class="books-header">
+      <span class="books-header__title">Books</span>
+      <a href="/news/articleList.html?sc_sub_section_code=S2N17" class="books-header__more">더보기 <i class="fa-solid fa-chevron-right" style="font-size:0.625rem"></i></a>
+    </div>
+
+    <div style="position:relative;">
+      <!-- Featured book -->
+      {% for art in book_articles %}
+      <div class="books-featured" id="bookSlide{{ loop.index0 }}" {% if not loop.first %}style="display:none"{% endif %}>
+        <div class="books-featured__cover">
+          {% if art.thumb_url %}
+          <img src="{{ art.thumb_url }}" alt="{{ art.title }}">
+          {% else %}
+          <div style="width:200px;height:280px;background:#d5d3cf;display:flex;align-items:center;justify-content:center;font-family:var(--serif);padding:1rem;text-align:center;color:#666;">{{ art.title }}</div>
+          {% endif %}
+        </div>
+        <div class="books-featured__info">
+          <span class="books-featured__tag">{% if art.subsection %}{{ art.subsection.name }}{% else %}도서·출판{% endif %}</span>
+          <h3 class="books-featured__quote line-clamp-3">{{ art.title }}</h3>
+          {% if art.subtitle %}
+          <p class="books-featured__desc line-clamp-3">{{ art.subtitle }}</p>
+          {% endif %}
+          <span class="books-featured__author">{{ art.author_name or '웰다잉뉴스' }}</span>
+        </div>
+      </div>
+      {% endfor %}
+
+      <!-- Nav arrows -->
+      <button class="books-nav-arrow books-nav-arrow--prev" onclick="bookNav(-1)" aria-label="이전 도서"><i class="fa-solid fa-chevron-left"></i></button>
+      <button class="books-nav-arrow books-nav-arrow--next" onclick="bookNav(1)" aria-label="다음 도서"><i class="fa-solid fa-chevron-right"></i></button>
+    </div>
+
+    <!-- Thumbnail row -->
+    <div class="books-thumbs">
+      {% for art in book_articles %}
+      <a href="javascript:void(0)" class="books-thumb-card" onclick="bookGo({{ loop.index0 }})">
+        {% if art.thumb_url %}
+        <img src="{{ art.thumb_url }}" alt="{{ art.title }}" loading="lazy">
+        {% else %}
+        <div style="width:100%;aspect-ratio:3/4;background:#d5d3cf;border-radius:0.25rem;"></div>
+        {% endif %}
+      </a>
+      {% endfor %}
+    </div>
+  </div>
+</div>
+{% endif %}
+
+<!-- =========== VIDEO (웰다잉TV) =========== -->
+{% if tv_articles %}
+<div class="container section-gap">
+  <div class="sec-head">
+    <span class="sec-head__title">웰다잉TV</span>
+    <span class="sec-head__line"></span>
+    <a href="/news/articleList.html?sc_section_code=S1N3" class="sec-head__more">전체보기</a>
+  </div>
+  <div class="vid-grid">
+    {% for art in tv_articles[:3] %}
+    <a href="/news/articleView.html?idxno={{ art.id }}" class="vid-card">
+      <div class="vid-thumb">
+        {% if art.thumb_url %}<img src="{{ art.thumb_url }}" alt="" loading="lazy">{% endif %}
+        <div class="vid-play"><i class="fa-solid fa-play"></i></div>
+      </div>
+      <div class="vid-card__body">
+        <h4 class="vid-card__title line-clamp-2">{{ art.title }}</h4>
+        <time class="vid-card__date">{{ art.created_at.strftime('%Y.%m.%d') if art.created_at else '' }}</time>
+      </div>
+    </a>
+    {% endfor %}
+  </div>
+</div>
+{% endif %}
+
+<!-- =========== EVENTS — STAT News-inspired =========== -->
+{% if schedule_articles %}
+<div class="events-section-wrap">
+  <div class="container">
+    <div class="events-header">
+      <div></div>
+      <div class="events-header__nav">
+        <button class="events-header__nav-btn" onclick="eventNav(-1)" aria-label="이전"><i class="fa-solid fa-arrow-left" style="font-size:0.75rem"></i></button>
+        <button class="events-header__nav-btn" onclick="eventNav(1)" aria-label="다음"><i class="fa-solid fa-arrow-right" style="font-size:0.75rem"></i></button>
+      </div>
+    </div>
+
+    <div class="events-layout">
+      <!-- Left description -->
+      <div class="events-sidebar">
+        <div class="events-sidebar__label">웰다잉뉴스</div>
+        <h3 class="events-sidebar__title">행사 일정</h3>
+        <p class="events-sidebar__desc">웰다잉 관련 세미나, 컨퍼런스, 교육 프로그램 등 다양한 행사 정보를 확인하세요.</p>
+        <a href="/news/articleList.html?sc_section_code=S1N5" class="events-sidebar__link">전체 일정 보기 <i class="fa-solid fa-chevron-right" style="font-size:0.625rem"></i></a>
+      </div>
+
+      <!-- Featured event image -->
+      {% if schedule_articles[0] %}
+      <div class="events-featured">
+        {% if schedule_articles[0].thumb_url %}
+        <img src="{{ schedule_articles[0].thumb_url }}" alt="" class="events-featured__img" loading="lazy">
+        {% else %}
+        <div style="width:100%;aspect-ratio:4/3;background:linear-gradient(135deg,#2a6b6b,#1a4a4a);display:flex;align-items:center;justify-content:center;border-radius:var(--radius-lg);">
+          <i class="fa-regular fa-calendar" style="font-size:3rem;color:rgba(255,255,255,0.3)"></i>
+        </div>
+        {% endif %}
+        <div class="events-featured__badge">
+          <div class="events-featured__badge-day">{{ schedule_articles[0].created_at.strftime('%d') if schedule_articles[0].created_at else '--' }}</div>
+          <div class="events-featured__badge-mon">{{ schedule_articles[0].created_at.strftime('%b').upper() if schedule_articles[0].created_at else '' }}</div>
+        </div>
+      </div>
+
+      <!-- Featured event info -->
+      <div class="events-featured-info">
+        <h3 class="events-featured-info__title">
+          <a href="/news/articleView.html?idxno={{ schedule_articles[0].id }}">{{ schedule_articles[0].title }}</a>
+        </h3>
+        <div class="events-featured-info__meta">
+          {{ schedule_articles[0].author_name or '' }}
+          {% if schedule_articles[0].created_at %}
+          <span style="margin-left:0.5rem;">|</span>
+          <span style="margin-left:0.5rem;">{{ schedule_articles[0].created_at.strftime('%Y년 %m월 %d일') }}</span>
+          {% endif %}
+        </div>
+      </div>
+      {% endif %}
+    </div>
+
+    <!-- Small event cards -->
+    {% if schedule_articles|length > 1 %}
+    <div class="events-cards">
+      {% for art in schedule_articles[1:4] %}
+      <a href="/news/articleView.html?idxno={{ art.id }}" class="event-card">
+        <div class="event-card__badge">
+          <div class="event-card__badge-day">{{ art.created_at.strftime('%d') if art.created_at else '--' }}</div>
+          <div class="event-card__badge-mon">{{ art.created_at.strftime('%b').upper() if art.created_at else '' }}</div>
+        </div>
+        <div class="event-card__body">
+          <h4 class="event-card__title line-clamp-2">{{ art.title }}</h4>
+          <div class="event-card__place">{{ art.author_name or '웰다잉뉴스' }}</div>
+        </div>
+      </a>
+      {% endfor %}
+    </div>
+    {% endif %}
+  </div>
+</div>
+{% endif %}
+
+<!-- =========== RESOURCES (자료실) =========== -->
+{% if library_articles %}
+<div class="container section-gap">
+  <div class="sec-head">
+    <span class="sec-head__title">자료실</span>
+    <span class="sec-head__line"></span>
+    <a href="/news/articleList.html?sc_section_code=S1N4" class="sec-head__more">전체보기</a>
+  </div>
+  <div class="res-list">
+    {% for art in library_articles %}
+    <a href="/news/articleView.html?idxno={{ art.id }}" class="res-item">
+      <span class="res-badge">자료</span>
+      <div class="res-body">
+        <h4 class="res-title line-clamp-2">{{ art.title }}</h4>
+        <div class="res-org">{{ art.author_name or '웰다잉뉴스' }}</div>
+      </div>
+    </a>
+    {% endfor %}
+  </div>
+</div>
+{% endif %}
+
+<!-- =========== NEWSLETTER CTA =========== -->
+<div class="container section-gap">
+  <div class="newsletter">
+    <div class="newsletter__inner">
+      <div class="newsletter__text">
+        <div class="newsletter__title-wrap">
+          <i class="fa-regular fa-envelope"></i>
+          <span class="newsletter__title">뉴스레터 구독</span>
+        </div>
+        <p class="newsletter__desc">웰다잉뉴스의 주요 기사를 매주 이메일로 받아보세요.</p>
+      </div>
+      <form class="newsletter__form" action="/news/articleList.html?sc_section_code=S1N6" method="get">
+        <input type="email" class="newsletter__input" placeholder="이메일 주소 입력">
+        <button type="submit" class="newsletter__btn">구독</button>
+      </form>
+    </div>
+  </div>
+</div>
+
+{% endblock %}
+
+{% block extra_js %}
+<script>
+/* ===== Hero Slider ===== */
+(function(){
+  var slides = document.querySelectorAll('.hero__slide');
+  var bgs = document.querySelectorAll('.hero__bg');
+  var dots = document.querySelectorAll('.hero__dot');
+  var countEl = document.getElementById('heroCount');
+  if (!slides.length) return;
+  var cur = 0, total = slides.length;
+
+  function show(idx) {
+    slides.forEach(function(s,i){ s.style.display = i===idx ? '' : 'none'; });
+    bgs.forEach(function(b,i){ b.style.opacity = i===idx ? '1' : '0'; });
+    dots.forEach(function(d,i){ d.classList.toggle('hero__dot--active', i===idx); });
+    if (countEl) countEl.textContent = (idx+1) + ' / ' + total;
+    cur = idx;
+  }
+  window.heroNav = function(dir){ show((cur+dir+total)%total); };
+  window.heroGo = function(idx){ show(idx); };
+  setInterval(function(){ show((cur+1)%total); }, 6000);
+})();
+
+/* ===== Popular Tabs ===== */
+function switchPop(btn, panelId) {
+  document.querySelectorAll('.pop-tab').forEach(function(t){ t.classList.remove('pop-tab--active'); });
+  btn.classList.add('pop-tab--active');
+  document.querySelectorAll('.pop-list').forEach(function(p){ p.style.display = 'none'; });
+  document.getElementById(panelId).style.display = '';
+}
+
+/* ===== Category Tabs ===== */
+function switchCat(btn) {
+  var cat = btn.dataset.cat;
+  document.querySelectorAll('.cat-pill').forEach(function(p){ p.classList.remove('cat-pill--active'); });
+  btn.classList.add('cat-pill--active');
+  document.querySelectorAll('.cat-panel').forEach(function(p){ p.style.display = p.dataset.cat === cat ? '' : 'none'; });
+}
+
+/* ===== Books Carousel ===== */
+(function(){
+  var slides = document.querySelectorAll('[id^="bookSlide"]');
+  if (!slides.length) return;
+  var cur = 0, total = slides.length;
+  function show(idx) {
+    slides.forEach(function(s,i){ s.style.display = i===idx ? '' : 'none'; });
+    cur = idx;
+  }
+  window.bookNav = function(dir){ show((cur+dir+total)%total); };
+  window.bookGo = function(idx){ show(idx); };
+})();
+
+/* ===== Events Nav (placeholder) ===== */
+function eventNav(dir) {
+  // future: scroll events or cycle featured
+}
+</script>
+{% endblock %}
