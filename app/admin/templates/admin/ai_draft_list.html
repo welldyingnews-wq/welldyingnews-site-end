@@ -1,0 +1,172 @@
+{% extends "admin/base.html" %}
+{% block nav_title %}AI 초안 목록{% endblock %}
+
+{% block content %}
+<div class="d-flex justify-content-between align-items-center mb-3">
+    <h5 class="mb-0">AI 초안 목록</h5>
+    <a href="{{ url_for('admin.curation') }}" class="btn btn-sm btn-primary">
+        <i class="bi bi-plus-circle"></i> 새 큐레이션
+    </a>
+</div>
+
+<!-- 프로그레스 -->
+<div id="progressArea" class="mb-3" style="display:none;">
+    <div class="card border-info">
+        <div class="card-body py-2">
+            <div class="d-flex align-items-center gap-2">
+                <div class="spinner-border spinner-border-sm text-info"></div>
+                <span id="progressText">처리 중...</span>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- 상태 필터 -->
+<ul class="nav nav-tabs mb-3">
+    <li class="nav-item">
+        <a class="nav-link {{ 'active' if not status_filter }}" href="{{ url_for('admin.ai_draft_list') }}">전체</a>
+    </li>
+    <li class="nav-item">
+        <a class="nav-link {{ 'active' if status_filter == 'completed' }}" href="{{ url_for('admin.ai_draft_list', status='completed') }}">
+            완료 <span class="badge bg-success">{{ completed_count if completed_count is defined else '' }}</span>
+        </a>
+    </li>
+    <li class="nav-item">
+        <a class="nav-link {{ 'active' if status_filter == 'generating' }}" href="{{ url_for('admin.ai_draft_list', status='generating') }}">생성중</a>
+    </li>
+    <li class="nav-item">
+        <a class="nav-link {{ 'active' if status_filter == 'skipped' }}" href="{{ url_for('admin.ai_draft_list', status='skipped') }}">스킵</a>
+    </li>
+    <li class="nav-item">
+        <a class="nav-link {{ 'active' if status_filter == 'published' }}" href="{{ url_for('admin.ai_draft_list', status='published') }}">발행</a>
+    </li>
+</ul>
+
+<!-- 테이블 -->
+<div class="card">
+    <div class="table-responsive">
+        <table class="table table-sm table-hover mb-0">
+            <thead class="table-light">
+                <tr>
+                    <th width="40">#</th>
+                    <th>제목</th>
+                    <th width="60">등급</th>
+                    <th width="80">유형</th>
+                    <th width="90">상태</th>
+                    <th width="60">검증</th>
+                    <th width="70">소요</th>
+                    <th width="120">생성일</th>
+                    <th width="100">액션</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for d in drafts %}
+                <tr>
+                    <td>{{ d.id }}</td>
+                    <td>
+                        <a href="{{ url_for('admin.ai_draft_edit', draft_id=d.id) }}" class="text-decoration-none">
+                            {{ d.title or '(제목 없음)' }}
+                        </a>
+                        {% if d.skip_reason %}
+                        <br><small class="text-danger">{{ d.skip_reason[:50] }}</small>
+                        {% endif %}
+                    </td>
+                    <td>
+                        {% if d.grade %}
+                        <span class="badge {{ 'bg-primary' if d.grade == 'A1' else 'bg-success' if d.grade == 'A2' else 'bg-secondary' }}">{{ d.grade }}</span>
+                        {% endif %}
+                    </td>
+                    <td><small>{{ d.article_type }}</small></td>
+                    <td>
+                        {% set status_class = {
+                            'pending': 'bg-secondary',
+                            'curating': 'bg-info',
+                            'scraping': 'bg-info',
+                            'generating': 'bg-warning',
+                            'validating': 'bg-warning',
+                            'completed': 'bg-success',
+                            'skipped': 'bg-danger',
+                            'published': 'bg-primary',
+                            'rejected': 'bg-dark'
+                        } %}
+                        {% set status_label = {
+                            'pending': '대기',
+                            'curating': '분류중',
+                            'scraping': '스크래핑',
+                            'generating': '생성중',
+                            'validating': '검증중',
+                            'completed': '완료',
+                            'skipped': '스킵',
+                            'published': '발행',
+                            'rejected': '반려'
+                        } %}
+                        <span class="badge {{ status_class.get(d.status, 'bg-light text-dark') }}">{{ status_label.get(d.status, d.status) }}</span>
+                    </td>
+                    <td>
+                        {% if d.validation_score %}
+                        <span class="badge {{ 'bg-success' if d.validation_score >= 70 else 'bg-warning' if d.validation_score >= 40 else 'bg-danger' }}">{{ d.validation_score }}점</span>
+                        {% endif %}
+                    </td>
+                    <td><small>{{ '%.1f초' % d.generation_time_sec if d.generation_time_sec else '' }}</small></td>
+                    <td><small>{{ d.created_at.strftime('%m/%d %H:%M') if d.created_at else '' }}</small></td>
+                    <td>
+                        <div class="btn-group btn-group-sm">
+                            {% if d.status == 'completed' %}
+                            <a href="{{ url_for('admin.ai_draft_edit', draft_id=d.id) }}" class="btn btn-outline-primary" title="편집">
+                                <i class="bi bi-pencil"></i>
+                            </a>
+                            {% endif %}
+                            <form method="post" action="{{ url_for('admin.ai_draft_delete', draft_id=d.id) }}" class="d-inline" onsubmit="return confirm('삭제하시겠습니까?')">
+                                <button type="submit" class="btn btn-outline-danger" title="삭제"><i class="bi bi-trash"></i></button>
+                            </form>
+                        </div>
+                    </td>
+                </tr>
+                {% else %}
+                <tr><td colspan="9" class="text-center text-muted py-4">초안이 없습니다.</td></tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>
+
+<!-- 페이지네이션 -->
+{% if pagination.pages > 1 %}
+<nav class="mt-3">
+    <ul class="pagination pagination-sm justify-content-center">
+        {% for p in pagination.iter_pages(left_edge=1, right_edge=1, left_current=2, right_current=2) %}
+        {% if p %}
+        <li class="page-item {{ 'active' if p == pagination.page }}">
+            <a class="page-link" href="{{ url_for('admin.ai_draft_list', page=p, status=status_filter) }}">{{ p }}</a>
+        </li>
+        {% else %}
+        <li class="page-item disabled"><span class="page-link">...</span></li>
+        {% endif %}
+        {% endfor %}
+    </ul>
+</nav>
+{% endif %}
+{% endblock %}
+
+{% block extra_scripts %}
+<script>
+// 생성중인 초안이 있으면 자동 폴링
+(function() {
+    const hasActive = {{ 'true' if drafts|selectattr('status', 'in', ['curating','scraping','generating','validating'])|list else 'false' }};
+    if (!hasActive) return;
+    document.getElementById('progressArea').style.display = 'block';
+    const poll = setInterval(() => {
+        fetch('{{ url_for("admin.api_ai_draft_progress") }}')
+        .then(r => r.json())
+        .then(data => {
+            const active = (data.drafts||[]).filter(d => ['curating','scraping','generating','validating'].includes(d.status));
+            document.getElementById('progressText').textContent = `처리 중... (${active.length}건 진행)`;
+            if (!data.queue.is_processing && data.queue.queue_size === 0 && active.length === 0) {
+                clearInterval(poll);
+                location.reload();
+            }
+        });
+    }, 3000);
+})();
+</script>
+{% endblock %}

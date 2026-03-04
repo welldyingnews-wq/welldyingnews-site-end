@@ -19,23 +19,75 @@
                         <label class="form-label fw-bold">위치</label>
                         <select name="position" class="form-select">
                             <option value="">선택</option>
-                            {% for pos in ['header', 'sidebar', 'footer', 'article_top', 'article_bottom'] %}
-                            <option value="{{ pos }}" {% if banner and banner.position == pos %}selected{% endif %}>{{ pos }}</option>
+                            {% set positions = [
+                                ('header', '상단 (header)'),
+                                ('sidebar', '사이드바 상단 (sidebar)'),
+                                ('sidebar_bottom', '사이드바 하단 (sidebar_bottom)'),
+                                ('footer', '하단 (footer)'),
+                            ] %}
+                            {% for val, label in positions %}
+                            <option value="{{ val }}" {% if banner and banner.position == val %}selected{% endif %}>{{ label }}</option>
                             {% endfor %}
                         </select>
                     </div>
+                    <div class="row mb-3">
+                        <div class="col-6">
+                            <label class="form-label fw-bold">시작일</label>
+                            <input type="datetime-local" name="start_date" class="form-control" value="{{ banner.start_date.strftime('%Y-%m-%dT%H:%M') if banner and banner.start_date else '' }}">
+                            <small class="text-muted">비워두면 즉시 노출</small>
+                        </div>
+                        <div class="col-6">
+                            <label class="form-label fw-bold">종료일</label>
+                            <input type="datetime-local" name="end_date" class="form-control" value="{{ banner.end_date.strftime('%Y-%m-%dT%H:%M') if banner and banner.end_date else '' }}">
+                            <small class="text-muted">비워두면 무기한</small>
+                        </div>
+                    </div>
                     <div class="mb-3">
-                        <label class="form-label fw-bold">이미지</label>
-                        {% if banner and banner.image_path %}<div class="mb-2"><img src="{{ banner.image_path if banner.image_path.startswith(('http', '/')) else url_for('static', filename=banner.image_path) }}" class="img-fluid rounded" style="max-height:150px"></div>{% endif %}
-                        <input type="file" name="image" class="form-control" accept="image/*">
+                        <label class="form-label fw-bold">정렬순서</label>
+                        <input type="number" name="sort_order" class="form-control" value="{{ banner.sort_order if banner else 0 }}" min="0">
+                        <small class="text-muted">숫자가 작을수록 먼저 표시됩니다</small>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label fw-bold">PC 이미지</label>
+                        <div class="mb-2" id="pcPreviewWrap" {% if not (banner and banner.image_path) %}style="display:none"{% endif %}>
+                            <img src="{% if banner and banner.image_path %}{{ banner.image_path if banner.image_path.startswith(('http', '/')) else url_for('static', filename=banner.image_path) }}{% endif %}" class="img-fluid rounded" style="max-height:150px" id="pcPreview">
+                        </div>
+                        <input type="file" name="image" class="form-control" accept="image/*" onchange="previewBanner(this,'pcPreview','pcPreviewWrap')">
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label fw-bold">모바일 이미지 <span class="badge bg-info">선택</span></label>
+                        <div class="mb-2" id="mobPreviewWrap" {% if not (banner and banner.mobile_image_path) %}style="display:none"{% endif %}>
+                            <img src="{% if banner and banner.mobile_image_path %}{{ banner.mobile_image_path if banner.mobile_image_path.startswith(('http', '/')) else url_for('static', filename=banner.mobile_image_path) }}{% endif %}" class="img-fluid rounded" style="max-height:120px" id="mobPreview">
+                            {% if banner and banner.mobile_image_path %}
+                            <div class="form-check mt-1"><input class="form-check-input" type="checkbox" name="delete_mobile_image" value="1" id="delMobImg"><label class="form-check-label text-danger" for="delMobImg"><small>모바일 이미지 삭제</small></label></div>
+                            {% endif %}
+                        </div>
+                        <input type="file" name="mobile_image" class="form-control" accept="image/*" onchange="previewBanner(this,'mobPreview','mobPreviewWrap')">
+                        <small class="text-muted">모바일(767px 이하)에서 표시할 별도 이미지. 비워두면 PC 이미지가 축소되어 표시됩니다.</small>
                     </div>
                     <div class="mb-3">
                         <div class="form-check"><input class="form-check-input" type="checkbox" name="is_active" value="1" id="isActive" {% if not banner or banner.is_active %}checked{% endif %}><label class="form-check-label" for="isActive">활성</label></div>
                     </div>
+                    {% if banner and banner.id %}
+                    <div class="mb-3 p-2 bg-light rounded">
+                        <small class="text-muted">클릭수: <strong>{{ banner.click_count }}</strong> | 등록일: {{ banner.created_at.strftime('%Y-%m-%d %H:%M') if banner.created_at else '-' }}</small>
+                    </div>
+                    {% endif %}
                     <div class="d-grid"><button type="submit" class="btn btn-primary"><i class="bi bi-save"></i> 저장</button></div>
                 </form>
             </div>
         </div>
     </div>
 </div>
+<script>
+function previewBanner(input, imgId, wrapId) {
+    if (!input.files || !input.files[0]) return;
+    var reader = new FileReader();
+    reader.onload = function(e) {
+        document.getElementById(imgId).src = e.target.result;
+        document.getElementById(wrapId).style.display = '';
+    };
+    reader.readAsDataURL(input.files[0]);
+}
+</script>
 {% endblock %}

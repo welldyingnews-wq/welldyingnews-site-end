@@ -1,0 +1,301 @@
+{% extends "public/base_v0.html" %}
+
+{% block title %}{{ newsletter.title }} — 웰다잉뉴스{% endblock %}
+
+{% block extra_css %}
+<link rel="stylesheet" href="{{ static_v('css/newsletter_magazine.css') }}">
+{% endblock %}
+
+{% block content %}
+<div class="nmag">
+
+    <!-- 마스트헤드 -->
+    <header class="nmag-mast">
+        <span class="nmag-mast__label">Weekly Newsletter</span>
+        <h1 class="nmag-mast__title">{{ newsletter.title }}</h1>
+        <div class="nmag-mast__meta">
+            <span class="nmag-mast__vol">Vol. {{ newsletter.volume_number }}</span>
+            {% if newsletter.publish_date %}
+            <span class="nmag-mast__sep">|</span>
+            <span>{{ newsletter.publish_date.strftime('%Y년 %m월 %d일') }}</span>
+            {% endif %}
+            <span class="nmag-mast__sep">|</span>
+            <span><i class="fa-regular fa-eye"></i> {{ '{:,}'.format(newsletter.view_count or 0) }}</span>
+        </div>
+    </header>
+
+    <!-- ① 주간 브리핑 (이미지 + 하단 본문) -->
+    {% if newsletter.briefing_visible %}
+    <section class="nmag-briefing">
+        {% if newsletter.briefing_image %}
+        <div class="nmag-briefing__img-wrap">
+            <img src="{{ newsletter.briefing_image }}" alt="" class="nmag-briefing__img">
+            <span class="nmag-briefing__tag">주간 브리핑</span>
+        </div>
+        {% endif %}
+        <div class="nmag-briefing__body">
+            {% if newsletter.briefing_title %}
+            <h2 class="nmag-briefing__title">{{ newsletter.briefing_title }}</h2>
+            {% endif %}
+            {% if newsletter.briefing_content %}
+            <div class="nmag-briefing__content">{{ newsletter.briefing_content|safe }}</div>
+            {% endif %}
+            {% if newsletter.briefing_article %}
+            <a href="/news/articleView.html?idxno={{ newsletter.briefing_article.id }}" class="nmag-briefing__cta">기사 전문 읽기 &rarr;</a>
+            {% endif %}
+        </div>
+    </section>
+    {% endif %}
+
+    <!-- ② 주간 포커스 (1+4 비대칭) -->
+    {% set focus = sections.get('focus', {}) %}
+    {% if focus.get('visible') and focus_items %}
+    <div class="nmag-divider">
+        <span class="nmag-divider__icon">&#9670;</span>
+        <span class="nmag-divider__text">{{ focus.get('title', '주간 포커스') }}</span>
+    </div>
+    <div class="nmag-focus">
+        <!-- 리드 (첫 번째 큰 카드) -->
+        {% if focus_items|length > 0 %}
+        <a href="{{ focus_items[0].link or '#' }}" class="nmag-focus__lead">
+            <div>
+                {% if focus_items[0].image %}
+                <img src="{{ focus_items[0].image }}" alt="" class="nmag-focus__lead-img">
+                {% else %}
+                <div class="nmag-focus__lead-img-ph"></div>
+                {% endif %}
+            </div>
+            <div class="nmag-focus__lead-body">
+                <h3 class="nmag-focus__lead-title">{{ focus_items[0].title }}</h3>
+                <p class="nmag-focus__lead-summary">{{ focus_items[0].summary|truncate(120) if focus_items[0].summary else '' }}</p>
+            </div>
+        </a>
+        {% endif %}
+        <!-- 나머지 카드들 (2x2) -->
+        {% if focus_items|length > 1 %}
+        <div class="nmag-focus__side">
+            {% for item in focus_items[1:5] %}
+            <a href="{{ item.link or '#' }}" class="nmag-focus__card">
+                <div class="nmag-img-frame">
+                    {% if item.image %}
+                    <img src="{{ item.image }}" alt="" class="nmag-focus__card-img">
+                    {% else %}
+                    <div class="nmag-focus__card-img-ph"></div>
+                    {% endif %}
+                </div>
+                <div class="nmag-focus__card-body">
+                    <h4 class="nmag-focus__card-title">{{ item.title }}</h4>
+                </div>
+            </a>
+            {% endfor %}
+        </div>
+        {% endif %}
+    </div>
+    {% endif %}
+
+    <!-- 광고 1 -->
+    {% set ads = sections.get('ads', []) %}
+    {% if ads|length > 0 and ads[0].get('visible') and ads[0].get('image') %}
+    <div class="nmag-ad">
+        {% if ads[0].get('link') %}<a href="{{ ads[0].link }}" target="_blank">{% endif %}
+        <img src="{{ ads[0].image }}" alt="">
+        {% if ads[0].get('link') %}</a>{% endif %}
+    </div>
+    {% endif %}
+
+    <!-- ③ 주간 오피니언 (카드형) -->
+    {% set opinion = sections.get('opinion', {}) %}
+    {% if opinion.get('visible') and opinion_items %}
+    <div class="nmag-divider">
+        <span class="nmag-divider__icon">&#9670;</span>
+        <span class="nmag-divider__text">{{ opinion.get('title', '주간 오피니언') }}</span>
+    </div>
+    <div class="nmag-opinion-grid">
+        {% for item in opinion_items %}
+        <a href="{{ item.link or '#' }}" class="nmag-opinion-card">
+            {% if item.image %}
+            <div class="nmag-opinion-card__img-wrap">
+                <img src="{{ item.image }}" alt="" class="nmag-opinion-card__img">
+            </div>
+            {% endif %}
+            <div class="nmag-opinion-card__body">
+                {% if item.author %}
+                <div class="nmag-opinion-card__author-line">
+                    <span class="nmag-opinion-card__author-icon">{{ item.author[:1] }}</span>
+                    <span class="nmag-opinion-card__author-name">{{ item.author }}</span>
+                </div>
+                {% endif %}
+                <h4 class="nmag-opinion-card__title">{{ item.title }}</h4>
+                <p class="nmag-opinion-card__summary">{{ item.summary|truncate(100) if item.summary else '' }}</p>
+            </div>
+        </a>
+        {% endfor %}
+    </div>
+    {% endif %}
+
+    <!-- 광고 2 -->
+    {% if ads|length > 1 and ads[1].get('visible') and ads[1].get('image') %}
+    <div class="nmag-ad">
+        {% if ads[1].get('link') %}<a href="{{ ads[1].link }}" target="_blank">{% endif %}
+        <img src="{{ ads[1].image }}" alt="">
+        {% if ads[1].get('link') %}</a>{% endif %}
+    </div>
+    {% endif %}
+
+    <!-- ④ 도서 + 글귀 (2컬럼 or 각각 표시) -->
+    {% set book = sections.get('book', {}) %}
+    {% set quote = sections.get('quote', {}) %}
+    {% set has_book = book.get('visible') and book.get('book_title') %}
+    {% set has_quote = quote.get('visible') and quote.get('text') %}
+
+    {% if has_book and has_quote %}
+    <!-- 도서 + 글귀 2컬럼 (웜톤 밴드) -->
+    <div class="nmag-band">
+        <div class="nmag-divider">
+            <span class="nmag-divider__icon">&#9670;</span>
+            <span class="nmag-divider__text">추천 도서 &amp; 글귀</span>
+        </div>
+        <div class="nmag-two-col">
+            <div class="nmag-two-col__left">
+                <div class="nmag-book">
+                    {% if book.get('image') %}
+                    <img src="{{ book.image }}" alt="{{ book.book_title }}" class="nmag-book__cover">
+                    {% endif %}
+                    <div class="nmag-book__info">
+                        <h4 class="nmag-book__name">{{ book.book_title }}</h4>
+                        {% if book.get('author') %}
+                        <p class="nmag-book__author">{{ book.author }}</p>
+                        {% endif %}
+                        {% if book.get('description') %}
+                        <p class="nmag-book__desc">{{ book.description }}</p>
+                        {% endif %}
+                        {% if book.get('link') %}
+                        <a href="{{ book.link }}" class="nmag-book__link" target="_blank">자세히 보기 &rarr;</a>
+                        {% endif %}
+                    </div>
+                </div>
+            </div>
+            <div class="nmag-two-col__right">
+                <div class="nmag-quote-side">
+                    <span class="nmag-quote-side__mark">&ldquo;</span>
+                    <blockquote>
+                        <p>{{ quote.text }}</p>
+                        {% if quote.get('author') %}
+                        <cite>— {{ quote.author }}</cite>
+                        {% endif %}
+                    </blockquote>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    {% elif has_book %}
+    <!-- 도서만 (웜톤 밴드) -->
+    <div class="nmag-band">
+        <div class="nmag-divider">
+            <span class="nmag-divider__icon">&#9670;</span>
+            <span class="nmag-divider__text">{{ book.get('title', '주간 추천 도서') }}</span>
+        </div>
+        <div class="nmag-book" style="max-width: 600px;">
+            {% if book.get('image') %}
+            <img src="{{ book.image }}" alt="{{ book.book_title }}" class="nmag-book__cover">
+            {% endif %}
+            <div class="nmag-book__info">
+                <h4 class="nmag-book__name">{{ book.book_title }}</h4>
+                {% if book.get('author') %}
+                <p class="nmag-book__author">{{ book.author }}</p>
+                {% endif %}
+                {% if book.get('description') %}
+                <p class="nmag-book__desc">{{ book.description }}</p>
+                {% endif %}
+                {% if book.get('link') %}
+                <a href="{{ book.link }}" class="nmag-book__link" target="_blank">자세히 보기 &rarr;</a>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+
+    {% elif has_quote %}
+    <!-- 글귀만 (풀폭 밴드) -->
+    <div class="nmag-divider">
+        <span class="nmag-divider__icon">&#9670;</span>
+        <span class="nmag-divider__text">{{ quote.get('title', '이 주의 글귀') }}</span>
+    </div>
+    <div class="nmag-quote-band">
+        <span class="nmag-quote-band__mark">&ldquo;</span>
+        <blockquote>
+            <p>{{ quote.text }}</p>
+            {% if quote.get('author') %}
+            <cite>— {{ quote.author }}</cite>
+            {% endif %}
+        </blockquote>
+    </div>
+    {% endif %}
+
+    <!-- 광고 3 -->
+    {% if ads|length > 2 and ads[2].get('visible') and ads[2].get('image') %}
+    <div class="nmag-ad">
+        {% if ads[2].get('link') %}<a href="{{ ads[2].link }}" target="_blank">{% endif %}
+        <img src="{{ ads[2].image }}" alt="">
+        {% if ads[2].get('link') %}</a>{% endif %}
+    </div>
+    {% endif %}
+
+    <!-- ⑤ 주간 화제의 영상 -->
+    {% set videos = sections.get('videos', {}) %}
+    {% if videos.get('visible') and video_items %}
+    <div class="nmag-divider">
+        <span class="nmag-divider__icon">&#9670;</span>
+        <span class="nmag-divider__text">{{ videos.get('title', '주간 화제의 영상') }}</span>
+    </div>
+    <div class="nmag-video-grid">
+        {% for v in video_items %}
+        <div class="nmag-video-card">
+            {% if v.video_id %}
+            <a href="{{ v.youtube_url }}" target="_blank" class="nmag-video-card__thumb">
+                <img src="{{ v.thumbnail }}" alt="{{ v.title }}">
+                <span class="nmag-video-card__play">&#9654;</span>
+            </a>
+            {% endif %}
+            <div class="nmag-video-card__body">
+                {% if v.title %}<h4 class="nmag-video-card__title">{{ v.title }}</h4>{% endif %}
+                {% if v.description %}<p class="nmag-video-card__desc">{{ v.description }}</p>{% endif %}
+            </div>
+        </div>
+        {% endfor %}
+    </div>
+    {% endif %}
+
+    <!-- 광고 4 -->
+    {% if ads|length > 3 and ads[3].get('visible') and ads[3].get('image') %}
+    <div class="nmag-ad">
+        {% if ads[3].get('link') %}<a href="{{ ads[3].link }}" target="_blank">{% endif %}
+        <img src="{{ ads[3].image }}" alt="">
+        {% if ads[3].get('link') %}</a>{% endif %}
+    </div>
+    {% endif %}
+
+    <!-- 지난 뉴스레터 -->
+    {% if recent_newsletters %}
+    <div class="nmag-divider">
+        <span class="nmag-divider__icon">&#9670;</span>
+        <span class="nmag-divider__text">지난 뉴스레터</span>
+    </div>
+    <div class="nmag-recent-grid">
+        {% for rnl in recent_newsletters %}
+        <a href="/newsletter/{{ rnl.slug }}" class="nmag-recent-card">
+            <span class="nmag-recent-card__vol">Vol. {{ rnl.volume_number }}</span>
+            <span class="nmag-recent-card__title">{{ rnl.title }}</span>
+            {% if rnl.publish_date %}
+            <span class="nmag-recent-card__date">{{ rnl.publish_date.strftime('%Y.%m.%d') }}</span>
+            {% endif %}
+        </a>
+        {% endfor %}
+        <a href="/newsletter/archive" class="nmag-recent-card nmag-recent-card--more">
+            <span>전체 보기 &rarr;</span>
+        </a>
+    </div>
+    {% endif %}
+
+</div>
+{% endblock %}

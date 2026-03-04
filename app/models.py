@@ -15,6 +15,8 @@ class AdminUser(UserMixin, db.Model):
     email = db.Column(db.String(100))
     department = db.Column(db.String(50), default='')
     level = db.Column(db.String(20), default='admin')  # admin, editor, reporter
+    photo = db.Column(db.String(500), default='')  # 프로필 사진 URL
+    photo_pos = db.Column(db.String(20), default='center center')  # object-position
     is_active = db.Column(db.Boolean, default=True)
     is_dormant = db.Column(db.Boolean, default=False)
     created_at = db.Column(db.DateTime, default=datetime.now)
@@ -119,6 +121,7 @@ class VisitorLog(db.Model):
     ip_address = db.Column(db.String(50), nullable=False)
     session_key = db.Column(db.String(64), default='')
     user_agent = db.Column(db.String(20), default='pc')   # pc, mobile, tablet
+    referrer_source = db.Column(db.String(20), default='direct')  # naver, google, daum, facebook, kakao, direct, other
     date = db.Column(db.Date, nullable=False, index=True)
     article_id = db.Column(db.Integer, nullable=True)    # NULL이면 사이트 방문, 값 있으면 기사 조회
     created_at = db.Column(db.DateTime, default=datetime.now)
@@ -177,6 +180,10 @@ class Article(db.Model):
     subsection_id = db.Column(db.Integer, db.ForeignKey('sub_section.id'))
     author_name = db.Column(db.String(50), default='웰다잉뉴스')
     author_email = db.Column(db.String(100), default='welldyingnews@naver.com')
+    author_photo = db.Column(db.String(500), default='')  # 필진 프로필 사진
+    author_photo_pos = db.Column(db.String(20), default='center center')  # object-position (예: 50% 30%)
+    author_title = db.Column(db.String(100), default='')  # 직함 (예: 명예이사장)
+    author_affiliation = db.Column(db.String(100), default='')  # 소속 (예: 각당복지재단)
     source = db.Column(db.String(100), default='')  # 기사출처
     level = db.Column(db.String(1), default='B')  # B=일반, I=중요, T=헤드라인
     recognition = db.Column(db.String(1), default='E')  # C=미승인, E=승인, R=반려
@@ -202,16 +209,30 @@ class Article(db.Model):
                                         backref='article', lazy='dynamic', cascade='all, delete-orphan')
 
     @property
+    def subtitle_text(self):
+        """리드문: subtitle → 없으면 본문에서 첫 100자 자동 추출"""
+        if self.subtitle:
+            return self.subtitle
+        import re, html
+        text = re.sub(r'<[^>]+>', '', self.content or '')
+        text = html.unescape(text).strip()
+        return text[:100]
+
+    @property
     def summary_text(self):
         if self.summary:
             return self.summary
-        import re
+        import re, html
         text = re.sub(r'<[^>]+>', '', self.content or '')
+        text = html.unescape(text).strip()
         return text[:200]
 
     @property
     def thumb_url(self):
-        """썸네일 URL 반환: thumbnail_path → 본문 이미지 → YouTube 썸네일 순서"""
+        """썸네일 URL 반환: 오피니언은 프로필사진 우선 → thumbnail_path → 본문 이미지 → YouTube 썸네일 순서"""
+        # 오피니언(S1N2) 섹션이면 프로필 사진을 썸네일로 사용
+        if self.section and self.section.code == 'S1N2' and self.author_photo:
+            return self.author_photo
         if self.thumbnail_path and '/' in self.thumbnail_path:
             if self.thumbnail_path.startswith(('http', '/')):
                 return self.thumbnail_path
@@ -361,6 +382,7 @@ class Banner(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     name = db.Column(db.String(100), nullable=False)
     image_path = db.Column(db.String(500), default='')
+    mobile_image_path = db.Column(db.String(500), default='')
     link_url = db.Column(db.String(500), default='')
     position = db.Column(db.String(50), default='')  # header, sidebar, footer 등
     is_active = db.Column(db.Boolean, default=True)
@@ -432,6 +454,50 @@ class LayoutBlock(db.Model):
     is_active = db.Column(db.Boolean, default=True)
 
 
+class NewsletterSubscriber(db.Model):
+    """뉴스레터 구독자"""
+    __tablename__ = 'newsletter_subscriber'
+    id = db.Column(db.Integer, primary_key=True)
+    email = db.Column(db.String(200), unique=True, nullable=False)
+    name = db.Column(db.String(50), default='')
+    is_active = db.Column(db.Boolean, default=True)
+    created_at = db.Column(db.DateTime, default=datetime.now)
+
+
+class Schedule(db.Model):
+    """주요일정"""
+    __tablename__ = 'schedule'
+    id = db.Column(db.Integer, primary_key=True)
+    title = db.Column(db.String(500), nullable=False)
+    description = db.Column(db.Text, default='')
+    event_date = db.Column(db.DateTime, nullable=False)
+    end_date = db.Column(db.DateTime, nullable=True)
+    location = db.Column(db.String(200), default='')
+    category = db.Column(db.String(50), default='')  # 세미나, 학술, 행사 등
+    link_url = db.Column(db.String(500), default='')
+    content = db.Column(db.Text, default='')           # 본문 (CKEditor HTML)
+    image_url = db.Column(db.String(500), default='')  # 대표 이미지 URL
+    is_active = db.Column(db.Boolean, default=True)
+    created_at = db.Column(db.DateTime, default=datetime.now)
+
+
+class Resource(db.Model):
+    """자료실"""
+    __tablename__ = 'resource'
+    id = db.Column(db.Integer, primary_key=True)
+    title = db.Column(db.String(500), nullable=False)
+    description = db.Column(db.Text, default='')
+    file_path = db.Column(db.String(500), default='')
+    file_url = db.Column(db.String(500), default='')
+    file_size = db.Column(db.Integer, default=0)
+    file_type = db.Column(db.String(50), default='')  # pdf, hwp, doc 등
+    category = db.Column(db.String(50), default='')  # 보고서, 연구자료, 양식 등
+    author_name = db.Column(db.String(50), default='')
+    download_count = db.Column(db.Integer, default=0)
+    is_active = db.Column(db.Boolean, default=True)
+    created_at = db.Column(db.DateTime, default=datetime.now)
+
+
 class Photo(db.Model):
     """포토DB (업로드된 이미지 관리)"""
     __tablename__ = 'photo'
@@ -446,3 +512,97 @@ class Photo(db.Model):
     is_favorite = db.Column(db.Boolean, default=False)
     uploaded_by = db.Column(db.String(50), default='')
     created_at = db.Column(db.DateTime, default=datetime.now)
+
+
+class Newsletter(db.Model):
+    """주간 뉴스레터"""
+    __tablename__ = 'newsletter'
+    id = db.Column(db.Integer, primary_key=True)
+    volume_number = db.Column(db.Integer, nullable=False, unique=True)
+    title = db.Column(db.String(500), nullable=False)
+    slug = db.Column(db.String(200), unique=True, nullable=False)
+    publish_date = db.Column(db.Date, nullable=True)
+    status = db.Column(db.String(10), default='draft')  # draft / published
+
+    # 주간 브리핑 (히어로 섹션)
+    briefing_title = db.Column(db.String(500), default='')
+    briefing_image = db.Column(db.String(500), default='')
+    briefing_content = db.Column(db.Text, default='')
+    briefing_article_id = db.Column(db.Integer, db.ForeignKey('article.id'), nullable=True)
+    briefing_visible = db.Column(db.Boolean, default=True)
+
+    # 나머지 섹션 (JSON)
+    sections_data = db.Column(db.Text, default='{}')
+
+    view_count = db.Column(db.Integer, default=0)
+    created_at = db.Column(db.DateTime, default=datetime.now)
+    updated_at = db.Column(db.DateTime, default=datetime.now, onupdate=datetime.now)
+
+    briefing_article = db.relationship('Article', foreign_keys=[briefing_article_id])
+
+    @property
+    def sections(self):
+        import json
+        try:
+            return json.loads(self.sections_data or '{}')
+        except (json.JSONDecodeError, TypeError):
+            return {}
+
+    @sections.setter
+    def sections(self, value):
+        import json
+        self.sections_data = json.dumps(value, ensure_ascii=False)
+
+
+class AiDraft(db.Model):
+    """AI 기사 초안"""
+    __tablename__ = 'ai_draft'
+    id = db.Column(db.Integer, primary_key=True)
+
+    # 원본 기사 정보
+    source_news_ids = db.Column(db.Text, default='')       # JSON: Supabase news IDs
+    source_data = db.Column(db.Text, default='')            # JSON: 원본 기사 데이터
+    original_url = db.Column(db.String(1000), default='')
+    related_urls = db.Column(db.Text, default='')           # JSON: 관련 기사 URLs
+
+    # AI 처리 결과 (JSON)
+    curation_result = db.Column(db.Text, default='')        # Step 1 분류 결과
+    scraped_data = db.Column(db.Text, default='')           # Step 0 스크래핑 데이터
+    fact_package = db.Column(db.Text, default='')           # Step 2 자료 패키지
+    article_result = db.Column(db.Text, default='')         # Step 3 기사 작성 결과
+    validation_result = db.Column(db.Text, default='')      # Step 4 검증 결과
+
+    # 기사 필드 (관리자 편집 가능)
+    title = db.Column(db.String(500), default='')
+    subtitle = db.Column(db.Text, default='')
+    content = db.Column(db.Text, default='')
+    summary = db.Column(db.Text, default='')
+    keywords = db.Column(db.String(500), default='')
+    author_name = db.Column(db.String(50), default='웰다잉뉴스')
+    source_text = db.Column(db.String(200), default='')     # 출처 표시
+
+    # 분류
+    grade = db.Column(db.String(5), default='')             # A1(해설), A2(스트레이트), B(단신)
+    article_type = db.Column(db.String(20), default='')     # 스트레이트, 해설
+    suggested_section_id = db.Column(db.Integer, nullable=True)
+    suggested_subsection_id = db.Column(db.Integer, nullable=True)
+
+    # 상태
+    status = db.Column(db.String(20), default='pending', index=True)  # pending/curating/scraping/generating/validating/completed/skipped/published/rejected
+    skip_reason = db.Column(db.String(500), default='')
+    validation_score = db.Column(db.Integer, default=0)     # 0~100
+
+    # 연결
+    article_id = db.Column(db.Integer, db.ForeignKey('article.id'), nullable=True)
+    created_by = db.Column(db.Integer, db.ForeignKey('admin_user.id'), nullable=True)
+
+    # 메타
+    ai_models_used = db.Column(db.String(200), default='')  # 사용된 AI 모델
+    total_tokens_used = db.Column(db.Integer, default=0)
+    generation_time_sec = db.Column(db.Float, default=0)
+    created_at = db.Column(db.DateTime, default=datetime.now)
+    completed_at = db.Column(db.DateTime, nullable=True)
+    published_at = db.Column(db.DateTime, nullable=True)
+
+    article = db.relationship('Article', foreign_keys=[article_id])
+    creator = db.relationship('AdminUser', foreign_keys=[created_by])

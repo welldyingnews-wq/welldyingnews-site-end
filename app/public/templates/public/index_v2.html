@@ -35,9 +35,7 @@
     <div class="hero__content hero__slide" {% if not loop.first %}style="display:none"{% endif %}>
       <span class="hero__tag">{% if art.section %}{{ art.section.name }}{% endif %}</span>
       <h2 class="hero__title">{{ art.title }}</h2>
-      {% if art.subtitle %}
-      <p class="hero__excerpt">{{ art.subtitle }}</p>
-      {% endif %}
+      <p class="hero__excerpt">{{ art.subtitle_text }}</p>
       <div class="hero__meta">
         <span class="hero__date">{{ art.created_at.strftime('%Y.%m.%d') if art.created_at else '' }}</span>
         <a href="/news/articleView.html?idxno={{ art.id }}" class="hero__link">자세히 보기</a>
@@ -67,7 +65,7 @@
     <!-- Content -->
     <div>
       <div class="sec-head">
-        <span class="sec-head__title">최신 기사</span>
+        <span class="sec-head__title">주요 기사</span>
         <span class="sec-head__line"></span>
       </div>
       <div class="latest-list">
@@ -141,7 +139,7 @@
       <a href="/news/articleView.html?idxno={{ art.id }}" class="v2-card">
         <div class="v2-card__cat">{% if art.subsection %}{{ art.subsection.name }}{% elif art.section %}{{ art.section.name }}{% endif %}</div>
         <h4 class="v2-card__title line-clamp-2">{{ art.title }}</h4>
-        {% if art.subtitle %}<p class="v2-card__excerpt line-clamp-2">{{ art.subtitle }}</p>{% endif %}
+        <p class="v2-card__excerpt line-clamp-2">{{ art.subtitle_text }}</p>
         <div class="v2-card__date">{{ art.created_at.strftime('%Y.%m.%d') if art.created_at else '' }}</div>
       </a>
       {% endfor %}
@@ -165,12 +163,12 @@
     {% for art in opinion_articles %}
     <a href="/news/articleView.html?idxno={{ art.id }}" class="col-card">
       <div class="col-avatar">
-        {% if art.thumb_url %}<img src="{{ art.thumb_url }}" alt="">{% else %}{{ art.author_name[:1] if art.author_name else '필' }}{% endif %}
+        {% if art.thumb_url %}<img src="{{ art.thumb_url }}" alt="" style="object-position:{{ art.author_photo_pos or 'center center' }}">{% else %}{{ art.author_name[:1] if art.author_name else '필' }}{% endif %}
       </div>
       <div class="col-info">
         <div>
-          <span class="col-name">{{ art.author_name or '웰다잉뉴스' }}</span>
-          {% if art.subsection %}<span class="col-role">{{ art.subsection.name }}</span>{% endif %}
+          <span class="col-name">{{ art.author_name|replace('웰다잉뉴스', '')|trim or '필진' }}</span>
+          {% if art.author_title %}<span class="col-role">{{ art.author_title }}</span>{% elif art.subsection %}<span class="col-role">{{ art.subsection.name }}</span>{% endif %}
         </div>
         <h4 class="col-title line-clamp-2">{{ art.title }}</h4>
       </div>
@@ -203,9 +201,7 @@
         <div class="books-featured__info">
           <span class="books-featured__tag">{% if art.subsection %}{{ art.subsection.name }}{% else %}도서·출판{% endif %}</span>
           <h3 class="books-featured__quote line-clamp-3">{{ art.title }}</h3>
-          {% if art.subtitle %}
-          <p class="books-featured__desc line-clamp-3">{{ art.subtitle }}</p>
-          {% endif %}
+          <p class="books-featured__desc line-clamp-3">{{ art.subtitle_text }}</p>
           <span class="books-featured__author">{{ art.author_name or '웰다잉뉴스' }}</span>
         </div>
       </div>

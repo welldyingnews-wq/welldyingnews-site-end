@@ -1,0 +1,225 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta property="og:title" content="{{ newsletter.title }}">
+<meta property="og:description" content="웰다잉뉴스 주간 뉴스레터 Vol.{{ newsletter.volume_number }}">
+<title>{{ newsletter.title }} — 웰다잉뉴스</title>
+<link rel="icon" type="image/png" href="/static/images/favicon.png">
+<link href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@300;400;500;700&family=Noto+Serif+KR:wght@400;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="{{ static_v('css/newsletter.css') }}">
+</head>
+<body>
+<div class="nl-wrapper">
+
+    <!-- 헤더 -->
+    <header class="nl-header">
+        <a href="/" class="nl-logo-link">
+            <img src="/static/images/logo-header.png" alt="웰다잉뉴스" class="nl-logo">
+        </a>
+        <div class="nl-title">{{ newsletter.title }}</div>
+        <div class="nl-meta">
+            <span class="nl-volume">Vol. {{ newsletter.volume_number }}</span>
+            {% if newsletter.publish_date %}
+            <span class="nl-divider">|</span>
+            <span class="nl-date">{{ newsletter.publish_date.strftime('%Y년 %m월 %d일') }}</span>
+            {% endif %}
+            <span class="nl-divider">|</span>
+            <span><i class="fa-regular fa-eye"></i> {{ '{:,}'.format(newsletter.view_count or 0) }}</span>
+        </div>
+        <a href="/newsletter/archive" class="nl-archive-link">지난 뉴스레터 보기 &rarr;</a>
+    </header>
+
+    <!-- ① 주간 브리핑 -->
+    {% if newsletter.briefing_visible %}
+    <section class="nl-section nl-briefing">
+        <h3 class="nl-section-title">주간 브리핑</h3>
+        {% if newsletter.briefing_image %}
+        <img src="{{ newsletter.briefing_image }}" alt="" class="nl-briefing-img">
+        {% endif %}
+        {% if newsletter.briefing_title %}
+        <h2 class="nl-briefing-title">{{ newsletter.briefing_title }}</h2>
+        {% endif %}
+        {% if newsletter.briefing_content %}
+        <div class="nl-briefing-content">{{ newsletter.briefing_content|safe }}</div>
+        {% endif %}
+        {% if newsletter.briefing_article %}
+        <a href="/news/articleView.html?idxno={{ newsletter.briefing_article.id }}" class="nl-read-more">기사 전문 읽기 &rarr;</a>
+        {% endif %}
+    </section>
+    {% endif %}
+
+    <!-- ② 주간 포커스 -->
+    {% set focus = sections.get('focus', {}) %}
+    {% if focus.get('visible') and focus_items %}
+    <section class="nl-section">
+        <h3 class="nl-section-title">{{ focus.get('title', '주간 포커스') }}</h3>
+        <div class="nl-grid">
+            {% for item in focus_items %}
+            <a href="{{ item.link or '#' }}" class="nl-card">
+                {% if item.image %}
+                <img src="{{ item.image }}" alt="" class="nl-card-img">
+                {% else %}
+                <div class="nl-card-img-placeholder"></div>
+                {% endif %}
+                <div class="nl-card-body">
+                    <h4 class="nl-card-title">{{ item.title }}</h4>
+                    <p class="nl-card-summary">{{ item.summary|truncate(80) if item.summary else '' }}</p>
+                </div>
+            </a>
+            {% endfor %}
+        </div>
+    </section>
+    {% endif %}
+
+    <!-- 광고 1 -->
+    {% set ads = sections.get('ads', []) %}
+    {% if ads|length > 0 and ads[0].get('visible') and ads[0].get('image') %}
+    <div class="nl-ad">
+        {% if ads[0].get('link') %}<a href="{{ ads[0].link }}" target="_blank">{% endif %}
+        <img src="{{ ads[0].image }}" alt="광고">
+        {% if ads[0].get('link') %}</a>{% endif %}
+    </div>
+    {% endif %}
+
+    <!-- ③ 주간 오피니언 -->
+    {% set opinion = sections.get('opinion', {}) %}
+    {% if opinion.get('visible') and opinion_items %}
+    <section class="nl-section">
+        <h3 class="nl-section-title">{{ opinion.get('title', '주간 오피니언') }}</h3>
+        {% for item in opinion_items %}
+        <a href="{{ item.link or '#' }}" class="nl-opinion-row">
+            {% if item.image %}
+            <img src="{{ item.image }}" alt="" class="nl-opinion-img">
+            {% endif %}
+            <div class="nl-opinion-body">
+                <h4 class="nl-opinion-title">{{ item.title }}</h4>
+                <p class="nl-opinion-summary">{{ item.summary|truncate(100) if item.summary else '' }}</p>
+                {% if item.author %}<span class="nl-opinion-author">{{ item.author }}</span>{% endif %}
+            </div>
+        </a>
+        {% endfor %}
+    </section>
+    {% endif %}
+
+    <!-- 광고 2 -->
+    {% if ads|length > 1 and ads[1].get('visible') and ads[1].get('image') %}
+    <div class="nl-ad">
+        {% if ads[1].get('link') %}<a href="{{ ads[1].link }}" target="_blank">{% endif %}
+        <img src="{{ ads[1].image }}" alt="광고">
+        {% if ads[1].get('link') %}</a>{% endif %}
+    </div>
+    {% endif %}
+
+    <!-- ④ 주간 추천 도서 -->
+    {% set book = sections.get('book', {}) %}
+    {% if book.get('visible') and book.get('book_title') %}
+    <section class="nl-section nl-book-section">
+        <h3 class="nl-section-title">{{ book.get('title', '주간 추천 도서') }}</h3>
+        <div class="nl-book-card">
+            {% if book.get('image') %}
+            <img src="{{ book.image }}" alt="{{ book.book_title }}" class="nl-book-img">
+            {% endif %}
+            <div class="nl-book-info">
+                <h4 class="nl-book-title">{{ book.book_title }}</h4>
+                {% if book.get('author') %}
+                <p class="nl-book-author">{{ book.author }}</p>
+                {% endif %}
+                {% if book.get('description') %}
+                <p class="nl-book-desc">{{ book.description }}</p>
+                {% endif %}
+                {% if book.get('link') %}
+                <a href="{{ book.link }}" class="nl-read-more" target="_blank">자세히 보기 &rarr;</a>
+                {% endif %}
+            </div>
+        </div>
+    </section>
+    {% endif %}
+
+    <!-- ⑤ 이 주의 글귀 -->
+    {% set quote = sections.get('quote', {}) %}
+    {% if quote.get('visible') and quote.get('text') %}
+    <section class="nl-section nl-quote-section">
+        <h3 class="nl-section-title">{{ quote.get('title', '이 주의 글귀') }}</h3>
+        <blockquote class="nl-blockquote">
+            <p>&ldquo;{{ quote.text }}&rdquo;</p>
+            {% if quote.get('author') %}
+            <cite>— {{ quote.author }}</cite>
+            {% endif %}
+        </blockquote>
+    </section>
+    {% endif %}
+
+    <!-- 광고 3 -->
+    {% if ads|length > 2 and ads[2].get('visible') and ads[2].get('image') %}
+    <div class="nl-ad">
+        {% if ads[2].get('link') %}<a href="{{ ads[2].link }}" target="_blank">{% endif %}
+        <img src="{{ ads[2].image }}" alt="광고">
+        {% if ads[2].get('link') %}</a>{% endif %}
+    </div>
+    {% endif %}
+
+    <!-- ⑥ 주간 화제의 영상 -->
+    {% set videos = sections.get('videos', {}) %}
+    {% if videos.get('visible') and video_items %}
+    <section class="nl-section">
+        <h3 class="nl-section-title">{{ videos.get('title', '주간 화제의 영상') }}</h3>
+        {% for v in video_items %}
+        <div class="nl-video-card">
+            {% if v.video_id %}
+            <a href="{{ v.youtube_url }}" target="_blank" class="nl-video-thumb">
+                <img src="{{ v.thumbnail }}" alt="{{ v.title }}">
+                <span class="nl-play-icon">&#9654;</span>
+            </a>
+            {% endif %}
+            {% if v.title %}<h4 class="nl-video-title">{{ v.title }}</h4>{% endif %}
+            {% if v.description %}<p class="nl-video-desc">{{ v.description }}</p>{% endif %}
+        </div>
+        {% endfor %}
+    </section>
+    {% endif %}
+
+    <!-- 광고 4 -->
+    {% if ads|length > 3 and ads[3].get('visible') and ads[3].get('image') %}
+    <div class="nl-ad">
+        {% if ads[3].get('link') %}<a href="{{ ads[3].link }}" target="_blank">{% endif %}
+        <img src="{{ ads[3].image }}" alt="광고">
+        {% if ads[3].get('link') %}</a>{% endif %}
+    </div>
+    {% endif %}
+
+    <!-- 지난 뉴스레터 -->
+    {% if recent_newsletters %}
+    <section class="nl-section">
+        <h3 class="nl-section-title">지난 뉴스레터</h3>
+        <div class="nl-recent-list">
+            {% for rnl in recent_newsletters %}
+            <a href="/newsletter/{{ rnl.slug }}" class="nl-recent-item">
+                <span class="nl-recent-vol">Vol. {{ rnl.volume_number }}</span>
+                <span class="nl-recent-title">{{ rnl.title }}</span>
+                {% if rnl.publish_date %}
+                <span class="nl-recent-date">{{ rnl.publish_date.strftime('%Y.%m.%d') }}</span>
+                {% endif %}
+            </a>
+            {% endfor %}
+        </div>
+    </section>
+    {% endif %}
+
+    <!-- 푸터 -->
+    <footer class="nl-footer">
+        <img src="/static/images/logo-header.png" alt="웰다잉뉴스" class="nl-footer-logo">
+        <p class="nl-footer-copy">&copy; 웰다잉뉴스 All rights reserved.</p>
+        <p class="nl-footer-links">
+            <a href="/">홈페이지</a>
+            <span>|</span>
+            <a href="/newsletter/archive">지난 뉴스레터</a>
+            <span>|</span>
+            <a href="/newsletter/unsubscribe">수신거부</a>
+        </p>
+    </footer>
+
+</div>
+</body>
+</html>

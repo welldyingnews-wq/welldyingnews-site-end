@@ -1,0 +1,52 @@
+{% extends "admin/base.html" %}
+{% block nav_title %}정보페이지 관리{% endblock %}
+{% block content %}
+<div class="card">
+    <div class="card-header d-flex align-items-center">
+        <strong>정보페이지 목록</strong>
+        <span class="text-muted ms-2 small">매체소개, 약관, 정책 등 안내 페이지를 관리합니다</span>
+    </div>
+    <div class="table-responsive">
+        <table class="table table-hover mb-0">
+            <thead class="table-light">
+                <tr>
+                    <th>그룹</th>
+                    <th>페이지명</th>
+                    <th>코드</th>
+                    <th>상태</th>
+                    <th>관리</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for p in pages %}
+                <tr>
+                    <td><span class="badge bg-secondary">{{ p.group }}</span></td>
+                    <td><strong>{{ p.title }}</strong></td>
+                    <td><code>{{ p.code }}</code></td>
+                    <td>
+                        {% if p.has_db_content %}
+                        <span class="badge bg-success"><i class="bi bi-pencil-square"></i> 수정됨</span>
+                        {% else %}
+                        <span class="badge bg-outline-secondary text-muted border">기본값</span>
+                        {% endif %}
+                    </td>
+                    <td class="text-nowrap">
+                        <a href="{{ url_for('admin.com_page_edit', page_code=p.code) }}" class="btn btn-sm btn-outline-primary">
+                            <i class="bi bi-pencil"></i> 편집
+                        </a>
+                        <a href="/com/{{ p.code }}.html" target="_blank" class="btn btn-sm btn-outline-secondary">
+                            <i class="bi bi-eye"></i> 보기
+                        </a>
+                        {% if p.has_db_content %}
+                        <form method="post" action="{{ url_for('admin.com_page_reset', page_code=p.code) }}" class="d-inline" onsubmit="return confirm('기본값으로 초기화하시겠습니까?')">
+                            <button class="btn btn-sm btn-outline-warning"><i class="bi bi-arrow-counterclockwise"></i> 초기화</button>
+                        </form>
+                        {% endif %}
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>
+{% endblock %}

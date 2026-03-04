@@ -3,34 +3,99 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<meta name="description" content="삶과 죽음의 존엄성을 전하는 웰다잉뉴스">
+{% if ga4_id %}
+<!-- Google Analytics 4 -->
+<script async src="https://www.googletagmanager.com/gtag/js?id={{ ga4_id }}"></script>
+<script>window.dataLayer=window.dataLayer||[];function gtag(){dataLayer.push(arguments);}gtag('js',new Date());gtag('config','{{ ga4_id }}');</script>
+{% endif %}
+<meta name="naver-site-verification" content="f25250377d179a6cf7de446cfcb32cf80e0ce784" />
+<meta name="description" content="호스피스, 사전연명의료의향서, 연명의료결정, 조력사망, 장례, 애도, 고독사, 생애말기 돌봄 등 존엄한 마무리 준비를 위한 웰다잉 미디어">
+{% block og_meta %}
 <meta property="og:type" content="website">
 <meta property="og:title" content="웰다잉뉴스">
 <meta property="og:site_name" content="웰다잉뉴스">
-<meta property="og:description" content="삶과 죽음의 존엄성을 전하는 웰다잉뉴스">
-<meta property="og:url" content="{{ request.url }}">
-<meta property="og:image" content="{{ request.url_root }}static/images/og_default.png">
+<meta property="og:description" content="호스피스, 사전연명의료의향서, 연명의료결정, 조력사망, 장례, 애도, 고독사, 생애말기 돌봄 등 존엄한 마무리 준비를 위한 웰다잉 미디어">
+<meta property="og:url" content="{{ site_url }}{{ request.path }}">
+<meta property="og:image" content="{{ site_url }}/static/images/og_default.png">
 <meta name="twitter:card" content="summary_large_image">
+{% endblock %}
+{% block canonical %}<link rel="canonical" href="{{ site_url }}{{ request.path }}{% if request.query_string %}?{{ request.query_string.decode('utf-8') }}{% endif %}">{% endblock %}
+<link rel="alternate" type="application/rss+xml" title="웰다잉뉴스 RSS" href="/rss">
 
-<title>{% block title %}웰다잉뉴스 — 존엄한 삶의 마무리를 위한 전문 미디어{% endblock %}</title>
+<!-- Organization + WebSite JSON-LD -->
+<script type="application/ld+json">
+{
+  "@context": "https://schema.org",
+  "@type": "NewsMediaOrganization",
+  "name": "웰다잉뉴스",
+  "alternateName": "welldyingnews",
+  "url": "{{ site_url }}",
+  "logo": {
+    "@type": "ImageObject",
+    "url": "{{ site_url }}/static/images/logo.png",
+    "width": 300,
+    "height": 60
+  },
+  "sameAs": [],
+  "contactPoint": {
+    "@type": "ContactPoint",
+    "email": "welldyingnews@naver.com",
+    "contactType": "customer service"
+  },
+  "address": {
+    "@type": "PostalAddress",
+    "addressLocality": "서울특별시",
+    "addressRegion": "송파구",
+    "streetAddress": "송파대로 345 512동 1605호",
+    "addressCountry": "KR"
+  }
+}
+</script>
+<script type="application/ld+json">
+{
+  "@context": "https://schema.org",
+  "@type": "WebSite",
+  "name": "웰다잉뉴스",
+  "url": "{{ site_url }}",
+  "potentialAction": {
+    "@type": "SearchAction",
+    "target": "{{ site_url }}/news/articleList.html?sc_area=A&sc_word={search_term_string}&view_type=sm",
+    "query-input": "required name=search_term_string"
+  }
+}
+</script>
+{% block jsonld %}{% endblock %}
+
+<title>{% block title %}웰다잉뉴스 — 삶과 죽음의 존엄성을 전하는 미디어{% endblock %}</title>
+<link rel="icon" type="image/png" href="/static/images/favicon.png">
+<link rel="apple-touch-icon" href="/static/images/favicon.png">
 <link rel="preconnect" href="https://fonts.googleapis.com">
-<link href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@300;400;500;700&family=Noto+Serif+KR:wght@400;600;700&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Nanum+Myeongjo:wght@400;700;800&family=Noto+Sans+KR:wght@300;400;500;700;800&family=Noto+Serif+KR:wght@400;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" as="style" crossorigin href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/static/pretendard.min.css">
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
-<link rel="stylesheet" href="/static/css/public_v0.css">
+<link rel="stylesheet" href="{{ static_v('css/public_v0.css') }}">
 {% block extra_css %}{% endblock %}
 </head>
 <body>
 
-<!-- =========== UTILITY BAR =========== -->
-<div class="utilbar">
-  <div class="utilbar__inner">
-    <span class="utilbar__slogan">존엄한 삶의 마무리를 위한 전문 미디어</span>
-    <div class="utilbar__links">
-      <a href="/news/articleList.html?sc_section_code=S1N6">뉴스레터 구독</a>
-      <a href="#">소개</a>
-    </div>
+<!-- =========== QUOTE BANNER (명언 — 로고 위, 고정크기, 명조체) =========== -->
+{% if header_quotes %}
+<div class="quote-banner" id="quoteBanner">
+  <div class="quote-banner__inner">
+    <span class="quote-banner__mark quote-banner__mark--left">❝</span>
+    <span class="quote-banner__text" id="quoteText">{{ header_quotes[0]|safe }}</span>
+    <span class="quote-banner__mark quote-banner__mark--right">❞</span>
+  </div>
+  <div class="quote-banner__login">
+    {% if current_member %}
+    <a href="/member/mypage.html" title="마이페이지"><i class="fa-regular fa-user"></i></a>
+    <a href="/member/logout" title="로그아웃"><i class="fa-solid fa-right-from-bracket"></i></a>
+    {% else %}
+    <a href="/member/login.html" title="로그인"><i class="fa-regular fa-user"></i></a>
+    {% endif %}
   </div>
 </div>
+{% endif %}
 
 <!-- =========== HEADER =========== -->
 <header class="header">
@@ -40,52 +105,79 @@
       <i class="fa-solid fa-bars"></i>
     </button>
 
-    <!-- Logo -->
+    <!-- Logo (중앙) -->
     <a href="/" class="header__logo">
-      <span class="header__logo-title">웰다잉뉴스</span>
-      <span class="header__logo-sub">WellDying News</span>
+      <img src="/static/images/logo-header.png" alt="웰다잉뉴스" class="header__logo-img">
     </a>
 
-    <!-- Right actions -->
-    <div class="header__actions">
-      <button class="header__icon-btn" onclick="toggleSearch()" aria-label="검색">
-        <i class="fa-solid fa-magnifying-glass"></i>
-      </button>
-      <a href="/news/articleList.html?sc_section_code=S1N6" class="header__cta">뉴스레터 구독</a>
-    </div>
   </div>
 
-  <!-- Search bar (toggle) -->
-  <div class="header__search" id="headerSearch">
-    <div class="header__search-wrap">
-      <i class="fa-solid fa-magnifying-glass"></i>
-      <form method="get" action="/news/articleList.html">
-        <input type="hidden" name="sc_area" value="A">
-        <input type="hidden" name="view_type" value="sm">
-        <input type="text" name="sc_word" placeholder="기사 검색..." autofocus>
-      </form>
-    </div>
-  </div>
-
-  <!-- Desktop category nav -->
+  <!-- Desktop category nav + search (우측 끝) -->
   <nav class="catnav" aria-label="카테고리 네비게이션">
     <div class="catnav__inner">
       <ul class="catnav__list">
         {% for sec in nav_sections %}
-        <li>
-          <a href="/news/articleList.html?sc_section_code={{ sec.code }}"
+        {% if sec.code != 'S1N5' %}
+        {% set subs = sec.subsections.all() %}
+        <li class="catnav__item{% if subs %} catnav__item--has-dropdown{% endif %}" data-sec="{{ sec.code }}">
+          <a href="{% if sec.code == 'S1N6' %}/newsletter/archive{% else %}/news/articleList.html?sc_section_code={{ sec.code }}{% endif %}"
              class="catnav__link{% if loop.first %} catnav__link--active{% endif %}">{{ sec.name }}</a>
+          {% if subs %}
+          <div class="catnav__mega">
+            <div class="catnav__dropdown-grid {% if subs|length > 6 %}catnav__dropdown-grid--4col{% elif subs|length <= 3 %}catnav__dropdown-grid--auto{% else %}catnav__dropdown-grid--3col{% endif %}">
+              {% for sub in subs %}
+              <a href="/news/articleList.html?sc_sub_section_code={{ sub.code }}" class="catnav__dropdown-link">{{ sub.name }}</a>
+              {% endfor %}
+            </div>
+          </div>
+          {% endif %}
         </li>
+        {% endif %}
+        {% if sec.code == 'S1N4' %}
+        <li class="catnav__item">
+          <a href="/schedule/list.html" class="catnav__link">주요일정</a>
+        </li>
+        {% endif %}
         {% endfor %}
         {% for board in nav_boards %}
-        <li>
-          <a href="/bbs/list.html?table={{ board.id }}" class="catnav__link">{{ board.name }}</a>
+        <li class="catnav__item">
+          <a href="/bbs/list.html?table={{ board.code }}" class="catnav__link">{{ board.name }}</a>
         </li>
         {% endfor %}
       </ul>
+
+      <!-- Search (우측 끝) -->
+      <form class="catnav__search" method="get" action="/news/articleList.html">
+        <input type="hidden" name="sc_area" value="A">
+        <input type="hidden" name="view_type" value="sm">
+        <input type="text" name="sc_word" class="catnav__search-input" placeholder="기사 검색...">
+        <button type="submit" class="catnav__search-btn"><i class="fa-solid fa-magnifying-glass"></i></button>
+      </form>
     </div>
   </nav>
 </header>
+
+<!-- =========== GLOBAL STICKY HEADER (기사페이지 제외) =========== -->
+{% if request.endpoint != 'public.article_view' %}
+<div class="aview-sticky" id="globalStickyHeader">
+  <div class="aview-sticky__inner aview-sticky__inner--center">
+    <a href="/" class="aview-sticky__logo"><img src="/static/images/logo-header.png" alt="웰다잉뉴스" class="aview-sticky__logo-img"></a>
+  </div>
+  <div class="aview-sticky__catnav">
+    <button class="aview-sticky__menu-btn" onclick="toggleMob()" aria-label="메뉴 열기"><i class="fa-solid fa-bars"></i></button>
+    <ul class="aview-sticky__catlist">
+      {% for sec in nav_sections %}
+      {% if sec.code != 'S1N5' %}
+      <li><a href="{% if sec.code == 'S1N6' %}/newsletter/archive{% else %}/news/articleList.html?sc_section_code={{ sec.code }}{% endif %}">{{ sec.name }}</a></li>
+      {% endif %}
+      {% if sec.code == 'S1N4' %}
+      <li><a href="/schedule/list.html">주요일정</a></li>
+      {% endif %}
+      {% endfor %}
+    </ul>
+  </div>
+</div>
+{% endif %}
 
 <!-- =========== MOBILE NAV =========== -->
 <div class="mobnav-overlay" id="mobOverlay" onclick="toggleMob()"></div>
@@ -96,89 +188,274 @@
   </div>
   <div class="mobnav__body">
     {% for sec in nav_sections %}
-    <a href="/news/articleList.html?sc_section_code={{ sec.code }}" class="mobnav__link"
+    {% if sec.code != 'S1N5' %}
+    {% set subs = sec.subsections.all() %}
+    {% if subs %}
+    <div class="mobnav__group">
+      <button class="mobnav__link mobnav__link--parent" onclick="toggleMobSub(this)">
+        {{ sec.name }}
+        <i class="fa-solid fa-chevron-down mobnav__arrow"></i>
+      </button>
+      <div class="mobnav__sub">
+        <a href="{% if sec.code == 'S1N6' %}/newsletter/archive{% else %}/news/articleList.html?sc_section_code={{ sec.code }}{% endif %}" class="mobnav__sublink"
+           onclick="toggleMob()">{{ sec.name }} 전체</a>
+        {% for sub in subs %}
+        <a href="/news/articleList.html?sc_sub_section_code={{ sub.code }}" class="mobnav__sublink"
+           onclick="toggleMob()">{{ sub.name }}</a>
+        {% endfor %}
+      </div>
+    </div>
+    {% else %}
+    <a href="{% if sec.code == 'S1N6' %}/newsletter/archive{% else %}/news/articleList.html?sc_section_code={{ sec.code }}{% endif %}" class="mobnav__link"
        onclick="toggleMob()">{{ sec.name }}</a>
+    {% endif %}
+    {% endif %}
+    {% if sec.code == 'S1N4' %}
+    <a href="/schedule/list.html" class="mobnav__link" onclick="toggleMob()">주요일정</a>
+    {% endif %}
     {% endfor %}
     {% for board in nav_boards %}
-    <a href="/bbs/list.html?table={{ board.id }}" class="mobnav__link"
+    <a href="/bbs/list.html?table={{ board.code }}" class="mobnav__link"
        onclick="toggleMob()">{{ board.name }}</a>
     {% endfor %}
     <div class="mobnav__divider"></div>
-    <a href="/news/articleList.html?sc_section_code=S1N6" class="mobnav__link" onclick="toggleMob()">뉴스레터 구독</a>
-    <a href="#" class="mobnav__link" onclick="toggleMob()">소개</a>
+    {% if current_member %}
+    <a href="/member/mypage.html" class="mobnav__link" onclick="toggleMob()"><i class="fa-regular fa-user"></i> {{ current_member.name }}님</a>
+    <a href="/member/logout" class="mobnav__link" onclick="toggleMob()"><i class="fa-solid fa-right-from-bracket"></i> 로그아웃</a>
+    {% else %}
+    <a href="/member/login.html" class="mobnav__link" onclick="toggleMob()"><i class="fa-regular fa-user"></i> 로그인</a>
+    <a href="/member/" class="mobnav__link" onclick="toggleMob()"><i class="fa-solid fa-user-plus"></i> 회원가입</a>
+    {% endif %}
   </div>
 </nav>
+
+{% from "public/_banner_macros.html" import banner_img %}
+<!-- =========== HEADER BANNER =========== -->
+{% if banners.get('header') %}
+<div class="banner-bar banner-bar--header">
+  <div class="container">
+    {% for b in banners['header'] %}
+    <a href="{{ url_for('public.banner_click', banner_id=b.id) }}" target="_blank" rel="noopener" class="banner-bar__link">
+      {{ banner_img(b, 'banner-bar__img') }}
+    </a>
+    {% endfor %}
+  </div>
+</div>
+{% endif %}
 
 <!-- =========== MAIN CONTENT =========== -->
 <main>
 {% block content %}{% endblock %}
 </main>
 
+<!-- =========== FOOTER BANNER (홈/기사상세 제외 — 각각 자체 위치에서 렌더링) =========== -->
+{% if banners.get('footer') and request.endpoint not in ('public.index', 'public.article_view') %}
+<div class="banner-bar banner-bar--footer">
+  <div class="container">
+    {% for b in banners['footer'] %}
+    <a href="{{ url_for('public.banner_click', banner_id=b.id) }}" target="_blank" rel="noopener" class="banner-bar__link">
+      {{ banner_img(b, 'banner-bar__img') }}
+    </a>
+    {% endfor %}
+  </div>
+</div>
+{% endif %}
+
 <!-- =========== FOOTER =========== -->
 <footer class="footer">
   <div class="footer__inner">
+    <div class="footer__brand">
+      <a href="/"><img src="/static/images/logo.png" alt="웰다잉뉴스" class="footer__brand-logo"></a>
+      <p class="footer__brand-desc">삶과 죽음의 존엄성을 전하는 미디어</p>
+    </div>
     <div class="footer__grid">
-      <!-- Branding -->
-      <div>
-        <div class="footer__brand-title">웰다잉뉴스</div>
-        <p class="footer__brand-desc">존엄한 삶의 마무리를 위한 전문 미디어</p>
-      </div>
-      <!-- Categories -->
-      <div>
+      <div class="footer__categories">
         <div class="footer__col-title">카테고리</div>
-        {% for sec in nav_sections[:5] %}
-        <a href="/news/articleList.html?sc_section_code={{ sec.code }}" class="footer__link">{{ sec.name }}</a>
-        {% endfor %}
+        <div class="footer__cat-grid">
+          {% for sub in footer_subsections %}
+          <a href="/news/articleList.html?sc_section_code=S1N1&sc_sub_section_code={{ sub.code }}" class="footer__link">{{ sub.name }}</a>
+          {% endfor %}
+        </div>
       </div>
-      <!-- More -->
       <div>
-        <div class="footer__col-title">더보기</div>
-        {% for sec in nav_sections[5:] %}
-        <a href="/news/articleList.html?sc_section_code={{ sec.code }}" class="footer__link">{{ sec.name }}</a>
-        {% endfor %}
-        {% for board in nav_boards[:3] %}
-        <a href="/bbs/list.html?table={{ board.id }}" class="footer__link">{{ board.name }}</a>
-        {% endfor %}
-      </div>
-      <!-- Info -->
-      <div>
-        <div class="footer__col-title">웰다잉뉴스</div>
-        <a href="#" class="footer__link">소개</a>
-        <a href="/news/articleList.html?sc_section_code=S1N6" class="footer__link">뉴스레터</a>
-        <a href="/news/articleList.html?sc_section_code=S1N4" class="footer__link">자료실</a>
-        {% if current_member %}
-        <a href="/member/mypage.html" class="footer__link">마이페이지</a>
-        {% endif %}
-        <a href="/admin/login" class="footer__link">관리자</a>
+        <div class="footer__shortcut-list">
+          <a href="/news/articleList.html?sc_section_code=S1N2">오피니언</a>
+          <a href="/news/articleList.html?sc_section_code=S1N5">웰다잉TV</a>
+          <a href="/resource/list.html">자료실</a>
+          <a href="/schedule/list.html">주요일정</a>
+          <a href="/newsletter/archive.html">뉴스레터</a>
+          <a href="/bbs/list.html?board=free">자유게시판</a>
+          {% if current_member %}
+          <a href="/member/mypage.html">마이페이지</a>
+          {% else %}
+          <a href="/member/login.html">로그인</a>
+          <a href="/member/register.html">회원가입</a>
+          {% endif %}
+        </div>
       </div>
     </div>
+    <div class="footer__press-info">
+      서울특별시 송파구 송파대로 345 512동 1605호 &nbsp;|&nbsp;
+      법인명 : 웰다잉미디어 &nbsp;|&nbsp;
+      제호 : 웰다잉뉴스 &nbsp;|&nbsp;
+      등록번호 : 서울 아 04366 &nbsp;|&nbsp;
+      등록일 : 2017-02-13 &nbsp;|&nbsp;
+      발행일 : 2016-12-01<br>
+      발행·편집인 : 김동하 &nbsp;|&nbsp;
+      청소년보호책임자 : 이성아 &nbsp;|&nbsp;
+      전화 : 010-5165-5574 &nbsp;|&nbsp;
+      문의 : <a href="mailto:welldyingnews@naver.com" style="color:inherit">welldyingnews@naver.com</a>
+    </div>
+    <div class="footer__nav">
+      <a href="/com/com-1.html">매체소개</a>
+      <a href="/com/jb.html">기사제보</a>
+      <a href="/com/ad.html">광고문의</a>
+      <a href="/com/privacy.html"><strong>개인정보처리방침</strong></a>
+      <a href="/com/youthpolicy.html">청소년보호정책</a>
+      <a href="/com/copyright.html">저작권보호정책</a>
+      <a href="/com/emailno.html">이메일무단수집거부</a>
+    </div>
     <div class="footer__bottom">
-      <p class="footer__copy">Copyright {{ "2026" }} 웰다잉뉴스. All rights reserved.</p>
-      <div class="footer__legal">
-        <a href="#">개인정보처리방침</a>
-        <a href="#">이용약관</a>
-      </div>
+      <p class="footer__copy">Copyright &copy; 2016 웰다잉뉴스. All rights reserved. mail to <a href="mailto:welldyingnews@naver.com" style="color:inherit;text-decoration:underline">welldyingnews@naver.com</a></p>
     </div>
   </div>
 </footer>
 
 <!-- =========== SCRIPTS =========== -->
 <script>
-/* Mobile nav */
 function toggleMob() {
   document.getElementById('mobNav').classList.toggle('open');
   document.getElementById('mobOverlay').classList.toggle('open');
 }
-
-/* Search toggle */
-function toggleSearch() {
-  const s = document.getElementById('headerSearch');
-  s.classList.toggle('open');
-  if (s.classList.contains('open')) {
-    s.querySelector('input[name="sc_word"]').focus();
-  }
+function toggleMobSub(btn) {
+  var group = btn.parentElement;
+  group.classList.toggle('open');
 }
+
+/* Header shrink on scroll */
+(function(){
+  var header = document.querySelector('.header');
+  if (!header) return;
+  var threshold = 60;
+  window.addEventListener('scroll', function() {
+    if (window.scrollY > threshold) {
+      header.classList.add('header--shrink');
+    } else {
+      header.classList.remove('header--shrink');
+    }
+  }, {passive: true});
+})();
+
+/* Global sticky header on scroll (기사페이지 제외) */
+(function(){
+  var gsh = document.getElementById('globalStickyHeader');
+  if (!gsh) return;
+  var header = document.querySelector('.header');
+  if (!header) return;
+  var trigger = header.offsetHeight + 60;
+  window.addEventListener('scroll', function(){
+    gsh.classList.toggle('aview-sticky--show', window.scrollY > trigger);
+  }, {passive: true});
+})();
+
+/* Mega dropdown: show on nav item hover */
+(function(){
+  var items = document.querySelectorAll('.catnav__item--has-dropdown');
+  var activeItem = null;
+  var hideTimer = null;
+  function closeAll() {
+    items.forEach(function(el) {
+      var m = el.querySelector('.catnav__mega');
+      if (m) m.style.display = 'none';
+    });
+    activeItem = null;
+  }
+  items.forEach(function(item) {
+    var mega = item.querySelector('.catnav__mega');
+    if (!mega) return;
+    item.addEventListener('mouseenter', function() {
+      clearTimeout(hideTimer);
+      if (activeItem && activeItem !== item) closeAll();
+      mega.style.display = 'block';
+      activeItem = item;
+    });
+    item.addEventListener('mouseleave', function() {
+      hideTimer = setTimeout(function(){ mega.style.display = 'none'; activeItem = null; }, 80);
+    });
+  });
+})();
 </script>
 {% block extra_js %}{% endblock %}
+<script>
+/* Sticky sidebar: CSS sticky + JS로 양방향 top 값 조정 */
+(function(){
+  if (window.innerWidth < 768) return;
+
+  var asides = document.querySelectorAll('.main-grid > aside');
+  if (!asides.length) return;
+
+  var BOTTOM_GAP = 16;
+  var lastY = window.scrollY;
+  var headerEl = document.querySelector('.header');
+
+  function topGap() {
+    return (headerEl ? headerEl.offsetHeight : 0) + 12;
+  }
+
+  asides.forEach(function(aside) {
+    aside._stickyTop = topGap();
+  });
+
+  function onScroll() {
+    var y = window.scrollY;
+    if (y === lastY) return;
+    var vh = window.innerHeight;
+    var delta = y - lastY;
+
+    var tg = topGap();
+
+    asides.forEach(function(aside) {
+      var h = aside.offsetHeight;
+      if (h + tg + BOTTOM_GAP <= vh) {
+        aside._stickyTop = tg;
+        aside.style.top = tg + 'px';
+        return;
+      }
+
+      var minTop = vh - h - BOTTOM_GAP;
+      var maxTop = tg;
+      var cur = aside._stickyTop - delta;
+
+      cur = Math.max(cur, minTop);
+      cur = Math.min(cur, tg);
+
+      aside._stickyTop = cur;
+      aside.style.top = cur + 'px';
+    });
+
+    lastY = y;
+  }
+
+  window.addEventListener('scroll', onScroll, {passive: true});
+
+  function recalc() {
+    lastY = window.scrollY;
+    var tg = topGap();
+    asides.forEach(function(aside) {
+      var vh = window.innerHeight;
+      var h = aside.offsetHeight;
+      if (h + tg + BOTTOM_GAP <= vh) {
+        aside._stickyTop = tg;
+      } else {
+        aside._stickyTop = vh - h - BOTTOM_GAP;
+      }
+      aside.style.top = aside._stickyTop + 'px';
+    });
+  }
+
+  window.addEventListener('resize', recalc, {passive: true});
+  window.addEventListener('load', recalc);
+})();
+</script>
 </body>
 </html>

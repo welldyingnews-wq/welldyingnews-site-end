@@ -1,0 +1,699 @@
+/* ============================
+   뉴스레터 — 따뜻한 에디토리얼 매거진
+   ============================ */
+
+@import url('https://fonts.googleapis.com/css2?family=Noto+Serif+KR:wght@400;700;900&display=swap');
+
+/* ── 래퍼 ── */
+.nmag {
+    max-width: 1080px;
+    margin: 0 auto;
+    padding: 0 1rem 3rem;
+}
+
+/* ── 마스트헤드 (웜 그라데이션) ── */
+.nmag-mast {
+    text-align: center;
+    padding: 2.5rem 1.5rem 2rem;
+    background: linear-gradient(135deg, #f3eafa 0%, #faf6f0 60%, #fdf8f2 100%);
+    border-radius: 16px;
+    margin: 1rem 0 1.5rem;
+    position: relative;
+    border-top: 4px solid #5e1985;
+}
+.nmag-mast__label {
+    font-size: .7rem;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 6px;
+    color: #5e1985;
+    display: block;
+    margin-bottom: .6rem;
+}
+.nmag-mast__title {
+    font-family: 'Noto Serif KR', serif;
+    font-size: 2rem;
+    font-weight: 900;
+    color: #1a1a2e;
+    margin: 0 0 .5rem;
+    line-height: 1.3;
+    letter-spacing: -0.5px;
+}
+.nmag-mast__meta {
+    font-size: .82rem;
+    color: #888;
+    letter-spacing: 1px;
+}
+.nmag-mast__vol {
+    font-weight: 700;
+    color: #5e1985;
+}
+.nmag-mast__sep {
+    margin: 0 .6rem;
+    color: #ccc;
+}
+.nmag-mast::after {
+    content: '';
+    display: block;
+    width: 60px;
+    height: 3px;
+    background: #5e1985;
+    margin: 1.25rem auto 0;
+    border-radius: 2px;
+}
+
+/* ── 섹션 디바이더 (굵은 실선) ── */
+.nmag-divider {
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+    margin: 2.5rem 0 1.5rem;
+}
+.nmag-divider::before,
+.nmag-divider::after {
+    content: '';
+    flex: 1;
+    height: 3px;
+    background: #222;
+    border-radius: 1px;
+}
+.nmag-divider__text {
+    font-family: 'Noto Serif KR', serif;
+    font-size: 1.05rem;
+    font-weight: 700;
+    color: #222;
+    white-space: nowrap;
+    letter-spacing: 1px;
+}
+.nmag-divider__icon {
+    color: #b388d4;
+    font-size: .85rem;
+}
+
+/* ── 브리핑 (이미지 상단 + 본문 하단) ── */
+.nmag-briefing {
+    margin-bottom: 2.5rem;
+    background: #fff;
+    border-radius: 16px;
+    overflow: hidden;
+    box-shadow: 0 2px 12px rgba(94,25,133,0.05);
+}
+.nmag-briefing__img-wrap {
+    position: relative;
+    background: linear-gradient(135deg, #e8ddf0, #d8cce4);
+    padding: 8px 8px 0;
+}
+.nmag-briefing__img {
+    width: 100%;
+    display: block;
+    border-radius: 8px 8px 0 0;
+    max-height: 480px;
+    object-fit: cover;
+}
+.nmag-briefing__tag {
+    position: absolute;
+    top: 1.25rem;
+    left: 1.25rem;
+    font-size: .72rem;
+    font-weight: 600;
+    letter-spacing: 2px;
+    color: #fff;
+    background: rgba(94, 25, 133, 0.85);
+    border-radius: 20px;
+    padding: .3rem 1rem;
+}
+.nmag-briefing__body {
+    padding: 2rem 2.5rem 2.5rem;
+}
+.nmag-briefing__title {
+    font-family: 'Noto Serif KR', serif;
+    font-size: 1.8rem;
+    font-weight: 900;
+    color: #111;
+    line-height: 1.45;
+    margin: 0 0 1.25rem;
+}
+.nmag-briefing__content {
+    font-size: .95rem;
+    color: #444;
+    line-height: 1.9;
+    margin-bottom: 1.25rem;
+}
+.nmag-briefing__content img {
+    max-width: 100%;
+    height: auto;
+    border-radius: 4px;
+    margin: .5rem 0;
+}
+.nmag-briefing__content p {
+    margin-bottom: .75rem;
+}
+.nmag-briefing__cta {
+    display: inline-block;
+    padding: .55rem 1.75rem;
+    background: #5e1985;
+    color: #fff;
+    border-radius: 24px;
+    font-size: .85rem;
+    font-weight: 500;
+    text-decoration: none;
+    letter-spacing: .5px;
+    transition: background .2s;
+}
+.nmag-briefing__cta:hover {
+    background: #4a1269;
+    color: #fff;
+}
+
+/* ── 포커스 (1+4 비대칭 그리드) ── */
+.nmag-focus {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    grid-template-rows: auto auto;
+    gap: 1.25rem;
+}
+.nmag-focus__lead {
+    grid-row: 1 / 3;
+    display: block;
+    text-decoration: none;
+    color: inherit;
+    border-radius: 12px;
+    overflow: hidden;
+    background: #fff;
+    box-shadow: 0 2px 12px rgba(94,25,133,0.05);
+    transition: box-shadow .2s, transform .15s;
+}
+.nmag-focus__lead:hover {
+    box-shadow: 0 8px 28px rgba(94,25,133,0.1);
+    transform: translateY(-3px);
+}
+.nmag-focus__lead > div:first-child {
+    position: relative;
+    background: linear-gradient(135deg, #e8ddf0, #d8cce4);
+    padding: 6px 6px 0;
+}
+.nmag-focus__lead-img {
+    width: 100%;
+    aspect-ratio: 4 / 3;
+    object-fit: cover;
+    display: block;
+    border-radius: 6px 6px 0 0;
+}
+.nmag-focus__lead-img-ph {
+    width: 100%;
+    aspect-ratio: 4 / 3;
+    background: linear-gradient(135deg, #f5f0fa, #f0ece8);
+    border-radius: 6px 6px 0 0;
+}
+.nmag-focus__lead-body {
+    padding: 1.25rem 1.25rem 1.5rem;
+}
+.nmag-focus__lead-title {
+    font-family: 'Noto Serif KR', serif;
+    font-size: 1.2rem;
+    font-weight: 700;
+    line-height: 1.5;
+    margin-bottom: .4rem;
+    color: #111;
+}
+.nmag-focus__lead-summary {
+    font-size: .88rem;
+    color: #666;
+    line-height: 1.65;
+    display: -webkit-box;
+    -webkit-line-clamp: 3;
+    -webkit-box-orient: vertical;
+    overflow: hidden;
+}
+/* 오른쪽 작은 카드들 */
+.nmag-focus__side {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 1.25rem;
+}
+.nmag-focus__card {
+    display: block;
+    text-decoration: none;
+    color: inherit;
+    border-radius: 12px;
+    overflow: hidden;
+    background: #fff;
+    box-shadow: 0 2px 10px rgba(94,25,133,0.04);
+    transition: box-shadow .2s, transform .15s;
+}
+.nmag-focus__card:hover {
+    box-shadow: 0 6px 20px rgba(94,25,133,0.1);
+    transform: translateY(-2px);
+}
+.nmag-focus__card .nmag-img-frame {
+    background: linear-gradient(135deg, #e8ddf0, #d8cce4);
+    padding: 5px 5px 0;
+}
+.nmag-focus__card-img {
+    width: 100%;
+    aspect-ratio: 16 / 10;
+    object-fit: cover;
+    display: block;
+    border-radius: 4px 4px 0 0;
+}
+.nmag-focus__card-img-ph {
+    width: 100%;
+    aspect-ratio: 16 / 10;
+    background: linear-gradient(135deg, #f5f0fa, #f0ece8);
+    border-radius: 4px 4px 0 0;
+}
+.nmag-focus__card-body {
+    padding: .65rem .85rem .75rem;
+}
+.nmag-focus__card-title {
+    font-size: .85rem;
+    font-weight: 600;
+    line-height: 1.4;
+    display: -webkit-box;
+    -webkit-line-clamp: 2;
+    -webkit-box-orient: vertical;
+    overflow: hidden;
+    color: #222;
+}
+
+/* ── 광고 ── */
+.nmag-ad {
+    text-align: center;
+    margin: 2rem 0;
+    padding: 1rem 0;
+}
+.nmag-ad img {
+    max-width: 100%;
+    border-radius: 8px;
+    display: block;
+    margin: 0 auto;
+}
+.nmag-ad a { display: block; }
+
+/* ── 오피니언 (카드형, 필자 아바타) ── */
+.nmag-opinion-grid {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 1.5rem;
+}
+.nmag-opinion-card {
+    display: block;
+    text-decoration: none;
+    color: inherit;
+    border-radius: 12px;
+    overflow: hidden;
+    background: #fff;
+    box-shadow: 0 2px 10px rgba(94,25,133,0.04);
+    transition: box-shadow .2s, transform .15s;
+}
+.nmag-opinion-card:hover {
+    box-shadow: 0 6px 20px rgba(94,25,133,0.1);
+    transform: translateY(-2px);
+}
+.nmag-opinion-card__img-wrap {
+    position: relative;
+    overflow: hidden;
+    background: linear-gradient(135deg, #e8ddf0, #d8cce4);
+    padding: 5px 5px 0;
+}
+.nmag-opinion-card__img {
+    width: 100%;
+    aspect-ratio: 16 / 10;
+    object-fit: cover;
+    display: block;
+    border-radius: 4px 4px 0 0;
+}
+.nmag-opinion-card__body {
+    padding: 1rem;
+}
+.nmag-opinion-card__author-line {
+    display: flex;
+    align-items: center;
+    gap: .4rem;
+    margin-bottom: .5rem;
+}
+.nmag-opinion-card__author-icon {
+    width: 22px;
+    height: 22px;
+    border-radius: 50%;
+    background: linear-gradient(135deg, #e8ddf0, #d4c0e8);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: .6rem;
+    color: #5e1985;
+    flex-shrink: 0;
+    font-weight: 700;
+}
+.nmag-opinion-card__author-name {
+    font-size: .75rem;
+    color: #5e1985;
+    font-weight: 600;
+}
+.nmag-opinion-card__title {
+    font-family: 'Noto Serif KR', serif;
+    font-size: .95rem;
+    font-weight: 700;
+    line-height: 1.45;
+    margin-bottom: .3rem;
+    color: #111;
+    display: -webkit-box;
+    -webkit-line-clamp: 2;
+    -webkit-box-orient: vertical;
+    overflow: hidden;
+}
+.nmag-opinion-card__summary {
+    font-size: .82rem;
+    color: #777;
+    line-height: 1.55;
+    display: -webkit-box;
+    -webkit-line-clamp: 2;
+    -webkit-box-orient: vertical;
+    overflow: hidden;
+}
+
+/* ── 도서 + 글귀 밴드 래퍼 ── */
+.nmag-band {
+    background: #faf7f2;
+    border-radius: 16px;
+    padding: 2rem 2rem 2.25rem;
+    margin-bottom: 2.5rem;
+}
+.nmag-band .nmag-divider {
+    margin-top: 0;
+    margin-bottom: 1.25rem;
+}
+.nmag-band .nmag-divider::before,
+.nmag-band .nmag-divider::after {
+    background: #333;
+}
+
+/* 2컬럼: 도서 + 글귀 */
+.nmag-two-col {
+    display: flex;
+    gap: 2rem;
+}
+.nmag-two-col__left {
+    flex: 1;
+    min-width: 0;
+}
+.nmag-two-col__right {
+    flex: 1;
+    min-width: 0;
+}
+
+/* 추천 도서 */
+.nmag-book {
+    display: flex;
+    gap: 1.5rem;
+    background: #fff;
+    border-radius: 12px;
+    padding: 1.5rem;
+    height: 100%;
+    box-shadow: 0 2px 10px rgba(0,0,0,0.04);
+}
+.nmag-book__cover {
+    width: 130px;
+    flex-shrink: 0;
+    border-radius: 6px;
+    box-shadow: 0 4px 16px rgba(0,0,0,0.12);
+    align-self: flex-start;
+}
+.nmag-book__info {
+    flex: 1;
+    min-width: 0;
+}
+.nmag-book__name {
+    font-family: 'Noto Serif KR', serif;
+    font-size: 1.05rem;
+    font-weight: 700;
+    margin-bottom: .25rem;
+    color: #222;
+}
+.nmag-book__author {
+    font-size: .82rem;
+    color: #999;
+    margin-bottom: .75rem;
+}
+.nmag-book__desc {
+    font-size: .85rem;
+    color: #555;
+    line-height: 1.7;
+    margin-bottom: .75rem;
+}
+.nmag-book__link {
+    display: inline-block;
+    font-size: .82rem;
+    color: #5e1985;
+    text-decoration: none;
+    font-weight: 600;
+    border-bottom: 1px solid #5e1985;
+    padding-bottom: 1px;
+    transition: color .2s;
+}
+.nmag-book__link:hover { color: #4a1269; }
+
+/* ── 글귀 (풀폭 밴드) ── */
+.nmag-quote-band {
+    background: linear-gradient(135deg, #f8f3fd 0%, #f0e8f7 100%);
+    border-radius: 14px;
+    padding: 2.5rem 3rem;
+    text-align: center;
+    margin-bottom: 2.5rem;
+    position: relative;
+}
+.nmag-quote-band__mark {
+    font-family: 'Noto Serif KR', serif;
+    font-size: 4rem;
+    color: #d4b8e8;
+    line-height: 1;
+    margin-bottom: -.5rem;
+    display: block;
+}
+.nmag-quote-band blockquote {
+    font-family: 'Noto Serif KR', serif;
+    font-size: 1.2rem;
+    line-height: 2;
+    color: #333;
+    margin: 0;
+    padding: 0;
+    border: none;
+    max-width: 700px;
+    margin: 0 auto;
+}
+.nmag-quote-band blockquote p {
+    margin-bottom: .5rem;
+}
+.nmag-quote-band cite {
+    display: block;
+    font-family: 'Noto Sans KR', sans-serif;
+    font-size: .85rem;
+    color: #888;
+    font-style: normal;
+    margin-top: .75rem;
+}
+/* 글귀 사이드 (도서와 함께일 때) */
+.nmag-quote-side {
+    background: linear-gradient(135deg, #f8f3fd 0%, #f0e8f7 100%);
+    border-radius: 12px;
+    padding: 1.75rem;
+    height: 100%;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    text-align: center;
+}
+.nmag-quote-side__mark {
+    font-family: 'Noto Serif KR', serif;
+    font-size: 3rem;
+    color: #d4b8e8;
+    line-height: 1;
+    margin-bottom: .25rem;
+}
+.nmag-quote-side blockquote {
+    font-family: 'Noto Serif KR', serif;
+    font-size: 1rem;
+    line-height: 1.9;
+    color: #333;
+    margin: 0;
+    padding: 0;
+    border: none;
+}
+.nmag-quote-side blockquote p {
+    margin-bottom: .3rem;
+}
+.nmag-quote-side cite {
+    display: block;
+    font-family: 'Noto Sans KR', sans-serif;
+    font-size: .8rem;
+    color: #888;
+    font-style: normal;
+    margin-top: .5rem;
+}
+
+/* ── 영상 (2열 카드) ── */
+.nmag-video-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 1.5rem;
+}
+.nmag-video-card {
+    border-radius: 12px;
+    overflow: hidden;
+    background: #fff;
+    box-shadow: 0 2px 10px rgba(94,25,133,0.04);
+}
+.nmag-video-card__thumb {
+    display: block;
+    position: relative;
+    overflow: hidden;
+    background: linear-gradient(135deg, #e8ddf0, #d8cce4);
+    padding: 5px 5px 0;
+}
+.nmag-video-card__thumb img {
+    width: 100%;
+    display: block;
+    aspect-ratio: 16/9;
+    object-fit: cover;
+    transition: transform .3s;
+    border-radius: 4px 4px 0 0;
+}
+.nmag-video-card:hover .nmag-video-card__thumb img {
+    transform: scale(1.03);
+}
+.nmag-video-card__play {
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    width: 56px;
+    height: 56px;
+    background: rgba(0,0,0,0.45);
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 1.3rem;
+    color: #fff;
+    transition: background .2s, transform .2s;
+    border: 2px solid rgba(255,255,255,.4);
+}
+.nmag-video-card:hover .nmag-video-card__play {
+    background: rgba(94,25,133,0.8);
+    transform: translate(-50%, -50%) scale(1.05);
+}
+.nmag-video-card__body {
+    padding: .85rem 1rem;
+}
+.nmag-video-card__title {
+    font-size: .92rem;
+    font-weight: 600;
+    margin-bottom: .15rem;
+    color: #222;
+}
+.nmag-video-card__desc {
+    font-size: .8rem;
+    color: #888;
+    line-height: 1.5;
+}
+
+/* ── 지난 뉴스레터 ── */
+.nmag-recent-grid {
+    display: flex;
+    gap: 1rem;
+    overflow-x: auto;
+    padding-bottom: .5rem;
+}
+.nmag-recent-card {
+    flex: 0 0 220px;
+    display: flex;
+    flex-direction: column;
+    gap: .3rem;
+    padding: 1rem 1.25rem;
+    border-radius: 12px;
+    text-decoration: none;
+    color: inherit;
+    transition: box-shadow .2s, transform .15s;
+    background: #fff;
+    box-shadow: 0 2px 8px rgba(94,25,133,0.04);
+}
+.nmag-recent-card:hover {
+    box-shadow: 0 4px 16px rgba(94,25,133,0.1);
+    transform: translateY(-2px);
+}
+.nmag-recent-card__vol {
+    font-size: .75rem;
+    font-weight: 700;
+    color: #5e1985;
+    letter-spacing: .5px;
+}
+.nmag-recent-card__title {
+    font-family: 'Noto Serif KR', serif;
+    font-size: .88rem;
+    font-weight: 500;
+    line-height: 1.4;
+    color: #222;
+}
+.nmag-recent-card__date {
+    font-size: .75rem;
+    color: #999;
+}
+.nmag-recent-card--more {
+    align-items: center;
+    justify-content: center;
+    background: linear-gradient(135deg, #f5f0fa, #faf7f2);
+    color: #5e1985;
+    font-weight: 600;
+    font-size: .9rem;
+    border: 1.5px dashed #e0d4ea;
+}
+
+/* ── 버튼 ── */
+.nmag-btn {
+    display: inline-block;
+    padding: .5rem 1.25rem;
+    background: #5e1985;
+    color: #fff;
+    border-radius: 24px;
+    font-size: .85rem;
+    font-weight: 500;
+    text-decoration: none;
+    transition: background .2s;
+    letter-spacing: .3px;
+}
+.nmag-btn:hover { background: #4a1269; color: #fff; }
+
+/* ── 반응형 ── */
+
+/* 태블릿 (≤900px) */
+@media (max-width: 900px) {
+    .nmag-mast__title { font-size: 1.6rem; }
+    .nmag-briefing__title { font-size: 1.5rem; }
+    .nmag-briefing__body { padding: 1.5rem 1.75rem 2rem; }
+    .nmag-focus { grid-template-columns: 1fr; }
+    .nmag-focus__lead { grid-row: auto; }
+    .nmag-focus__side { grid-template-columns: repeat(3, 1fr); }
+    .nmag-opinion-grid { grid-template-columns: repeat(2, 1fr); }
+    .nmag-two-col { flex-direction: column; }
+    .nmag-band { padding: 1.5rem; }
+}
+
+/* 모바일 (≤600px) */
+@media (max-width: 600px) {
+    .nmag { padding: 0 .5rem 2rem; }
+    .nmag-mast { padding: 1.5rem 1rem 1.25rem; border-radius: 12px; margin: .5rem 0 1rem; }
+    .nmag-mast__label { letter-spacing: 3px; font-size: .65rem; }
+    .nmag-mast__title { font-size: 1.3rem; }
+    .nmag-briefing { border-radius: 12px; }
+    .nmag-briefing__img-wrap { padding: 6px 6px 0; }
+    .nmag-briefing__body { padding: 1.25rem; }
+    .nmag-briefing__title { font-size: 1.25rem; }
+    .nmag-focus__side { grid-template-columns: 1fr 1fr; }
+    .nmag-opinion-grid { grid-template-columns: 1fr; }
+    .nmag-video-grid { grid-template-columns: 1fr; }
+    .nmag-quote-band { padding: 1.5rem 1.25rem; border-radius: 12px; }
+    .nmag-quote-band blockquote { font-size: 1.05rem; }
+    .nmag-recent-card { flex: 0 0 180px; }
+    .nmag-divider { margin: 2rem 0 1.25rem; }
+    .nmag-band { padding: 1.25rem; border-radius: 12px; }
+}

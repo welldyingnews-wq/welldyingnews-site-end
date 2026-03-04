@@ -8,20 +8,48 @@
 <div class="table-responsive">
     <table class="table table-hover">
         <thead class="table-light">
-            <tr><th style="width:50px">번호</th><th style="width:80px">이미지</th><th>이름</th><th>위치</th><th>링크</th><th>클릭</th><th>상태</th><th>관리</th></tr>
+            <tr>
+                <th style="width:40px">순서</th>
+                <th style="width:80px">이미지</th>
+                <th>이름</th>
+                <th>위치</th>
+                <th>기간</th>
+                <th>클릭</th>
+                <th>상태</th>
+                <th style="width:90px">관리</th>
+            </tr>
         </thead>
         <tbody>
             {% for b in banners %}
             <tr>
-                <td>{{ b.id }}</td>
+                <td>{{ b.sort_order }}</td>
                 <td>{% if b.image_path %}<img src="{{ b.image_path if b.image_path.startswith(('http', '/')) else url_for('static', filename=b.image_path) }}" style="width:60px;height:40px;object-fit:cover" class="rounded">{% else %}-{% endif %}</td>
-                <td>{{ b.name }}</td><td>{{ b.position or '-' }}</td>
-                <td><small>{{ b.link_url|truncate(40) }}</small></td>
+                <td>
+                    <a href="{{ url_for('admin.banner_edit', banner_id=b.id) }}" class="text-decoration-none">{{ b.name }}</a>
+                    {% if b.mobile_image_path %} <span class="badge bg-info" title="모바일 이미지 있음">M</span>{% endif %}
+                    {% if b.link_url %}<br><small class="text-muted">{{ b.link_url|truncate(40) }}</small>{% endif %}
+                </td>
+                <td><span class="badge bg-light text-dark">{{ b.position or '-' }}</span></td>
+                <td>
+                    <small>
+                        {% if b.start_date or b.end_date %}
+                        {{ b.start_date.strftime('%m/%d %H:%M') if b.start_date else '시작일 없음' }}
+                        ~
+                        {{ b.end_date.strftime('%m/%d %H:%M') if b.end_date else '종료일 없음' }}
+                        {% else %}
+                        <span class="text-muted">상시</span>
+                        {% endif %}
+                    </small>
+                </td>
                 <td>{{ b.click_count }}</td>
-                <td><span class="badge {% if b.is_active %}bg-success{% else %}bg-danger{% endif %}">{{ '활성' if b.is_active else '비활성' }}</span></td>
+                <td>
+                    <form method="post" action="{{ url_for('admin.banner_toggle', banner_id=b.id) }}" class="d-inline">
+                        <button type="submit" class="badge border-0 {% if b.is_active %}bg-success{% else %}bg-danger{% endif %}" style="cursor:pointer" title="클릭하여 상태 변경">{{ '활성' if b.is_active else '비활성' }}</button>
+                    </form>
+                </td>
                 <td>
                     <a href="{{ url_for('admin.banner_edit', banner_id=b.id) }}" class="btn btn-sm btn-outline-primary"><i class="bi bi-pencil"></i></a>
-                    <form method="post" action="{{ url_for('admin.banner_delete', banner_id=b.id) }}" class="d-inline" onsubmit="return confirm('삭제?')">
+                    <form method="post" action="{{ url_for('admin.banner_delete', banner_id=b.id) }}" class="d-inline" onsubmit="return confirm('삭제하시겠습니까?')">
                         <button class="btn btn-sm btn-outline-danger"><i class="bi bi-trash"></i></button>
                     </form>
                 </td>

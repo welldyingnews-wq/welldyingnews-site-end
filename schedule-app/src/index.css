@@ -1,0 +1,42 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* Scoped reset: only inside #schedule-app */
+#schedule-app {
+  line-height: 1.5;
+  -webkit-font-smoothing: antialiased;
+}
+
+#schedule-app *,
+#schedule-app *::before,
+#schedule-app *::after {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+}
+
+#schedule-app button {
+  cursor: pointer;
+  background: none;
+  border: none;
+  font: inherit;
+  color: inherit;
+}
+
+#schedule-app a {
+  color: inherit;
+  text-decoration: none;
+}
+
+#schedule-app table {
+  border-spacing: 0;
+}
+
+/* line-clamp utility (Tailwind v3 doesn't always include this) */
+#schedule-app .line-clamp-2 {
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}

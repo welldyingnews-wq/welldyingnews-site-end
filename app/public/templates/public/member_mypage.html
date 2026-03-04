@@ -1,118 +1,76 @@
-{% extends "public/base.html" %}
-{% block title %}마이페이지 - 웰다잉뉴스{% endblock %}
-
-{% block extra_head %}
-<style type="text/css">
-.mb-mypage{max-width:600px;margin:40px auto;padding:0 15px}
-.mb-mypage .join-header{text-align:center;margin-bottom:30px}
-.mb-mypage .join-header-title{font-size:1.5rem;font-weight:700;color:#222}
-.mb-mypage .join-subject{font-size:1.0625rem;font-weight:700;color:#222;margin-bottom:15px;padding-bottom:10px;border-bottom:2px solid #222}
-.mb-mypage .mb-content{margin-bottom:30px}
-.mb-mypage .info-row{display:flex;padding:10px 0;border-bottom:1px solid #eee;font-size:.875rem}
-.mb-mypage .info-row:last-child{border-bottom:none}
-.mb-mypage .info-row .label{width:100px;color:#888;flex-shrink:0;font-weight:500}
-.mb-mypage .info-row .value{color:#333}
-.mb-mypage fieldset{margin:0;padding:10px 0;border:none}
-.mb-mypage fieldset .medium-4{display:flex;align-items:center}
-.mb-mypage label strong{font-size:.875rem;font-weight:600}
-.mb-mypage input[type="text"],.mb-mypage input[type="password"],.mb-mypage input[type="email"],.mb-mypage input[type="tel"]{height:42px;font-size:.875rem;border:1px solid #ccc;border-radius:3px;margin-bottom:0}
-.mb-mypage input:focus{border-color:#5e1985;box-shadow:none}
-.mb-mypage .help-text{font-size:.75rem;color:#999;margin-top:4px}
-.mb-mypage .button.user-bg{background-color:#5e1985!important;color:#fff}
-.mb-mypage .button.user-bg:hover{background-color:#4a1369!important}
-.mb-mypage .profile-area{text-align:center;margin-bottom:20px}
-.mb-mypage .profile-img{width:80px;height:80px;border-radius:50%;background:#e0d5ea;display:inline-block;overflow:hidden;background-size:cover;background-position:center}
-.mb-mypage .profile-img img{width:100%;height:100%;object-fit:cover}
-.callout.alert{background:#fff0f0;color:#c00;border:1px solid #fdd}
-.callout.success{background:#f0fff0;color:#2a7a2a;border:1px solid #b2e6b2}
-</style>
-{% endblock %}
+{% extends "public/base_v0.html" %}
+{% block title %}마이페이지 — 웰다잉뉴스{% endblock %}
 
 {% block content %}
-<div class="mb-mypage">
-    <header class="join-header">
-        <h1 class="join-header-title">마이페이지</h1>
-    </header>
+<div class="container section-gap">
+  <div class="auth-card auth-card--wide">
+    <div class="auth-card__header">
+      <h1 class="auth-card__title">마이페이지</h1>
+    </div>
 
     {% with messages = get_flashed_messages(with_categories=true) %}
     {% if messages %}
     {% for category, message in messages %}
-    <div class="callout {{ 'alert' if category == 'error' else category }}">
-        <p style="margin:0">{{ message }}</p>
+    <div class="auth-alert auth-alert--{{ 'error' if category == 'error' else 'success' }}">
+      <i class="fa-solid {{ 'fa-circle-exclamation' if category == 'error' else 'fa-circle-check' }}"></i>
+      {{ message }}
     </div>
     {% endfor %}
     {% endif %}
     {% endwith %}
 
-    <!-- 프로필 이미지 -->
-    <div class="profile-area">
-        <div class="profile-img" {% if member.profile_image %}style="background-image:url({{ member.profile_image }})"{% endif %}></div>
+    <!-- 프로필 -->
+    <div class="mypage-profile">
+      <div class="mypage-profile__avatar" {% if member.profile_image %}style="background-image:url({{ member.profile_image }})"{% endif %}>
+        {% if not member.profile_image %}<i class="fa-solid fa-user"></i>{% endif %}
+      </div>
+      <div class="mypage-profile__info">
+        <div class="mypage-profile__name">{{ member.name }}</div>
+        <div class="mypage-profile__id">@{{ member.user_id }}</div>
+      </div>
     </div>
 
-    <!-- 회원 정보 -->
-    <article class="mb-content">
-        <h3 class="join-subject">회원정보</h3>
-        <div class="info-row"><span class="label">아이디</span><span class="value">{{ member.user_id }}</span></div>
-        <div class="info-row"><span class="label">이름</span><span class="value">{{ member.name }}</span></div>
-        <div class="info-row"><span class="label">이메일</span><span class="value">{{ member.email or '-' }}</span></div>
-        <div class="info-row"><span class="label">연락처</span><span class="value">{{ member.phone or '-' }}</span></div>
-        <div class="info-row"><span class="label">가입일</span><span class="value">{{ member.created_at.strftime('%Y-%m-%d') }}</span></div>
-    </article>
+    <!-- 회원정보 -->
+    <div class="mypage-section">
+      <h3 class="mypage-section__title">회원정보</h3>
+      <div class="mypage-info">
+        <div class="mypage-info__row"><span class="mypage-info__label">아이디</span><span>{{ member.user_id }}</span></div>
+        <div class="mypage-info__row"><span class="mypage-info__label">이름</span><span>{{ member.name }}</span></div>
+        <div class="mypage-info__row"><span class="mypage-info__label">이메일</span><span>{{ member.email or '-' }}</span></div>
+        <div class="mypage-info__row"><span class="mypage-info__label">연락처</span><span>{{ member.phone or '-' }}</span></div>
+        <div class="mypage-info__row"><span class="mypage-info__label">가입일</span><span>{{ member.created_at.strftime('%Y-%m-%d') }}</span></div>
+      </div>
+    </div>
 
-    <!-- 정보 수정 -->
-    <form method="POST" action="{{ url_for('public.member_update') }}" enctype="multipart/form-data">
-        <article class="mb-content">
-            <h3 class="join-subject">회원정보 수정</h3>
-
-            <fieldset class="row expanded small-collapse medium-uncollapse">
-                <div class="medium-4 columns">
-                    <label for="profile_image" class="text-left medium-middle"><strong>프로필 이미지</strong></label>
-                </div>
-                <div class="medium-8 columns">
-                    <input type="file" id="profile_image" name="profile_image" accept="image/*">
-                    <span class="help-text">jpg, png, gif (최대 2MB)</span>
-                </div>
-            </fieldset>
-
-            <fieldset class="row expanded small-collapse medium-uncollapse">
-                <div class="medium-4 columns">
-                    <label for="name" class="text-left medium-middle"><strong>이름</strong></label>
-                </div>
-                <div class="medium-8 columns">
-                    <input type="text" id="name" name="name" value="{{ member.name }}" maxlength="50">
-                </div>
-            </fieldset>
-
-            <fieldset class="row expanded small-collapse medium-uncollapse">
-                <div class="medium-4 columns">
-                    <label for="email" class="text-left medium-middle"><strong>이메일</strong></label>
-                </div>
-                <div class="medium-8 columns">
-                    <input type="email" id="email" name="email" value="{{ member.email }}">
-                </div>
-            </fieldset>
-
-            <fieldset class="row expanded small-collapse medium-uncollapse">
-                <div class="medium-4 columns">
-                    <label for="phone" class="text-left medium-middle"><strong>연락처</strong></label>
-                </div>
-                <div class="medium-8 columns">
-                    <input type="tel" id="phone" name="phone" value="{{ member.phone }}">
-                </div>
-            </fieldset>
-
-            <fieldset class="row expanded small-collapse medium-uncollapse">
-                <div class="medium-4 columns">
-                    <label for="new_password" class="text-left medium-middle"><strong>새 비밀번호</strong></label>
-                </div>
-                <div class="medium-8 columns">
-                    <input type="password" id="new_password" name="new_password" placeholder="변경 시에만 입력">
-                    <span class="help-text">비밀번호를 변경하려면 입력하세요. 비우면 변경되지 않습니다.</span>
-                </div>
-            </fieldset>
-        </article>
-
-        <button type="submit" class="button user-bg large expanded">수정하기</button>
+    <!-- 정보수정 -->
+    <form method="POST" action="{{ url_for('public.member_update') }}" enctype="multipart/form-data" class="auth-form">
+      <div class="mypage-section">
+        <h3 class="mypage-section__title">정보 수정</h3>
+        <div class="auth-form__group">
+          <label for="profile_image" class="auth-form__label">프로필 이미지</label>
+          <input type="file" id="profile_image" name="profile_image" accept="image/*" class="auth-form__file">
+        </div>
+        <div class="auth-form__group">
+          <label for="name" class="auth-form__label">이름</label>
+          <input type="text" id="name" name="name" value="{{ member.name }}" class="auth-form__input" maxlength="50">
+        </div>
+        <div class="auth-form__row">
+          <div class="auth-form__group">
+            <label for="email" class="auth-form__label">이메일</label>
+            <input type="email" id="email" name="email" value="{{ member.email }}" class="auth-form__input">
+          </div>
+          <div class="auth-form__group">
+            <label for="phone" class="auth-form__label">연락처</label>
+            <input type="tel" id="phone" name="phone" value="{{ member.phone }}" class="auth-form__input">
+          </div>
+        </div>
+        <div class="auth-form__group">
+          <label for="new_password" class="auth-form__label">새 비밀번호</label>
+          <input type="password" id="new_password" name="new_password" class="auth-form__input" placeholder="변경 시에만 입력">
+        </div>
+      </div>
+      <button type="submit" class="auth-form__submit">수정하기</button>
     </form>
+  </div>
 </div>
 {% endblock %}

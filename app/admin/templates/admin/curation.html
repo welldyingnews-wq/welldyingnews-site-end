@@ -1,0 +1,300 @@
+{% extends "admin/base.html" %}
+{% block nav_title %}AI 큐레이션{% endblock %}
+
+{% block content %}
+<div class="d-flex justify-content-between align-items-center mb-3">
+    <h5 class="mb-0">Supabase 수집 기사 큐레이션</h5>
+</div>
+
+<!-- 필터 -->
+<div class="card mb-3">
+    <div class="card-body">
+        <div class="row g-2 align-items-end">
+            <div class="col-auto">
+                <label class="form-label">시작일</label>
+                <input type="date" id="startDate" class="form-control form-control-sm">
+            </div>
+            <div class="col-auto">
+                <label class="form-label">종료일</label>
+                <input type="date" id="endDate" class="form-control form-control-sm">
+            </div>
+            <div class="col-auto">
+                <label class="form-label">국가</label>
+                <select id="countryFilter" class="form-select form-select-sm">
+                    <option value="">전체</option>
+                    <option value="KR">한국</option>
+                    <option value="US">미국</option>
+                    <option value="JP">일본</option>
+                    <option value="DE">독일</option>
+                    <option value="NL">네덜란드</option>
+                    <option value="ES">스페인</option>
+                </select>
+            </div>
+            <div class="col-auto">
+                <label class="form-label">소스</label>
+                <select id="sourceTable" class="form-select form-select-sm">
+                    <option value="news">news 테이블</option>
+                    <option value="collect">collect 테이블</option>
+                </select>
+            </div>
+            <div class="col-auto">
+                <button class="btn btn-sm btn-primary" onclick="loadArticles()">
+                    <i class="bi bi-search"></i> 기사 조회
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- 프로그레스 -->
+<div id="progressArea" class="mb-3" style="display:none;">
+    <div class="card border-info">
+        <div class="card-body py-2">
+            <div class="d-flex align-items-center gap-2">
+                <div class="spinner-border spinner-border-sm text-info"></div>
+                <span id="progressText">처리 중...</span>
+            </div>
+            <div class="progress mt-2" style="height:4px;">
+                <div id="progressBar" class="progress-bar bg-info" style="width:0%"></div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- 액션 버튼 -->
+<div id="actionBar" class="mb-3" style="display:none;">
+    <div class="d-flex gap-2">
+        <button class="btn btn-sm btn-outline-secondary" onclick="selectAll()">
+            <i class="bi bi-check-all"></i> 전체선택
+        </button>
+        <button class="btn btn-sm btn-warning" onclick="runClassify()">
+            <i class="bi bi-robot"></i> AI 분류 실행
+        </button>
+        <button class="btn btn-sm btn-success" onclick="runGenerate()">
+            <i class="bi bi-magic"></i> AI 초안 생성
+        </button>
+        <span id="selectedCount" class="text-muted small align-self-center"></span>
+    </div>
+</div>
+
+<!-- 기사 테이블 -->
+<div class="card">
+    <div class="table-responsive">
+        <table class="table table-sm table-hover mb-0">
+            <thead class="table-light">
+                <tr>
+                    <th width="30"><input type="checkbox" id="chkAll" onchange="toggleAll(this)"></th>
+                    <th>제목</th>
+                    <th width="80">출처</th>
+                    <th width="60">국가</th>
+                    <th width="120">날짜</th>
+                    <th width="80">등급</th>
+                    <th width="80">상태</th>
+                </tr>
+            </thead>
+            <tbody id="articleBody">
+                <tr><td colspan="7" class="text-center text-muted py-4">날짜를 선택하고 "기사 조회"를 클릭하세요.</td></tr>
+            </tbody>
+        </table>
+    </div>
+</div>
+
+<div id="resultInfo" class="text-muted small mt-2"></div>
+{% endblock %}
+
+{% block extra_scripts %}
+<script>
+let articles = [];
+let draftMap = {};  // supabase id → draft id
+
+// 오늘/어제 기본 날짜
+const today = new Date();
+const yesterday = new Date(today);
+yesterday.setDate(yesterday.getDate() - 7);
+document.getElementById('startDate').value = yesterday.toISOString().split('T')[0];
+document.getElementById('endDate').value = today.toISOString().split('T')[0];
+
+function loadArticles() {
+    const start = document.getElementById('startDate').value;
+    const end = document.getElementById('endDate').value;
+    const country = document.getElementById('countryFilter').value;
+    const source = document.getElementById('sourceTable').value;
+    const body = document.getElementById('articleBody');
+    body.innerHTML = '<tr><td colspan="7" class="text-center py-4"><div class="spinner-border spinner-border-sm"></div> 조회 중...</td></tr>';
+
+    fetch(`{{ url_for('admin.api_curation_articles') }}?start_date=${start}&end_date=${end}&country=${country}&source=${source}`)
+    .then(r => r.json())
+    .then(data => {
+        if (data.error) {
+            body.innerHTML = `<tr><td colspan="7" class="text-center text-danger py-4">${data.error}</td></tr>`;
+            return;
+        }
+        articles = data.articles || [];
+        document.getElementById('resultInfo').textContent = `총 ${articles.length}건 조회됨`;
+        if (!articles.length) {
+            body.innerHTML = '<tr><td colspan="7" class="text-center text-muted py-4">조회 결과가 없습니다.</td></tr>';
+            document.getElementById('actionBar').style.display = 'none';
+            return;
+        }
+        document.getElementById('actionBar').style.display = 'block';
+        renderArticles();
+    })
+    .catch(e => {
+        body.innerHTML = `<tr><td colspan="7" class="text-center text-danger py-4">오류: ${e.message}</td></tr>`;
+    });
+}
+
+function renderArticles() {
+    const body = document.getElementById('articleBody');
+    body.innerHTML = articles.map((a, i) => {
+        const title = a.title_ko || a.title || '(제목 없음)';
+        const source = a.source || '';
+        const country = a.country || '';
+        const date = (a.published_at || a.collected_at || '').substring(0, 10);
+        const grade = draftMap[a.id]?.grade || '';
+        const status = draftMap[a.id]?.status || '';
+        const gradeBadge = grade ? `<span class="badge ${grade === 'A1' ? 'bg-primary' : grade === 'A2' ? 'bg-success' : 'bg-secondary'}">${grade}</span>` : '';
+        const statusBadge = status ? getStatusBadge(status) : '';
+        return `<tr>
+            <td><input type="checkbox" class="article-chk" data-index="${i}" onchange="updateCount()"></td>
+            <td><a href="${a.link || '#'}" target="_blank" class="text-decoration-none">${title}</a></td>
+            <td><small>${source}</small></td>
+            <td>${country}</td>
+            <td><small>${date}</small></td>
+            <td>${gradeBadge}</td>
+            <td>${statusBadge}</td>
+        </tr>`;
+    }).join('');
+}
+
+function getStatusBadge(s) {
+    const map = {
+        'pending': '<span class="badge bg-secondary">대기</span>',
+        'curating': '<span class="badge bg-info">분류중</span>',
+        'scraping': '<span class="badge bg-info">스크래핑</span>',
+        'generating': '<span class="badge bg-warning">생성중</span>',
+        'validating': '<span class="badge bg-warning">검증중</span>',
+        'completed': '<span class="badge bg-success">완료</span>',
+        'skipped': '<span class="badge bg-danger">스킵</span>',
+        'published': '<span class="badge bg-primary">발행</span>',
+        'rejected': '<span class="badge bg-dark">반려</span>',
+    };
+    return map[s] || `<span class="badge bg-light text-dark">${s}</span>`;
+}
+
+function toggleAll(el) {
+    document.querySelectorAll('.article-chk').forEach(c => c.checked = el.checked);
+    updateCount();
+}
+
+function selectAll() {
+    document.querySelectorAll('.article-chk').forEach(c => c.checked = true);
+    document.getElementById('chkAll').checked = true;
+    updateCount();
+}
+
+function updateCount() {
+    const cnt = document.querySelectorAll('.article-chk:checked').length;
+    document.getElementById('selectedCount').textContent = cnt ? `${cnt}건 선택됨` : '';
+}
+
+function getSelectedArticles() {
+    const checked = document.querySelectorAll('.article-chk:checked');
+    return Array.from(checked).map(c => articles[c.dataset.index]);
+}
+
+function runClassify() {
+    const selected = getSelectedArticles();
+    if (!selected.length) { alert('기사를 선택하세요.'); return; }
+    if (!confirm(`${selected.length}건을 AI 분류하시겠습니까?`)) return;
+
+    showProgress('AI 분류 진행 중...');
+    fetch('{{ url_for("admin.curation_classify") }}', {
+        method: 'POST',
+        headers: {'Content-Type': 'application/json'},
+        body: JSON.stringify({articles: selected})
+    })
+    .then(r => r.json())
+    .then(data => {
+        if (data.error) { alert(data.error); hideProgress(); return; }
+        // 생성된 draft_ids 매핑
+        data.draft_ids.forEach((did, i) => {
+            if (selected[i]) draftMap[selected[i].id] = {draft_id: did, status: 'curating', grade: ''};
+        });
+        startPolling();
+    })
+    .catch(e => { alert('오류: ' + e.message); hideProgress(); });
+}
+
+function runGenerate() {
+    // 분류 완료된 draft 중 사용가능한 건
+    const draftIds = Object.values(draftMap)
+        .filter(d => d.status === 'pending' && d.grade)
+        .map(d => d.draft_id);
+    if (!draftIds.length) { alert('생성 가능한 초안이 없습니다. 먼저 AI 분류를 실행하세요.'); return; }
+    if (!confirm(`${draftIds.length}건의 AI 초안을 생성하시겠습니까?`)) return;
+
+    showProgress('AI 초안 생성 진행 중...');
+    fetch('{{ url_for("admin.curation_generate") }}', {
+        method: 'POST',
+        headers: {'Content-Type': 'application/json'},
+        body: JSON.stringify({draft_ids: draftIds})
+    })
+    .then(r => r.json())
+    .then(data => {
+        if (data.error) { alert(data.error); hideProgress(); return; }
+        startPolling();
+    })
+    .catch(e => { alert('오류: ' + e.message); hideProgress(); });
+}
+
+let pollTimer = null;
+function startPolling() {
+    if (pollTimer) return;
+    pollTimer = setInterval(pollProgress, 3000);
+}
+
+function pollProgress() {
+    fetch('{{ url_for("admin.api_ai_draft_progress") }}')
+    .then(r => r.json())
+    .then(data => {
+        const q = data.queue;
+        const drafts = data.drafts || [];
+
+        // draftMap 업데이트
+        drafts.forEach(d => {
+            const key = Object.keys(draftMap).find(k => draftMap[k].draft_id === d.id);
+            if (key) {
+                draftMap[key].status = d.status;
+                draftMap[key].grade = d.grade;
+            }
+        });
+        renderArticles();
+
+        // 완료 체크
+        const active = drafts.filter(d => ['curating','scraping','generating','validating'].includes(d.status));
+        if (!q.is_processing && q.queue_size === 0 && active.length === 0) {
+            hideProgress();
+            clearInterval(pollTimer);
+            pollTimer = null;
+        } else {
+            const total = drafts.length || 1;
+            const done = drafts.filter(d => ['completed','skipped','published','rejected','pending'].includes(d.status)).length;
+            const pct = Math.round(done / total * 100);
+            document.getElementById('progressBar').style.width = pct + '%';
+            document.getElementById('progressText').textContent =
+                `처리 중... (${done}/${total}) ${q.is_processing ? '- ' + (q.current_task.type || '') : ''}`;
+        }
+    });
+}
+
+function showProgress(msg) {
+    document.getElementById('progressArea').style.display = 'block';
+    document.getElementById('progressText').textContent = msg;
+    document.getElementById('progressBar').style.width = '0%';
+}
+function hideProgress() {
+    document.getElementById('progressArea').style.display = 'none';
+}
+</script>
+{% endblock %}

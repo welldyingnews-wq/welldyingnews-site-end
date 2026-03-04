@@ -1,183 +1,160 @@
-{% extends "public/base.html" %}
-{% block title %}{% if edit_post %}글수정{% else %}글쓰기{% endif %} - {{ board.name }} - 웰다잉뉴스{% endblock %}
-
-{% block extra_head %}
-<style type="text/css">
-.bbs-user-page {margin-bottom:15px}
-.bbs-user-page .titles {font-size:1.5rem;font-weight:700;letter-spacing:-.025em}
-.bbs-write-wrap {max-width:{% if is_mobile %}728{% else %}1240{% endif %}px;margin:0 auto;padding:20px 0}
-.bbs-write-form {border-top:2px solid #333}
-{% if is_mobile %}
-.bbs-write-form .form-row {display:block;border-bottom:1px solid #eee;padding:8px 0}
-.bbs-write-form .form-row .label-cell {display:block;width:auto;padding:4px 10px;background:transparent;font-size:13px}
-.bbs-write-form .form-row .input-cell {display:block;padding:4px 10px}
-{% else %}
-.bbs-write-form .form-row {display:flex;border-bottom:1px solid #eee}
-.bbs-write-form .form-row .label-cell {flex-shrink:0;width:120px;padding:12px 15px;background:#f9f9f9;font-size:14px;font-weight:500;color:#333;display:flex;align-items:center}
-.bbs-write-form .form-row .input-cell {flex:1;padding:8px 15px}
-{% endif %}
-.bbs-write-form .form-row .input-cell input[type="text"],
-.bbs-write-form .form-row .input-cell input[type="password"] {width:100%;max-width:300px;height:38px;padding:0 10px;border:1px solid #ddd;border-radius:3px;font-size:14px}
-.bbs-write-form .form-row .input-cell input.full-width {max-width:100%}
-.bbs-write-form .form-row .input-cell textarea {width:100%;height:400px;padding:12px;border:1px solid #ddd;border-radius:3px;font-size:14px;line-height:1.6;resize:vertical}
-.editor-mode-tabs {display:flex;gap:0;margin-bottom:-1px;position:relative;z-index:1}
-.editor-mode-tabs .mode-tab {padding:6px 16px;font-size:13px;border:1px solid #ddd;border-bottom:none;background:#f5f5f5;color:#666;cursor:pointer;border-radius:3px 3px 0 0}
-.editor-mode-tabs .mode-tab.active {background:#fff;color:#333;font-weight:600;border-bottom:1px solid #fff}
-.html-preview {width:100%;height:400px;padding:12px;border:1px solid #ddd;border-radius:0 3px 3px 3px;font-size:14px;line-height:1.6;overflow-y:auto;background:#fff;display:none}
-.bbs-write-actions {display:flex;justify-content:center;gap:8px;margin-top:20px}
-.bbs-write-actions .btn {display:inline-block;padding:10px 30px;font-size:14px;border:1px solid #ddd;border-radius:3px;color:#333;background:#fff;cursor:pointer;text-decoration:none}
-.bbs-write-actions .btn:hover {border-color:#999}
-.bbs-write-actions .btn-primary {background:#5e1985;color:#fff;border-color:#5e1985}
-.bbs-write-actions .btn-primary:hover {background:#4a1369;color:#fff}
-.flash-msg {padding:10px 15px;margin-bottom:10px;border-radius:3px;font-size:14px}
-.flash-msg.error {background:#fdf0f0;color:#e74c3c;border:1px solid #f5c6cb}
-</style>
-{% endblock %}
+{% extends "public/base_v0.html" %}
+{% block title %}{% if edit_post %}글수정{% else %}글쓰기{% endif %} — {{ board.name }} — 웰다잉뉴스{% endblock %}
 
 {% block content %}
-<div class="bbs-write-wrap">
-
-<header class="bbs-user-page">
-    <h3 class="titles">{{ board.name }} {% if edit_post %}글수정{% elif parent_post %}답글쓰기{% else %}글쓰기{% endif %}</h3>
-</header>
-
-{% with messages = get_flashed_messages(with_categories=true) %}
-{% if messages %}
-{% for category, message in messages %}
-<div class="flash-msg {{ category }}">{{ message }}</div>
-{% endfor %}
-{% endif %}
-{% endwith %}
-
-<form method="POST" action="{% if edit_post %}{{ url_for('public.bbs_edit', post_id=edit_post.id) }}{% else %}{{ url_for('public.bbs_write') }}{% endif %}" onsubmit="return validateForm()">
-    <input type="hidden" name="table" value="{{ board.code }}" />
-    {% if parent_post %}<input type="hidden" name="parent_post_id" value="{{ parent_post.id }}" />{% endif %}
-
-    <div class="bbs-write-form">
-        {% if parent_post %}
-        <div class="form-row">
-            <div class="label-cell">원글</div>
-            <div class="input-cell" style="display:flex;align-items:center;height:38px;font-size:14px;color:#666">
-                <i class="icon-back-arrow" style="margin-right:5px"></i> {{ parent_post.title }}
-            </div>
-        </div>
-        {% endif %}
-        {% if not edit_post %}
-        {% if current_member %}
-        <div class="form-row">
-            <div class="label-cell">작성자</div>
-            <div class="input-cell" style="display:flex;align-items:center;height:38px;font-size:14px">
-                <strong>{{ current_member.name }}</strong>
-                <input type="hidden" name="author_name" value="{{ current_member.name }}" />
-            </div>
-        </div>
-        {% else %}
-        <div class="form-row">
-            <div class="label-cell">닉네임</div>
-            <div class="input-cell">
-                <input type="text" name="author_name" placeholder="닉네임을 입력하세요" maxlength="50" />
-            </div>
-        </div>
-        <div class="form-row">
-            <div class="label-cell">비밀번호</div>
-            <div class="input-cell">
-                <input type="password" name="password" placeholder="글 삭제 시 필요합니다" maxlength="50" />
-            </div>
-        </div>
-        {% endif %}
-        {% endif %}
-        <div class="form-row">
-            <div class="label-cell">제목</div>
-            <div class="input-cell">
-                <input type="text" name="title" class="full-width" placeholder="제목을 입력하세요" maxlength="500" required value="{% if edit_post %}{{ edit_post.title }}{% elif parent_post %}Re: {{ parent_post.title }}{% endif %}" />
-            </div>
-        </div>
-        <div class="form-row">
-            <div class="label-cell">내용</div>
-            <div class="input-cell">
-                <div class="editor-mode-tabs">
-                    <span class="mode-tab active" data-mode="text">일반</span>
-                    <span class="mode-tab" data-mode="html">HTML</span>
-                </div>
-                <textarea name="content" id="bbs-content" placeholder="내용을 입력하세요" required>{{ edit_post.content if edit_post else '' }}</textarea>
-                <div class="html-preview" id="bbs-preview"></div>
-            </div>
-        </div>
-        {% if not edit_post %}
-        <div class="form-row">
-            <div class="label-cell">옵션</div>
-            <div class="input-cell" style="display:flex;align-items:center;height:38px">
-                <label style="display:flex;align-items:center;gap:5px;font-size:14px;cursor:pointer">
-                    <input type="checkbox" name="is_secret" value="1"> <i class="icon-lock"></i> 비밀글
-                </label>
-            </div>
-        </div>
-        {% endif %}
+<div class="container section-gap">
+  <div class="bbs-page">
+    <div class="bbs-page__header">
+      <h1 class="bbs-page__title">
+        <i class="fa-solid fa-pen"></i>
+        {{ board.name }} — {% if edit_post %}글수정{% elif parent_post %}답글쓰기{% else %}글 작성{% endif %}
+      </h1>
     </div>
 
-    <div class="bbs-write-actions">
-        <a href="{% if edit_post %}{{ url_for('public.bbs_view', idxno=edit_post.id) }}{% else %}{{ url_for('public.bbs_list', table=board.code) }}{% endif %}" class="btn">취소</a>
-        <button type="submit" class="btn btn-primary">{% if edit_post %}수정{% elif parent_post %}답글 등록{% else %}등록{% endif %}</button>
+    {% with messages = get_flashed_messages(with_categories=true) %}
+    {% if messages %}
+    {% for category, message in messages %}
+    <div class="auth-alert auth-alert--{{ 'error' if category == 'error' else 'success' }}">
+      <i class="fa-solid fa-circle-exclamation"></i> {{ message }}
     </div>
-</form>
+    {% endfor %}
+    {% endif %}
+    {% endwith %}
 
+    <form method="POST" action="{{ url_for('public.bbs_edit', post_id=edit_post.id) if edit_post else url_for('public.bbs_write') }}" class="bbs-write-form" enctype="multipart/form-data">
+      {% if not edit_post %}
+      <input type="hidden" name="table" value="{{ board.code }}">
+      {% if parent_post %}<input type="hidden" name="parent_post_id" value="{{ parent_post.id }}">{% endif %}
+      {% endif %}
+
+      <div class="bbs-write-form__row">
+        <label class="bbs-write-form__label">제목</label>
+        <div class="bbs-write-form__field">
+          <input type="text" name="title" class="bbs-write-form__input" value="{{ edit_post.title if edit_post else ('Re: ' + parent_post.title if parent_post else '') }}" required placeholder="제목을 입력하세요">
+        </div>
+      </div>
+
+      {% if not current_member %}
+      <div class="bbs-write-form__row">
+        <label class="bbs-write-form__label">닉네임</label>
+        <div class="bbs-write-form__field">
+          <input type="text" name="author_name" class="bbs-write-form__input bbs-write-form__input--sm" value="{{ edit_post.author_name if edit_post else '' }}" required maxlength="50" placeholder="닉네임">
+        </div>
+      </div>
+      <div class="bbs-write-form__row">
+        <label class="bbs-write-form__label">비밀번호</label>
+        <div class="bbs-write-form__field">
+          <input type="password" name="password" class="bbs-write-form__input bbs-write-form__input--sm" {% if not edit_post %}required{% endif %} maxlength="50" placeholder="글 수정/삭제 시 필요">
+        </div>
+      </div>
+      {% endif %}
+
+      <div class="bbs-write-form__row bbs-write-form__row--content">
+        <label class="bbs-write-form__label">내용</label>
+        <div class="bbs-write-form__field">
+          <!-- 에디터 툴바 -->
+          <div class="bbs-toolbar-editor">
+            <button type="button" onclick="editorCmd('bold')" title="굵게"><i class="fa-solid fa-bold"></i></button>
+            <button type="button" onclick="editorCmd('italic')" title="기울임"><i class="fa-solid fa-italic"></i></button>
+            <button type="button" onclick="editorCmd('underline')" title="밑줄"><i class="fa-solid fa-underline"></i></button>
+            <button type="button" onclick="editorCmd('strikeThrough')" title="취소선"><i class="fa-solid fa-strikethrough"></i></button>
+            <span class="bbs-toolbar-editor__sep"></span>
+            <button type="button" onclick="editorCmd('insertUnorderedList')" title="목록"><i class="fa-solid fa-list-ul"></i></button>
+            <button type="button" onclick="editorCmd('insertOrderedList')" title="번호 목록"><i class="fa-solid fa-list-ol"></i></button>
+            <span class="bbs-toolbar-editor__sep"></span>
+            <button type="button" onclick="insertLink()" title="링크 삽입"><i class="fa-solid fa-link"></i></button>
+            <button type="button" onclick="document.getElementById('imgUpload').click()" title="이미지 첨부"><i class="fa-solid fa-image"></i></button>
+            <button type="button" onclick="document.getElementById('fileUpload').click()" title="파일 첨부"><i class="fa-solid fa-paperclip"></i></button>
+          </div>
+          <input type="file" id="imgUpload" accept="image/*" style="display:none" onchange="uploadFile(this,'image')">
+          <input type="file" id="fileUpload" accept=".pdf,.doc,.docx,.hwp,.hwpx,.zip,.txt" style="display:none" onchange="uploadFile(this,'file')">
+          <!-- contenteditable 에디터 -->
+          <div id="bbsEditor" class="bbs-write-form__editor" contenteditable="true">{{ (edit_post.content if edit_post else '')|safe }}</div>
+          <textarea name="content" id="bbsContent" style="display:none" required>{{ edit_post.content if edit_post else '' }}</textarea>
+          <div id="fileList" class="bbs-file-list"></div>
+        </div>
+      </div>
+
+      {% if not edit_post %}
+      <div class="bbs-write-form__row">
+        <label class="bbs-write-form__label">옵션</label>
+        <div class="bbs-write-form__field bbs-write-form__options">
+          <label class="auth-checkbox"><input type="checkbox" name="is_secret" value="1"> <span>비밀글</span></label>
+        </div>
+      </div>
+      {% endif %}
+
+      <div class="bbs-write-form__actions">
+        <a href="{{ url_for('public.bbs_list', table=board.code) }}" class="bbs-btn">취소</a>
+        <button type="submit" class="bbs-btn bbs-btn--primary">{% if edit_post %}수정하기{% else %}등록하기{% endif %}</button>
+      </div>
+    </form>
+  </div>
 </div>
 {% endblock %}
 
-{% block extra_scripts %}
+{% block extra_js %}
 <script>
-function validateForm() {
-    var ta = document.getElementById('bbs-content');
-    var preview = document.getElementById('bbs-preview');
-    // HTML 미리보기 모드일 때 textarea가 숨겨져 있으므로 내용 동기화
-    if (ta.style.display === 'none') {
-        ta.value = preview.innerHTML;
-    }
-    var title = document.querySelector('input[name="title"]').value.trim();
-    var content = ta.value.trim();
-    if (!title) { alert('제목을 입력해주세요.'); return false; }
-    if (!content) { alert('내용을 입력해주세요.'); return false; }
-    return true;
+var editor = document.getElementById('bbsEditor');
+var hidden = document.getElementById('bbsContent');
+
+// 폼 제출 시 에디터 내용을 hidden textarea로 복사
+editor.closest('form').addEventListener('submit', function() {
+  hidden.value = editor.innerHTML;
+});
+
+function editorCmd(cmd) {
+  document.execCommand(cmd, false, null);
+  editor.focus();
 }
 
-// HTML 모드 전환
-$(document).ready(function() {
-    var currentMode = 'text';
-    $('.editor-mode-tabs .mode-tab').on('click', function() {
-        var mode = $(this).data('mode');
-        if (mode === currentMode) return;
-        currentMode = mode;
-        $('.editor-mode-tabs .mode-tab').removeClass('active');
-        $(this).addClass('active');
-        var $ta = $('#bbs-content');
-        var $preview = $('#bbs-preview');
-        if (mode === 'html') {
-            // HTML 모드: textarea에 HTML 직접 입력, 미리보기 영역에 렌더링 표시
-            $ta.attr('placeholder', 'HTML 코드를 입력하세요. 예: <b>굵게</b>, <br> 줄바꿈');
-            $preview.html($ta.val().replace(/\n/g, '<br>')).show();
-            $ta.css('border-radius', '0 0 0 3px');
-            $preview.css({'border-radius': '0 3px 3px 0', 'border-left': '1px dashed #ccc'});
-            // 나란히 배치
-            $ta.parent().css('display', 'grid');
-            $ta.parent().css('grid-template-columns', '1fr 1fr');
-            $ta.parent().css('grid-template-rows', 'auto 1fr');
-            $('.editor-mode-tabs').css('grid-column', '1 / -1');
-            $ta.show();
-            $preview.show();
-            // 실시간 미리보기
-            $ta.off('input.htmlpreview').on('input.htmlpreview', function() {
-                $preview.html($(this).val());
-            });
-        } else {
-            // 일반 모드로 복귀
-            $ta.attr('placeholder', '내용을 입력하세요');
-            $ta.off('input.htmlpreview');
-            $preview.hide();
-            $ta.show();
-            $ta.parent().css({'display': '', 'grid-template-columns': '', 'grid-template-rows': ''});
-            $ta.css('border-radius', '');
-        }
-    });
-});
+function insertLink() {
+  var url = prompt('링크 URL을 입력하세요:', 'https://');
+  if (url) {
+    document.execCommand('createLink', false, url);
+    // 새 탭에서 열리도록 target 추가
+    var links = editor.querySelectorAll('a:not([target])');
+    links.forEach(function(a) { a.setAttribute('target', '_blank'); });
+    editor.focus();
+  }
+}
+
+function uploadFile(input, type) {
+  var file = input.files[0];
+  if (!file) return;
+
+  var maxSize = type === 'image' ? 10 * 1024 * 1024 : 50 * 1024 * 1024;
+  if (file.size > maxSize) {
+    alert('파일 크기가 너무 큽니다. (이미지 10MB, 파일 50MB 이하)');
+    input.value = '';
+    return;
+  }
+
+  var formData = new FormData();
+  formData.append('file', file);
+
+  var btn = type === 'image' ? editor.querySelector('.fa-image') : editor.querySelector('.fa-paperclip');
+
+  fetch('/bbs/upload', { method: 'POST', body: formData })
+    .then(function(r) { return r.json(); })
+    .then(function(data) {
+      if (data.error) { alert(data.error); return; }
+      if (data.is_image) {
+        document.execCommand('insertHTML', false,
+          '<img src="' + data.url + '" alt="' + data.filename + '" style="max-width:100%;height:auto;margin:8px 0;display:block">');
+      } else {
+        var fileHtml = '<a href="' + data.url + '" target="_blank" class="bbs-attached-file">' +
+          '<i class="fa-solid fa-file-arrow-down"></i> ' + data.filename + '</a>';
+        var fileList = document.getElementById('fileList');
+        fileList.insertAdjacentHTML('beforeend', '<div class="bbs-file-item">' + fileHtml + '</div>');
+        document.execCommand('insertHTML', false,
+          '<p><a href="' + data.url + '" target="_blank">' + data.filename + '</a></p>');
+      }
+      editor.focus();
+    })
+    .catch(function() { alert('업로드에 실패했습니다.'); });
+
+  input.value = '';
+}
 </script>
 {% endblock %}

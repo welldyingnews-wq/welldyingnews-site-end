@@ -1,0 +1,28 @@
+{% extends "public/base_v0.html" %}
+{% block title %}뉴스레터 구독 해지 — 웰다잉뉴스{% endblock %}
+
+{% block content %}
+<div class="container section-gap">
+  <div class="auth-card">
+    <div class="auth-card__header">
+      <i class="fa-solid fa-envelope-circle-check" style="font-size:2rem;color:var(--accent);margin-bottom:.75rem"></i>
+      <h1 class="auth-card__title">뉴스레터</h1>
+    </div>
+
+    {% with messages = get_flashed_messages(with_categories=true) %}
+    {% if messages %}
+    {% for category, message in messages %}
+    <div class="auth-alert auth-alert--{{ 'error' if category == 'error' else 'success' }}">
+      <i class="fa-solid {{ 'fa-circle-exclamation' if category == 'error' else 'fa-circle-check' }}"></i>
+      {{ message }}
+    </div>
+    {% endfor %}
+    {% endif %}
+    {% endwith %}
+
+    <div class="auth-card__footer">
+      <a href="/">홈으로 돌아가기</a>
+    </div>
+  </div>
+</div>
+{% endblock %}

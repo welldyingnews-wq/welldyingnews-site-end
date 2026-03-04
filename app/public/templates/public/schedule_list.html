@@ -1,0 +1,16 @@
+{% extends "public/base_v0.html" %}
+{% block title %}주요일정 — 웰다잉뉴스{% endblock %}
+
+{% block extra_css %}
+<link rel="stylesheet" href="/static/schedule-app/schedule-app.css?v=20260226">
+{% endblock %}
+
+{% block content %}
+<div class="container section-gap">
+  <div id="schedule-app"></div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script type="module" src="/static/schedule-app/schedule-app.js?v=20260226"></script>
+{% endblock %}

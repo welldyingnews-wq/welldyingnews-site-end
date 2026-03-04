@@ -1,395 +1,328 @@
-{% extends "public/base.html" %}
+{% extends "public/base_v0.html" %}
+{% from "public/_banner_macros.html" import banner_img %}
+
 {% block title %}
-{% if subsection %}{{ subsection.name }} < {% endif %} {% if section %}{{ section.name }} < {% endif %} 기사목록 - 웰다잉뉴스 {%
-    endblock %} {% block extra_head %} <style type="text/css">
-    #user-section {display:block;margin:0 auto}
-    {% if is_mobile %}
-    /* 모바일: 사이드바 없이 단일 컬럼 */
-    #user-section .grid-wrap {display:block;width:100%}
-    #user-section .grid-wrap > .grid {display:block;width:auto}
-    #user-section .grid-wrap > .grid.side {display:none}
-    #section-list .type2 .thumb {width:100px;height:70px;margin-right:12px}
-    #section-list .type2 .view-cont .titles a {font-size:15px}
-    #section-list .type2 .lead
-    {font-size:13px;-webkit-line-clamp:2;display:-webkit-box;-webkit-box-orient:vertical;overflow:hidden}
-    #section-list .type2 .byline {font-size:11px}
-    {% else %}
-    #user-section .grid-wrap {display:table;width:100%;table-layout:fixed}
-    #user-section .grid-wrap > .grid {display:table-cell;width:100%;vertical-align:top}
-    #user-section .grid-wrap > .grid.side {width:340px;padding-left:40px}
-    #user-section .grid.side .sticky {width:100%}
-    #user-section .grid.side .sticky::after {content:'';display:table;clear:both}
-    @media screen and (max-width: 63.9375em) {
-    .row #user-section .grid-wrap, .row #user-section .grid-wrap > .grid {display:block;width:auto}
-    .row #user-section .grid-wrap {table-layout:initial}
-    .row #user-section .grid-wrap > .grid {vertical-align:initial}
-    .row #user-section .grid-wrap > .grid.side {padding-left:0}
-    }
-    {% endif %}
-    #section-list .type2 li {padding:20px 0;border-bottom:1px solid rgba(0,0,0,.06)}
-    #section-list .type2 li:first-child {padding-top:0}
-    #section-list .type2 .thumb {display:block;{% if not is_mobile
-    %}width:180px;height:120px;margin-right:20px;{% else %}width:100px;height:70px;margin-right:12px;{% endif %}overflow:hidden;position:relative;flex-shrink:0}
-    #section-list .type2 .thumb img {display:block;width:100%;height:100%;object-fit:cover}
-    #section-list .type2 .view-cont {overflow:hidden}
-    #section-list .type2 .view-cont .titles {margin:0 0 8px}
-    #section-list .type2 .view-cont .titles a
-    {font-size:18px;font-weight:700;color:#222;line-height:1.4;letter-spacing:-.025em}
-    #section-list .type2 .view-cont .titles a:hover {color:#5e1985}
-    #section-list .type2 .lead {margin:0 0 10px;font-size:14px;color:#666;line-height:1.6}
-    #section-list .type2 .lead a {color:#666}
-    #section-list .type2 .byline {font-size:12px;color:#999}
-    #section-list .type2 .byline em {margin-right:8px}
-    #section-list .type2 .byline em::after {content:'|';margin-left:8px;color:#ddd}
-    #section-list .type2 .byline em:last-child::after {display:none}
-    #section-list .type1 li {padding:10px 0;border-bottom:1px solid rgba(0,0,0,.06);overflow:hidden}
-    #section-list .type1 .titles {display:inline;margin:0}
-    #section-list .type1 .titles a {font-size:15px;font-weight:500;color:#333}
-    #section-list .type1 .titles a:hover {color:#5e1985}
-    #section-list .type1 .info {font-size:12px;color:#999;margin-left:8px}
-    #section-list .type1 .info.category {color:#5e1985}
-    </style>
-    {% endblock %}
+{% if subsection %}{{ subsection.name }} — {% endif %}{% if section %}{{ section.name }} — {% endif %}기사목록 — 웰다잉뉴스
+{% endblock %}
 
-    {% block content %}
-    <div id="user-section" style="max-width:{% if is_mobile %}728{% else %}1240{% endif %}px">
-        <div class="clearfix"></div>
+{% block jsonld %}
+<script type="application/ld+json">
+{
+  "@context": "https://schema.org",
+  "@type": "BreadcrumbList",
+  "itemListElement": [
+    {
+      "@type": "ListItem",
+      "position": 1,
+      "name": "홈",
+      "item": "{{ site_url }}/"
+    }{% if section %},
+    {
+      "@type": "ListItem",
+      "position": 2,
+      "name": "{{ section.name }}",
+      "item": "{{ site_url }}/news/articleList.html?sc_section_code={{ section.code }}"
+    }{% endif %}{% if subsection %},
+    {
+      "@type": "ListItem",
+      "position": 3,
+      "name": "{{ subsection.name }}"
+    }{% endif %}
+  ]
+}
+</script>
+{% endblock %}
 
-        <div id="anchorCon" class="grid-wrap">
-            <section class="grid body">
-                <div class="clearfix"></div>
-
-                <div id="sections">
-                    <section class="section-body">
-                        <!-- 헤더 -->
-                        <header class="header">
-                            <H1 class="titles">
-                                <strong>
-                                    {% if subsection %}{{ subsection.name }}
-                                    {% elif section %}{{ section.name }}
-                                    {% else %}전체기사{% endif %}
-                                    <span class="show-for-sr">목록</span>
-                                </strong>
-                                <small>( <span class="show-for-sr">총 : </span>{{ pagination.total|default(0)
-                                    }}건)</small>
-                            </H1>
-                            <div class="view-type">
-                                <div class="button-group tiny">
-                                    <a href="{{ url_for('public.article_list', sc_section_code=sc_section_code, sc_sub_section_code=sc_sub_section_code, sc_area=sc_area, sc_word=sc_word, view_type='') }}"
-                                        class="button {% if view_type != 'sm' and view_type != 'tm' %}user-bg{% else %}nd-white{% endif %}"
-                                        title="제목형">
-                                        <i class="icon-th-list"></i><span class="show-for-medium">&nbsp;제목형</span>
-                                    </a>
-                                    <a href="{{ url_for('public.article_list', sc_section_code=sc_section_code, sc_sub_section_code=sc_sub_section_code, sc_area=sc_area, sc_word=sc_word, view_type='sm') }}"
-                                        class="button {% if view_type == 'sm' %}user-bg{% else %}nd-white{% endif %}"
-                                        title="요약형">
-                                        <i class="icon-th"></i><span class="show-for-medium">&nbsp;요약형</span>
-                                    </a>
-                                    <a href="{{ url_for('public.article_list', sc_section_code=sc_section_code, sc_sub_section_code=sc_sub_section_code, sc_area=sc_area, sc_word=sc_word, view_type='tm') }}"
-                                        class="button {% if view_type == 'tm' %}user-bg{% else %}nd-white{% endif %}"
-                                        title="포토형">
-                                        <i class="icon-th-large"></i><span class="show-for-medium">&nbsp;포토형</span>
-                                    </a>
-                                </div>
-                            </div>
-                        </header>
-
-                        {% if sc_word %}
-                        <!-- 검색 필터 -->
-                        <div
-                            style="margin-bottom:15px;padding:12px 15px;background:#f9f9f9;border:1px solid #eee;border-radius:4px;display:flex;align-items:center;gap:10px;font-size:13px">
-                            <span style="color:#5e1985;font-weight:700"><i class="icon-search-thin"></i> "{{ sc_word
-                                }}"</span>
-                            <span style="color:#666">검색결과 {{ pagination.total }}건</span>
-                            <form method="get" action="{{ url_for('public.article_list') }}"
-                                style="margin-left:auto;display:flex;gap:6px;align-items:center">
-                                <input type="hidden" name="sc_section_code" value="{{ sc_section_code }}" />
-                                <input type="hidden" name="sc_sub_section_code" value="{{ sc_sub_section_code }}" />
-                                <input type="hidden" name="view_type" value="{{ view_type }}" />
-                                <select name="sc_area"
-                                    style="height:30px;margin:0;padding:0 8px;font-size:12px;border:1px solid #ddd;border-radius:3px">
-                                    <option value="A" {% if sc_area=='A' %}selected{% endif %}>제목+내용</option>
-                                    <option value="T" {% if sc_area=='T' %}selected{% endif %}>제목</option>
-                                    <option value="C" {% if sc_area=='C' %}selected{% endif %}>내용</option>
-                                    <option value="N" {% if sc_area=='N' %}selected{% endif %}>작성자</option>
-                                </select>
-                                <input type="text" name="sc_word" value="{{ sc_word }}"
-                                    style="height:30px;width:160px;margin:0;padding:0 8px;font-size:12px;border:1px solid #ddd;border-radius:3px" />
-                                <button type="submit"
-                                    style="height:30px;padding:0 12px;font-size:12px;background:#5e1985;color:#fff;border:none;border-radius:3px;cursor:pointer;white-space:nowrap;line-height:30px">검색</button>
-                            </form>
-                        </div>
-                        {% endif %}
-
-                        <!-- 기사 목록 -->
-                        <section id="section-list">
-                            {% if view_type == 'sm' %}
-                            <!-- 요약형 (type2) -->
-                            <ul class="type2 no-bullet">
-                                {% for article in articles %}
-                                <li style="display:flex;align-items:flex-start;{% if loop.first %}padding-top:0;{% endif %}">
-                                    {% if article.thumb_url %}
-                                    <a href="{{ url_for('public.article_view', idxno=article.id) }}" class="thumb">
-                                        <img src="{{ article.thumb_url }}" alt="" />
-                                        {% if article.article_type == 'V' %}
-                                        <span
-                                            style="position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);width:36px;height:36px;background:rgba(0,0,0,.6);border-radius:50%;display:flex;align-items:center;justify-content:center">
-                                            <span
-                                                style="width:0;height:0;border-top:8px solid transparent;border-bottom:8px solid transparent;border-left:14px solid #fff;margin-left:3px"></span>
-                                        </span>
-                                        {% endif %}
-                                    </a>
-                                    {% endif %}
-                                    <div class="view-cont">
-                                        <H2 class="titles"><a
-                                                href="{{ url_for('public.article_view', idxno=article.id) }}">{{
-                                                article.title }}</a></H2>
-                                        <p class="lead line-6x3">
-                                            <a href="{{ url_for('public.article_view', idxno=article.id) }}">{{
-                                                article.summary_text|truncate(200) }}</a>
-                                        </p>
-                                        <span class="byline">
-                                            {% if article.subsection %}<em>{{ article.subsection.name }}</em>{% endif %}
-                                            <em>{{ article.author_name }}</em>
-                                            <em>{{ (article.embargo_date or article.created_at).strftime('%Y.%m.%d
-                                                %H:%M') }}</em>
-                                        </span>
-                                    </div>
-                                </li>
-                                {% else %}
-                                <li style="padding:40px 0;text-align:center;color:#999;border-bottom:none">등록된 기사가 없습니다.
-                                </li>
-                                {% endfor %}
-                            </ul>
-                            {% elif view_type == 'tm' %}
-                            <!-- 포토형 (type3) -->
-                            <div class="clearfix" style="margin:-10px">
-                                {% for article in articles %}
-                                <div
-                                    style="float:left;width:calc({% if is_mobile %}50% - 20px{% else %}25% - 20px{% endif %});margin:10px;overflow:hidden">
-                                    <a href="{{ url_for('public.article_view', idxno=article.id) }}"
-                                        style="display:block;position:relative">
-                                        <span
-                                            style="display:block;height:160px;overflow:hidden;background-size:cover;background-position:center;{% if article.thumb_url %}background-image:url({{ article.thumb_url }}){% else %}background-color:#f0f0f0{% endif %}"></span>
-                                        {% if article.article_type == 'V' %}
-                                        <span
-                                            style="position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);width:40px;height:40px;background:rgba(0,0,0,.6);border-radius:50%;display:flex;align-items:center;justify-content:center">
-                                            <span
-                                                style="width:0;height:0;border-top:9px solid transparent;border-bottom:9px solid transparent;border-left:16px solid #fff;margin-left:3px"></span>
-                                        </span>
-                                        {% endif %}
-                                        <strong
-                                            style="display:block;margin-top:10px;font-size:14px;font-weight:500;line-height:1.4;color:#222;overflow:hidden;text-overflow:ellipsis;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical">{{
-                                            article.title }}</strong>
-                                    </a>
-                                    <span style="display:block;margin-top:5px;font-size:12px;color:#999">{{
-                                        article.author_name }} | {{ (article.embargo_date or
-                                        article.created_at).strftime('%Y.%m.%d') }}</span>
-                                </div>
-                                {% else %}
-                                <div style="padding:40px 0;text-align:center;color:#999;width:100%">등록된 기사가 없습니다.</div>
-                                {% endfor %}
-                            </div>
-                            {% else %}
-                            <!-- 제목형 (type1) -->
-                            <ul class="type1 no-bullet">
-                                {% for article in articles %}
-                                <li>
-                                    <H2 class="titles"><a
-                                            href="{{ url_for('public.article_view', idxno=article.id) }}">{{
-                                            article.title }}</a></H2>
-                                    {% if article.thumb_url %}<i class="icon-image-o" title="이미지기사"><span
-                                            class="show-for-sr">이미지기사</span></i>{% endif %}
-                                    {% if article.subsection %}<em class="info category">{{ article.subsection.name
-                                        }}</em>{% endif %}
-                                    <em class="info name">{{ article.author_name }}</em>
-                                    <em class="info dated">{{ (article.embargo_date or
-                                        article.created_at).strftime('%m.%d %H:%M') }}</em>
-                                </li>
-                                {% else %}
-                                <li style="padding:40px 0;text-align:center;color:#999;border-bottom:none">등록된 기사가 없습니다.
-                                </li>
-                                {% endfor %}
-                            </ul>
-                            {% endif %}
-                        </section>
-
-                        <!-- 페이지네이션 -->
-                        {% if pagination.pages > 1 %}
-                        <nav aria-label="Pagination">
-                            <ul class="pagination">
-                                <li class="pagination-start">
-                                    <a href="{{ url_for('public.article_list', page=1, sc_section_code=sc_section_code, sc_sub_section_code=sc_sub_section_code, sc_area=sc_area, sc_word=sc_word, view_type=view_type) }}"
-                                        title="처음">
-                                        <i class="icon-angle-double-left"><span class="show-for-sr">처음</span></i>
-                                    </a>
-                                </li>
-                                {% if pagination.has_prev %}
-                                <li class="pagination-oneprev">
-                                    <a href="{{ url_for('public.article_list', page=pagination.prev_num, sc_section_code=sc_section_code, sc_sub_section_code=sc_sub_section_code, sc_area=sc_area, sc_word=sc_word, view_type=view_type) }}"
-                                        title="이전">
-                                        <i class="icon-angle-left-min"><span class="show-for-sr">이전</span></i>
-                                    </a>
-                                </li>
-                                {% endif %}
-                                {% for p in pagination.iter_pages(left_edge=1, right_edge=1, left_current=4,
-                                right_current=4) %}
-                                {% if p %}
-                                {% if p == pagination.page %}
-                                <li class="current user-bg">{{ p }}</li>
-                                {% else %}
-                                <li><a
-                                        href="{{ url_for('public.article_list', page=p, sc_section_code=sc_section_code, sc_sub_section_code=sc_sub_section_code, sc_area=sc_area, sc_word=sc_word, view_type=view_type) }}">{{
-                                        p }}</a></li>
-                                {% endif %}
-                                {% else %}
-                                <li class="ellipsis"></li>
-                                {% endif %}
-                                {% endfor %}
-                                {% if pagination.has_next %}
-                                <li class="pagination-onenext">
-                                    <a href="{{ url_for('public.article_list', page=pagination.next_num, sc_section_code=sc_section_code, sc_sub_section_code=sc_sub_section_code, sc_area=sc_area, sc_word=sc_word, view_type=view_type) }}"
-                                        title="다음">
-                                        <span class="show-static-small-only">다음</span>
-                                        <i class="icon-angle-right-min"><span class="show-for-sr">다음</span></i>
-                                    </a>
-                                </li>
-                                {% endif %}
-                                <li class="pagination-end">
-                                    <a href="{{ url_for('public.article_list', page=pagination.pages, sc_section_code=sc_section_code, sc_sub_section_code=sc_sub_section_code, sc_area=sc_area, sc_word=sc_word, view_type=view_type) }}"
-                                        title="끝">
-                                        <i class="icon-angle-double-right"><span class="show-for-sr">끝</span></i>
-                                    </a>
-                                </li>
-                            </ul>
-                        </nav>
-                        {% endif %}
-
-                        {% if section and section.subsections.count() > 0 %}
-                        <div style="margin-top:20px;padding:10px 0;border-top:1px solid #eee">
-                            <a href="{{ url_for('public.article_list', sc_section_code=section.code, view_type=view_type) }}"
-                                style="display:inline-block;margin-right:15px;font-size:14px;{% if not subsection %}color:#5e1985;font-weight:700{% else %}color:#666{% endif %}">전체</a>
-                            {% for sub in section.subsections %}
-                            <a href="{{ url_for('public.article_list', sc_sub_section_code=sub.code, view_type=view_type) }}"
-                                style="display:inline-block;margin-right:15px;font-size:14px;{% if subsection and subsection.id == sub.id %}color:#5e1985;font-weight:700{% else %}color:#666{% endif %}">{{
-                                sub.name }}</a>
-                            {% endfor %}
-                        </div>
-                        {% endif %}
-
-                    </section>
-                </div>
-
-                <div class="clearfix"></div>
-            </section>
-
-            {% if not is_mobile %}
-            <!-- 사이드바 -->
-            <aside class="grid side">
-                <div class="clearfix">
-                    <div class="sticky">
-
-                        <!-- 사이드바 배너 -->
-                        {% if banners.get('sidebar') %}
-                        <div class="banner-area banner-sidebar" style="margin-bottom:25px">
-                            {% for b in banners['sidebar'] %}
-                            <a href="{{ url_for('public.banner_click', banner_id=b.id) }}" target="_blank"
-                                rel="noopener" style="display:block{% if not loop.first %};margin-top:10px{% endif %}">
-                                <img src="{{ b.image_path if b.image_path.startswith(('http', '/')) else url_for('static', filename=b.image_path) }}" alt="{{ b.name }}"
-                                    style="width:100%">
-                            </a>
-                            {% endfor %}
-                        </div>
-                        {% endif %}
-
-                        <!-- 오피니언 -->
-                        {% if sidebar_opinion %}
-                        <article class="box-skin">
-                            <header class="header"><a
-                                    href="{{ url_for('public.article_list', sc_section_code='S1N2', view_type='sm') }}">오피니언</a>
-                            </header>
-                            <section class="content">
-                                <div id="skin-11" class="auto-article">
-                                    {% for art in sidebar_opinion %}
-                                    <div class="item{% if not loop.first %} martop-15{% endif %}">
-                                        <a href="{{ url_for('public.article_view', idxno=art.id) }}"
-                                            class="auto-valign">
-                                            <div class="frame for-middle">
-                                                <em class="auto-images radius ratio-11"
-                                                    style="{% if art.thumb_url %}background-image:url({{ art.thumb_url }}){% else %}background-color:#e0d5ea{% endif %}"></em>
-                                            </div>
-                                            <div class="content for-middle">
-                                                <H2 class="auto-titles size-15 line-3x2 auto-fontA onload">{{ art.title
-                                                    }}</H2>
-                                                <em class="auto-name martop-5 size-12 line-2x1 auto-fontK">{{
-                                                    art.author_name }}</em>
-                                            </div>
-                                        </a>
-                                    </div>
-                                    {% endfor %}
-                                </div>
-                            </section>
-                        </article>
-                        <div class="box-margins box-solid" style="margin-bottom:25px;margin-top:25px;"></div>
-                        {% endif %}
-
-                        <!-- 많이 본 뉴스 (탭) -->
-                        {% if popular_today or popular_week %}
-                        <div class="tabs-wrap type-E">
-                            <header class="tabs-header">많이 본 뉴스</header>
-                            <ul class="tabs">
-                                <li class="tabs-title is-active"><a href="#" data-tab="today">오늘</a></li>
-                                <li class="tabs-title"><a href="#" data-tab="week">주간</a></li>
-                            </ul>
-                            <div class="tabs-panel-today tabs-popular active">
-                                <div class="auto-article">
-                                    {% for art in popular_today %}
-                                    <div class="item{% if not loop.first %} martop-8{% endif %}">
-                                        <a href="{{ url_for('public.article_view', idxno=art.id) }}"
-                                            style="display:flex;align-items:flex-start">
-                                            <strong
-                                                class="number size-22 line-2x1 {% if loop.index <= 3 %}user-point{% else %}auto-fontA{% endif %}"
-                                                style="flex-shrink:0;width:28px;margin-right:8px;font-size:18px;font-weight:700">{{
-                                                loop.index }}</strong>
-                                            <H2 class="auto-titles size-16 line-4x2 auto-fontA onload"
-                                                style="font-size:14px;line-height:1.5;font-weight:400;color:#333">{{
-                                                art.title }}</H2>
-                                        </a>
-                                    </div>
-                                    {% else %}
-                                    <div style="padding:20px 0;text-align:center;font-size:13px;color:#999">오늘 기사가 없습니다.
-                                    </div>
-                                    {% endfor %}
-                                </div>
-                            </div>
-                            <div class="tabs-panel-week tabs-popular" style="display:none">
-                                <div class="auto-article">
-                                    {% for art in popular_week %}
-                                    <div class="item{% if not loop.first %} martop-8{% endif %}">
-                                        <a href="{{ url_for('public.article_view', idxno=art.id) }}"
-                                            style="display:flex;align-items:flex-start">
-                                            <strong
-                                                class="number size-22 line-2x1 {% if loop.index <= 3 %}user-point{% else %}auto-fontA{% endif %}"
-                                                style="flex-shrink:0;width:28px;margin-right:8px;font-size:18px;font-weight:700">{{
-                                                loop.index }}</strong>
-                                            <H2 class="auto-titles size-16 line-4x2 auto-fontA onload"
-                                                style="font-size:14px;line-height:1.5;font-weight:400;color:#333">{{
-                                                art.title }}</H2>
-                                        </a>
-                                    </div>
-                                    {% else %}
-                                    <div style="padding:20px 0;text-align:center;font-size:13px;color:#999">주간 기사가 없습니다.
-                                    </div>
-                                    {% endfor %}
-                                </div>
-                            </div>
-                        </div>
-                        {% endif %}
-
-                    </div>
-                </div>
-            </aside>
-            {% endif %}
-        </div>
+{% block content %}
+<div class="container section-gap">
+  <!-- 헤더: 섹션명 + 보기타입 -->
+  <div class="alist-header">
+    <div class="alist-header__left">
+      <h1 class="alist-header__title">
+        {% if subsection %}{{ subsection.name }}
+        {% elif section %}{{ section.name }}
+        {% else %}전체기사{% endif %}
+      </h1>
     </div>
-    {% endblock %}
+    <div class="alist-header__right">
+      <a href="{{ url_for('public.article_list', sc_section_code=sc_section_code, sc_sub_section_code=sc_sub_section_code, sc_area=sc_area, sc_word=sc_word, view_type='') }}"
+         class="alist-vtype{% if view_type != 'sm' and view_type != 'tm' %} alist-vtype--active{% endif %}" title="제목형">
+        <i class="fa-solid fa-list"></i><span class="alist-vtype__text">제목형</span>
+      </a>
+      <a href="{{ url_for('public.article_list', sc_section_code=sc_section_code, sc_sub_section_code=sc_sub_section_code, sc_area=sc_area, sc_word=sc_word, view_type='sm') }}"
+         class="alist-vtype{% if view_type == 'sm' %} alist-vtype--active{% endif %}" title="요약형">
+        <i class="fa-solid fa-th-large"></i><span class="alist-vtype__text">요약형</span>
+      </a>
+      <a href="{{ url_for('public.article_list', sc_section_code=sc_section_code, sc_sub_section_code=sc_sub_section_code, sc_area=sc_area, sc_word=sc_word, view_type='tm') }}"
+         class="alist-vtype{% if view_type == 'tm' %} alist-vtype--active{% endif %}" title="포토형">
+        <i class="fa-solid fa-image"></i><span class="alist-vtype__text">포토형</span>
+      </a>
+    </div>
+  </div>
+
+  <!-- 2차 섹션 탭 (뉴스 S1N1 제외) -->
+  {% if section and section.code != 'S1N1' and section.subsections.count() > 0 %}
+  <div class="alist-subtabs">
+    <a href="{{ url_for('public.article_list', sc_section_code=section.code, view_type=view_type) }}"
+       class="alist-subtab{% if not subsection %} alist-subtab--active{% endif %}">전체</a>
+    {% for sub in section.subsections %}
+    <a href="{{ url_for('public.article_list', sc_sub_section_code=sub.code, view_type=view_type) }}"
+       class="alist-subtab{% if subsection and subsection.id == sub.id %} alist-subtab--active{% endif %}">{{ sub.name }}</a>
+    {% endfor %}
+  </div>
+  {% endif %}
+
+  <!-- 검색 필터 -->
+  {% if sc_word %}
+  <div class="alist-search-bar">
+    <div class="alist-search-bar__result">
+      <i class="fa-solid fa-magnifying-glass"></i>
+      <strong>"{{ sc_word }}"</strong> 검색결과 <em>{{ pagination.total }}</em>건
+    </div>
+    <form method="get" action="{{ url_for('public.article_list') }}" class="alist-search-bar__form">
+      <input type="hidden" name="sc_section_code" value="{{ sc_section_code }}">
+      <input type="hidden" name="sc_sub_section_code" value="{{ sc_sub_section_code }}">
+      <input type="hidden" name="view_type" value="{{ view_type }}">
+      <select name="sc_area" class="alist-search-bar__select">
+        <option value="A" {% if sc_area=='A' %}selected{% endif %}>제목+내용</option>
+        <option value="T" {% if sc_area=='T' %}selected{% endif %}>제목</option>
+        <option value="C" {% if sc_area=='C' %}selected{% endif %}>내용</option>
+        <option value="N" {% if sc_area=='N' %}selected{% endif %}>작성자</option>
+      </select>
+      <input type="text" name="sc_word" value="{{ sc_word }}" class="alist-search-bar__input" placeholder="검색어">
+      <button type="submit" class="alist-search-bar__btn">검색</button>
+    </form>
+  </div>
+  {% endif %}
+
+  <!-- 일정 검색 결과 -->
+  {% if schedule_results %}
+  <div style="background:#f9f5ff;border:1px solid #e9d5ff;border-radius:8px;padding:16px 20px;margin-bottom:20px;">
+    <h3 style="font-size:14px;font-weight:700;color:#5e1985;margin:0 0 12px;display:flex;align-items:center;gap:6px;">
+      <i class="fa-regular fa-calendar"></i> 관련 일정 {{ schedule_results|length }}건
+    </h3>
+    {% for s in schedule_results %}
+    <a href="/schedule/view/{{ s.id }}" style="display:flex;align-items:center;gap:10px;padding:8px 0;border-top:1px solid #e9d5ff;text-decoration:none;color:inherit;">
+      {% if s.image_url %}
+      <img src="{{ s.image_url }}" alt="" style="width:48px;height:36px;object-fit:cover;border-radius:4px;flex-shrink:0;">
+      {% endif %}
+      <div style="flex:1;min-width:0;">
+        <p style="font-size:13px;font-weight:600;color:#374151;margin:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">{{ s.title }}</p>
+        <span style="font-size:11px;color:#9ca3af;">{{ s.event_date.strftime('%Y.%m.%d') }}{% if s.category %} · {{ s.category }}{% endif %}</span>
+      </div>
+    </a>
+    {% endfor %}
+  </div>
+  {% endif %}
+
+  <!-- 본문 + 사이드바 -->
+  <div class="main-grid">
+    <div>
+      {% if view_type == 'sm' %}
+      <!-- 요약형 -->
+      <div class="alist-summary">
+        {% for article in articles %}
+        <a href="/news/articleView.html?idxno={{ article.id }}" class="alist-summary__item">
+          {% if article.thumb_url %}
+          <div class="alist-summary__thumb">
+            <img src="{{ article.thumb_url }}" alt="" loading="lazy">
+            {% if article.article_type == 'V' %}
+            <span class="alist-summary__play"><i class="fa-solid fa-play"></i></span>
+            {% endif %}
+          </div>
+          {% endif %}
+          <div class="alist-summary__body">
+            <h2 class="alist-summary__title line-clamp-2">{{ article.title }}</h2>
+            {% if article.summary_text %}
+            <p class="alist-summary__excerpt line-clamp-2">{{ article.summary_text|truncate(200) }}</p>
+            {% endif %}
+            <div class="alist-summary__meta">
+              {% if article.subsection %}<span class="alist-summary__cat">{{ article.subsection.name }}</span>{% endif %}
+              <span>{{ article.author_name }}</span>
+              <span>{{ (article.embargo_date or article.created_at).strftime('%Y.%m.%d %H:%M') }}</span>
+            </div>
+          </div>
+        </a>
+        {% else %}
+        <div class="alist-empty">등록된 기사가 없습니다.</div>
+        {% endfor %}
+      </div>
+
+      {% elif view_type == 'tm' %}
+      <!-- 포토형 -->
+      <div class="alist-photo-grid">
+        {% for article in articles %}
+        <a href="/news/articleView.html?idxno={{ article.id }}" class="alist-photo-card">
+          <div class="alist-photo-card__img" style="{% if article.thumb_url %}background-image:url({{ article.thumb_url }}){% endif %}">
+            {% if article.article_type == 'V' %}
+            <span class="alist-photo-card__play"><i class="fa-solid fa-play"></i></span>
+            {% endif %}
+          </div>
+          <h3 class="alist-photo-card__title line-clamp-2">{{ article.title }}</h3>
+          <span class="alist-photo-card__meta">{{ article.author_name }} | {{ (article.embargo_date or article.created_at).strftime('%Y.%m.%d') }}</span>
+        </a>
+        {% else %}
+        <div class="alist-empty" style="grid-column:1/-1">등록된 기사가 없습니다.</div>
+        {% endfor %}
+      </div>
+
+      {% else %}
+      <!-- 제목형 -->
+      <div class="alist-title-list">
+        {% for article in articles %}
+        <div class="alist-title-item">
+          <a href="/news/articleView.html?idxno={{ article.id }}" class="alist-title-item__link">{{ article.title }}</a>
+          {% if article.thumb_url %}<i class="fa-regular fa-image alist-title-item__icon"></i>{% endif %}
+          {% if article.subsection %}<span class="alist-title-item__cat">{{ article.subsection.name }}</span>{% endif %}
+          <span class="alist-title-item__meta">{{ article.author_name }}</span>
+          <span class="alist-title-item__meta">{{ (article.embargo_date or article.created_at).strftime('%m.%d %H:%M') }}</span>
+        </div>
+        {% else %}
+        <div class="alist-empty">등록된 기사가 없습니다.</div>
+        {% endfor %}
+      </div>
+      {% endif %}
+
+      <!-- 페이지네이션 -->
+      {% if pagination.pages > 1 %}
+      <nav class="alist-pager">
+        <a href="{{ url_for('public.article_list', page=1, sc_section_code=sc_section_code, sc_sub_section_code=sc_sub_section_code, sc_area=sc_area, sc_word=sc_word, view_type=view_type) }}"
+           class="alist-pager__btn" title="처음"><i class="fa-solid fa-angles-left"></i></a>
+        {% if pagination.has_prev %}
+        <a href="{{ url_for('public.article_list', page=pagination.prev_num, sc_section_code=sc_section_code, sc_sub_section_code=sc_sub_section_code, sc_area=sc_area, sc_word=sc_word, view_type=view_type) }}"
+           class="alist-pager__btn" title="이전"><i class="fa-solid fa-angle-left"></i></a>
+        {% endif %}
+        {% for p in pagination.iter_pages(left_edge=1, right_edge=1, left_current=4, right_current=4) %}
+          {% if p %}
+            {% if p == pagination.page %}
+            <span class="alist-pager__num alist-pager__num--active">{{ p }}</span>
+            {% else %}
+            <a href="{{ url_for('public.article_list', page=p, sc_section_code=sc_section_code, sc_sub_section_code=sc_sub_section_code, sc_area=sc_area, sc_word=sc_word, view_type=view_type) }}"
+               class="alist-pager__num">{{ p }}</a>
+            {% endif %}
+          {% else %}
+          <span class="alist-pager__dots">…</span>
+          {% endif %}
+        {% endfor %}
+        {% if pagination.has_next %}
+        <a href="{{ url_for('public.article_list', page=pagination.next_num, sc_section_code=sc_section_code, sc_sub_section_code=sc_sub_section_code, sc_area=sc_area, sc_word=sc_word, view_type=view_type) }}"
+           class="alist-pager__btn" title="다음"><i class="fa-solid fa-angle-right"></i></a>
+        {% endif %}
+        <a href="{{ url_for('public.article_list', page=pagination.pages, sc_section_code=sc_section_code, sc_sub_section_code=sc_sub_section_code, sc_area=sc_area, sc_word=sc_word, view_type=view_type) }}"
+           class="alist-pager__btn" title="끝"><i class="fa-solid fa-angles-right"></i></a>
+      </nav>
+      {% endif %}
+    </div>
+
+    <!-- 사이드바 -->
+    <aside>
+      {% if banners.get('sidebar') %}
+      <div class="banner-area desk-only">
+        {% for b in banners['sidebar'] %}
+        <a href="{{ url_for('public.banner_click', banner_id=b.id) }}" target="_blank" rel="noopener">
+          {{ banner_img(b) }}
+        </a>
+        {% endfor %}
+      </div>
+      {% endif %}
+
+      {% if sidebar_opinion %}
+      <!-- 오피니언 (PC: 리스트형) -->
+      <div class="desk-only">
+        <div class="sec-head" style="margin-top:0.5rem">
+          <i class="fa-solid fa-pen-nib"></i>
+          <span class="sec-head__title">오피니언</span>
+        </div>
+        <div class="sidebar-opinion">
+          {% for art in sidebar_opinion %}
+          <a href="/news/articleView.html?idxno={{ art.id }}" class="sidebar-opinion__item">
+            <div class="sidebar-opinion__avatar" style="{% if art.thumb_url %}background-image:url({{ art.thumb_url }}){% endif %}">
+              {% if not art.thumb_url %}{{ art.author_name[:1] if art.author_name else '필' }}{% endif %}
+            </div>
+            <div class="sidebar-opinion__body">
+              <div class="sidebar-opinion__title line-clamp-2">{{ art.title }}</div>
+              {% if art.author_title %}<div class="sidebar-opinion__author">{{ art.author_title }}</div>{% elif art.author_name and art.author_name != '웰다잉뉴스' %}<div class="sidebar-opinion__author">{{ art.author_name }}</div>{% endif %}
+            </div>
+          </a>
+          {% endfor %}
+        </div>
+      </div>
+      <!-- 오피니언 (모바일: 카드형) -->
+      <div class="mob-only">
+        <div class="sec-head" style="margin-top:0.5rem">
+          <i class="fa-solid fa-pen-nib"></i>
+          <span class="sec-head__title">오피니언</span>
+        </div>
+        <div class="opinion-grid">
+          {% for art in sidebar_opinion %}
+          <a href="/news/articleView.html?idxno={{ art.id }}" class="opinion-card">
+            <div class="opinion-avatar">
+              {% if art.thumb_url %}
+              <img src="{{ art.thumb_url }}" alt="" style="object-position:{{ art.author_photo_pos or 'center center' }}">
+              {% else %}
+              {{ art.author_name[:1] if art.author_name else '필' }}
+              {% endif %}
+            </div>
+            {% if art.author_title %}
+            <div class="opinion-name">{{ art.author_title }}</div>
+            {% elif art.author_name and art.author_name != '웰다잉뉴스' %}
+            <div class="opinion-name">{{ art.author_name }}</div>
+            {% endif %}
+            <div class="opinion-title line-clamp-2">{{ art.title }}</div>
+          </a>
+          {% endfor %}
+        </div>
+      </div>
+      {% endif %}
+
+      {% if popular_today or popular_week %}
+      <div class="sec-head" style="margin-top:1.5rem">
+        <i class="fa-solid fa-arrow-trend-up"></i>
+        <span class="sec-head__title">많이 본 뉴스</span>
+      </div>
+      <div class="pop-tabs">
+        <button class="pop-tab pop-tab--active" onclick="switchPop(this,'popWeekSide')">주간</button>
+        <button class="pop-tab" onclick="switchPop(this,'popTodaySide')">오늘</button>
+      </div>
+      <div class="pop-list" id="popWeekSide">
+        {% for art in popular_week %}
+        <a href="/news/articleView.html?idxno={{ art.id }}" class="pop-item">
+          <span class="pop-num {{ 'pop-num--top' if loop.index <= 3 else 'pop-num--rest' }}">{{ loop.index }}</span>
+          <span class="pop-title line-clamp-2">{{ art.title }}</span>
+        </a>
+        {% endfor %}
+      </div>
+      <div class="pop-list" id="popTodaySide" style="display:none">
+        {% for art in popular_today %}
+        <a href="/news/articleView.html?idxno={{ art.id }}" class="pop-item">
+          <span class="pop-num {{ 'pop-num--top' if loop.index <= 3 else 'pop-num--rest' }}">{{ loop.index }}</span>
+          <span class="pop-title line-clamp-2">{{ art.title }}</span>
+        </a>
+        {% endfor %}
+      </div>
+      {% endif %}
+
+      {% if banners.get('sidebar_bottom') %}
+      <div class="banner-area desk-only" style="margin-top:1.25rem">
+        {% for b in banners['sidebar_bottom'] %}
+        <a href="{{ url_for('public.banner_click', banner_id=b.id) }}" target="_blank" rel="noopener">
+          {{ banner_img(b) }}
+        </a>
+        {% endfor %}
+      </div>
+      {% endif %}
+    </aside>
+  </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+function switchPop(btn, panelId) {
+  document.querySelectorAll('.pop-tab').forEach(function(t){ t.classList.remove('pop-tab--active'); });
+  btn.classList.add('pop-tab--active');
+  document.querySelectorAll('.pop-list').forEach(function(p){ p.style.display = 'none'; });
+  document.getElementById(panelId).style.display = '';
+}
+</script>
+{% endblock %}

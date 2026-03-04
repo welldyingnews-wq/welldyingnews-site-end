@@ -1,6 +1,11 @@
 {% extends "admin/base.html" %}
 {% block nav_title %}{{ '휴지통' if show_deleted else '기사검색' }}{% endblock %}
 
+{% block extra_head %}
+<style>.card, .table, .form-select, .form-control, .btn { font-size: .9375rem; }
+.table tbody td a.text-decoration-none { font-size: .9375rem; font-weight: 500; }</style>
+{% endblock %}
+
 {% block content %}
 {% if not show_deleted %}
 <!-- 검색 폼 -->
@@ -182,7 +187,6 @@
                     <th>제목</th>
                     <th width="80">섹션</th>
                     <th width="60">상태</th>
-                    <th width="100">1면</th>
                     <th width="70">기자</th>
                     <th width="50">조회</th>
                     <th width="110">등록일</th>
@@ -211,16 +215,6 @@
                         {% if article.recognition == 'E' %}<span class="badge bg-success">승인</span>
                         {% elif article.recognition == 'C' %}<span class="badge bg-warning text-dark">미승인</span>
                         {% else %}<span class="badge bg-danger">반려</span>{% endif %}
-                    </td>
-                    <td>
-                        <div class="btn-group btn-group-sm" role="group">
-                            <button
-                                class="btn btn-outline-dark btn-level {% if article.level == 'T' %}active{% endif %}"
-                                data-id="{{ article.id }}" data-level="T" title="헤드라인 (1면 대형)">헤드</button>
-                            <button
-                                class="btn btn-outline-info btn-level {% if article.level == 'I' %}active{% endif %}"
-                                data-id="{{ article.id }}" data-level="I" title="중요 (1면 소형)">중요</button>
-                        </div>
                     </td>
                     <td class="small">{{ article.author_name }}</td>
                     <td class="small">{{ article.view_count }}</td>

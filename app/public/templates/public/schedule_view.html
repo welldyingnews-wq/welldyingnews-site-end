@@ -1,0 +1,62 @@
+{% extends "public/base_v0.html" %}
+{% block title %}{{ schedule.title }} — 주요일정 — 웰다잉뉴스{% endblock %}
+
+{% block extra_css %}
+<style>
+.sv { max-width: 800px; margin: 0 auto; }
+.sv__back { display: inline-flex; align-items: center; gap: .375rem; font-size: .8125rem; color: var(--muted-fg); text-decoration: none; margin-bottom: 1.25rem; }
+.sv__back:hover { color: var(--accent); }
+.sv__cat { display: inline-block; padding: .25rem .75rem; font-size: .75rem; font-weight: 600; color: #fff; border-radius: 1rem; margin-bottom: .75rem; }
+.sv__title { font-size: 1.5rem; font-weight: 800; color: var(--foreground); line-height: 1.4; margin: 0 0 1rem; }
+.sv__meta { display: flex; flex-wrap: wrap; gap: .75rem 1.5rem; font-size: .8125rem; color: var(--muted-fg); padding-bottom: 1.25rem; border-bottom: 1px solid var(--border); margin-bottom: 1.5rem; }
+.sv__meta i { margin-right: .25rem; }
+.sv__img { width: 100%; border-radius: var(--radius-lg); margin-bottom: 1.5rem; }
+.sv__body { font-size: .9375rem; line-height: 1.8; color: var(--foreground); word-break: keep-all; }
+.sv__body img { max-width: 100%; height: auto; border-radius: var(--radius); margin: 1rem 0; }
+.sv__body p { margin-bottom: 1rem; }
+.sv__link-btn { display: inline-flex; align-items: center; gap: .5rem; margin-top: 1.5rem; padding: .625rem 1.25rem; background: var(--accent); color: #fff; border-radius: var(--radius); font-size: .875rem; font-weight: 600; text-decoration: none; }
+.sv__link-btn:hover { opacity: .9; color: #fff; }
+.sv__desc { font-size: .875rem; color: var(--muted-fg); line-height: 1.6; padding: 1rem; background: var(--secondary); border-radius: var(--radius); margin-bottom: 1.5rem; }
+.sv__empty { padding: 3rem; text-align: center; color: var(--muted-fg); }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="container section-gap">
+  <div class="sv">
+    <a href="/schedule/list.html" class="sv__back"><i class="fa-solid fa-arrow-left"></i> 주요일정 목록</a>
+
+    {% if schedule.category %}
+    {% set cat_colors = {'교육':'#3B82F6','세미나':'#10B981','토론회':'#F59E0B','공청회':'#EF4444','학술대회':'#8B5CF6','예술':'#EC4899','행사':'#F97316','공고':'#64748B'} %}
+    <span class="sv__cat" style="background:{{ cat_colors.get(schedule.category, '#6B7280') }}">{{ schedule.category }}</span>
+    {% endif %}
+
+    <h1 class="sv__title">{{ schedule.title }}</h1>
+
+    <div class="sv__meta">
+      <span><i class="fa-regular fa-calendar"></i> {{ schedule.event_date.strftime('%Y.%m.%d %H:%M') }}{% if schedule.end_date %} ~ {{ schedule.end_date.strftime('%Y.%m.%d %H:%M') }}{% endif %}</span>
+      {% if schedule.location %}<span><i class="fa-solid fa-location-dot"></i> {{ schedule.location }}</span>{% endif %}
+    </div>
+
+    {% if schedule.description %}
+    <div class="sv__desc">{{ schedule.description }}</div>
+    {% endif %}
+
+    {% if schedule.image_url %}
+    <img src="{{ schedule.image_url }}" alt="{{ schedule.title }}" class="sv__img">
+    {% endif %}
+
+    {% if schedule.content %}
+    <div class="sv__body">{{ schedule.content|safe }}</div>
+    {% elif not schedule.description %}
+    <div class="sv__empty">상세 내용이 없습니다.</div>
+    {% endif %}
+
+    {% if schedule.link_url %}
+    <a href="{{ schedule.link_url }}" target="_blank" rel="noopener noreferrer" class="sv__link-btn">
+      <i class="fa-solid fa-arrow-up-right-from-square"></i> 상세 페이지 바로가기
+    </a>
+    {% endif %}
+  </div>
+</div>
+{% endblock %}

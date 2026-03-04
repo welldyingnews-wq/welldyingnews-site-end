@@ -1,0 +1,243 @@
+{% extends "admin/base.html" %}
+{% block nav_title %}{{ '일정수정' if schedule and schedule.id else '일정등록' }}{% endblock %}
+
+{% block extra_head %}
+<link rel="stylesheet" href="https://cdn.ckeditor.com/ckeditor5/43.3.1/ckeditor5.css">
+<style>
+    .ck-editor__editable { min-height: 300px; }
+    .ck-editor__editable.ck-focused { border-color: #5e1985 !important; }
+    .ck-editor__editable figcaption {
+        background: #fffbe6 !important;
+        border: 2px dashed #e0c760 !important;
+        padding: 8px 12px !important;
+        font-size: 13px; color: #555; text-align: center;
+        min-height: 32px; display: block !important;
+    }
+    .ck-editor__editable figcaption.ck-placeholder::before {
+        content: '▼ 여기에 사진설명(캡션)을 입력하세요' !important;
+        color: #c0a020 !important; font-style: normal !important;
+    }
+    .image-upload-area {
+        border: 2px dashed #dee2e6; border-radius: .375rem;
+        padding: 1.5rem; text-align: center; cursor: pointer;
+        transition: border-color .2s, background-color .2s;
+    }
+    .image-upload-area:hover { border-color: #5e1985; background-color: #f8f0ff; }
+    .image-preview { max-width: 200px; max-height: 150px; object-fit: cover; border-radius: .375rem; }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="row justify-content-center">
+    <div class="col-lg-10">
+        <div class="card">
+            <div class="card-header"><strong>{{ '일정수정' if schedule and schedule.id else '일정등록' }}</strong></div>
+            <div class="card-body">
+                <form method="post" enctype="multipart/form-data"
+                      action="{{ url_for('admin.schedule_edit', schedule_id=schedule.id) if schedule and schedule.id else url_for('admin.schedule_new') }}">
+                    <div class="row">
+                        <div class="col-lg-8">
+                            <div class="mb-3">
+                                <label class="form-label fw-bold">제목</label>
+                                <input type="text" name="title" class="form-control" value="{{ schedule.title if schedule else '' }}" required>
+                            </div>
+                            <div class="mb-3">
+                                <label class="form-label fw-bold">간략 설명</label>
+                                <textarea name="description" class="form-control" rows="2" placeholder="목록에 표시될 짧은 설명">{{ schedule.description if schedule else '' }}</textarea>
+                            </div>
+                            <div class="mb-3">
+                                <label class="form-label fw-bold">본문</label>
+                                <textarea id="editor" name="content">{{ schedule.content if schedule else '' }}</textarea>
+                            </div>
+                        </div>
+                        <div class="col-lg-4">
+                            <div class="row mb-3">
+                                <div class="col-6">
+                                    <label class="form-label fw-bold">시작일시</label>
+                                    <input type="datetime-local" name="event_date" class="form-control" value="{{ schedule.event_date.strftime('%Y-%m-%dT%H:%M') if schedule and schedule.event_date else '' }}" required>
+                                </div>
+                                <div class="col-6">
+                                    <label class="form-label fw-bold">종료일시</label>
+                                    <input type="datetime-local" name="end_date" class="form-control" value="{{ schedule.end_date.strftime('%Y-%m-%dT%H:%M') if schedule and schedule.end_date else '' }}">
+                                    <small class="text-muted">비워두면 당일 행사</small>
+                                </div>
+                            </div>
+                            <div class="mb-3">
+                                <label class="form-label fw-bold">장소</label>
+                                <input type="text" name="location" class="form-control" value="{{ schedule.location if schedule else '' }}" placeholder="예: 서울 코엑스">
+                            </div>
+                            <div class="mb-3">
+                                <label class="form-label fw-bold">카테고리</label>
+                                <select name="category" class="form-select">
+                                    <option value="">-- 선택 --</option>
+                                    {% for cat in ['교육', '세미나', '토론회', '공청회', '학술대회', '예술', '행사', '강연', '공고'] %}
+                                    <option value="{{ cat }}" {% if schedule and schedule.category == cat %}selected{% endif %}>{{ cat }}</option>
+                                    {% endfor %}
+                                </select>
+                            </div>
+                            <div class="mb-3">
+                                <label class="form-label fw-bold">링크 URL</label>
+                                <input type="url" name="link_url" class="form-control" value="{{ schedule.link_url if schedule else '' }}" placeholder="상세 페이지 또는 신청 링크">
+                            </div>
+                            <div class="mb-3">
+                                <label class="form-label fw-bold">대표 이미지</label>
+                                {% if schedule and schedule.image_url %}
+                                <div class="mb-2">
+                                    <img src="{{ schedule.image_url }}" class="image-preview" alt="대표 이미지">
+                                </div>
+                                {% endif %}
+                                <div class="image-upload-area" id="imageUploadArea" onclick="document.getElementById('imageFile').click()">
+                                    <i class="bi bi-cloud-arrow-up fs-3 text-muted"></i>
+                                    <div class="text-muted small mt-1">클릭하여 이미지 업로드</div>
+                                </div>
+                                <input type="file" id="imageFile" name="image_file" accept="image/*" class="d-none" onchange="previewImage(this)">
+                                <input type="hidden" name="image_url" id="imageUrlField" value="{{ schedule.image_url if schedule else '' }}">
+                            </div>
+                            <div class="mb-3">
+                                <div class="form-check">
+                                    <input class="form-check-input" type="checkbox" name="is_active" value="1" id="isActive" {% if not schedule or schedule.is_active %}checked{% endif %}>
+                                    <label class="form-check-label" for="isActive">활성 (공개 사이트에 노출)</label>
+                                </div>
+                            </div>
+                            {% if schedule and schedule.id %}
+                            <div class="mb-3 p-2 bg-light rounded">
+                                <small class="text-muted">등록일: {{ schedule.created_at.strftime('%Y-%m-%d %H:%M') if schedule.created_at else '-' }}</small>
+                            </div>
+                            {% endif %}
+                        </div>
+                    </div>
+                    <div class="d-grid mt-3"><button type="submit" class="btn btn-primary"><i class="bi bi-save"></i> 저장</button></div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_scripts %}
+<script type="importmap">
+{
+    "imports": {
+        "ckeditor5": "https://cdn.ckeditor.com/ckeditor5/43.3.1/ckeditor5.js",
+        "ckeditor5/": "https://cdn.ckeditor.com/ckeditor5/43.3.1/"
+    }
+}
+</script>
+<script type="module">
+    import {
+        ClassicEditor,
+        Essentials, Paragraph, Heading, Undo,
+        Bold, Italic, Underline, Strikethrough,
+        Font, Alignment,
+        Link, AutoLink,
+        Image, ImageCaption, ImageStyle, ImageToolbar, ImageUpload, ImageResize, ImageInsert,
+        BlockQuote, List,
+        Indent, IndentBlock,
+        Table, TableToolbar, TableCaption,
+        MediaEmbed, HorizontalLine,
+        RemoveFormat, FindAndReplace, SourceEditing,
+        PasteFromOffice, FileRepository, GeneralHtmlSupport
+    } from 'ckeditor5';
+    import koTranslations from 'ckeditor5/translations/ko.js';
+
+    class MyUploadAdapter {
+        constructor(loader) { this.loader = loader; }
+        upload() {
+            return this.loader.file.then(file => {
+                const data = new FormData();
+                data.append('upload', file);
+                return fetch('{{ url_for("admin.upload_image") }}', { method: 'POST', body: data })
+                    .then(res => {
+                        if (!res.ok) return res.json().then(err => { throw new Error(err.error?.message || '업로드 실패'); });
+                        return res.json();
+                    })
+                    .then(result => ({ default: result.url }));
+            });
+        }
+        abort() { }
+    }
+    function MyUploadAdapterPlugin(editor) {
+        editor.plugins.get('FileRepository').createUploadAdapter = (loader) => new MyUploadAdapter(loader);
+    }
+
+    ClassicEditor.create(document.querySelector('#editor'), {
+        plugins: [
+            Essentials, Paragraph, Heading, Undo,
+            Bold, Italic, Underline, Strikethrough,
+            Font, Alignment,
+            Link, AutoLink,
+            Image, ImageCaption, ImageStyle, ImageToolbar, ImageUpload, ImageResize, ImageInsert,
+            BlockQuote, List,
+            Indent, IndentBlock,
+            Table, TableToolbar, TableCaption,
+            MediaEmbed, HorizontalLine,
+            RemoveFormat, FindAndReplace, SourceEditing,
+            PasteFromOffice, FileRepository, GeneralHtmlSupport,
+            MyUploadAdapterPlugin
+        ],
+        language: koTranslations,
+        toolbar: {
+            items: [
+                'heading', '|',
+                'bold', 'italic', 'underline', '|',
+                'fontSize', 'fontColor', '|',
+                'alignment', '|',
+                'link', 'insertImage', 'uploadImage', 'mediaEmbed', 'insertTable', 'blockQuote', 'horizontalLine', '|',
+                'bulletedList', 'numberedList', '|',
+                'outdent', 'indent', '|',
+                'removeFormat', 'sourceEditing', '|',
+                'undo', 'redo'
+            ],
+            shouldNotGroupWhenFull: true
+        },
+        fontSize: { options: [9, 10, 11, 12, 'default', 14, 16, 18, 20, 24] },
+        heading: {
+            options: [
+                { model: 'paragraph', title: '본문', class: 'ck-heading_paragraph' },
+                { model: 'heading2', view: 'h2', title: '제목 2', class: 'ck-heading_heading2' },
+                { model: 'heading3', view: 'h3', title: '제목 3', class: 'ck-heading_heading3' },
+            ]
+        },
+        image: {
+            insert: { type: 'block' },
+            toolbar: ['imageStyle:block', 'imageStyle:side', '|', 'toggleImageCaption', 'imageTextAlternative', '|',
+                'resizeImage:50', 'resizeImage:75', 'resizeImage:original'],
+            resizeOptions: [
+                { name: 'resizeImage:original', value: null, label: '원본' },
+                { name: 'resizeImage:50', value: '50', label: '50%' },
+                { name: 'resizeImage:75', value: '75', label: '75%' }
+            ]
+        },
+        table: { contentToolbar: ['tableColumn', 'tableRow', 'mergeTableCells'] },
+        mediaEmbed: { previewsInData: true },
+        htmlSupport: {
+            allow: [{ name: /^(?!figure|img|figcaption).*$/, attributes: true, classes: true, styles: true }],
+            disallow: [{ name: 'figure' }, { name: 'figcaption' }, { name: 'img' }]
+        }
+    }).then(editor => {
+        window.editorInstance = editor;
+    }).catch(err => console.error('CKEditor init error:', err));
+</script>
+<script>
+    function previewImage(input) {
+        if (!input.files || !input.files[0]) return;
+        var file = input.files[0];
+        var reader = new FileReader();
+        reader.onload = function(e) {
+            var area = document.getElementById('imageUploadArea');
+            area.innerHTML = '<img src="' + e.target.result + '" class="image-preview" alt="미리보기">';
+        };
+        reader.readAsDataURL(file);
+        var data = new FormData();
+        data.append('upload', file);
+        fetch('{{ url_for("admin.upload_image") }}', { method: 'POST', body: data })
+            .then(function(res) { return res.json(); })
+            .then(function(result) {
+                if (result.url) {
+                    document.getElementById('imageUrlField').value = result.url;
+                }
+            })
+            .catch(function(err) { console.error('이미지 업로드 실패:', err); });
+    }
+</script>
+{% endblock %}

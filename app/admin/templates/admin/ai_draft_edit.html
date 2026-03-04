@@ -1,0 +1,304 @@
+{% extends "admin/base.html" %}
+{% block nav_title %}AI 초안 편집{% endblock %}
+
+{% block extra_head %}
+<link rel="stylesheet" href="https://cdn.ckeditor.com/ckeditor5/43.3.1/ckeditor5.css">
+<style>
+    .ck-editor__editable { min-height: 400px; font-size: 18px !important; }
+    .ck-editor__editable.ck-focused { border-color: #5e1985 !important; }
+    .info-panel { max-height: 300px; overflow-y: auto; }
+    .fact-item { border-left: 3px solid #5e1985; padding-left: 10px; margin-bottom: 8px; }
+    .hallucination-item { border-left: 3px solid #dc3545; padding-left: 10px; margin-bottom: 8px; }
+    .title-suggestion { cursor: pointer; padding: 4px 8px; border-radius: 4px; }
+    .title-suggestion:hover { background: #f0e6f6; }
+</style>
+{% endblock %}
+
+{% block content %}
+<form method="post" action="{{ url_for('admin.ai_draft_update', draft_id=draft.id) }}">
+    <div class="d-flex justify-content-between align-items-center mb-3">
+        <h5 class="mb-0">
+            AI 초안 #{{ draft.id }}
+            {% set status_label = {'pending':'대기','curating':'분류중','scraping':'스크래핑','generating':'생성중','validating':'검증중','completed':'완료','skipped':'스킵','published':'발행','rejected':'반려'} %}
+            <span class="badge {{ 'bg-success' if draft.status == 'completed' else 'bg-primary' if draft.status == 'published' else 'bg-warning' }}">{{ status_label.get(draft.status, draft.status) }}</span>
+            {% if draft.grade %}
+            <span class="badge {{ 'bg-primary' if draft.grade == 'A1' else 'bg-success' if draft.grade == 'A2' else 'bg-secondary' }}">{{ draft.grade }}</span>
+            {% endif %}
+        </h5>
+        <div class="d-flex gap-2">
+            <button type="submit" class="btn btn-sm btn-primary"><i class="bi bi-save"></i> 저장</button>
+            {% if draft.status == 'completed' %}
+            <button type="button" class="btn btn-sm btn-success" onclick="publishDraft()"><i class="bi bi-send"></i> 기사 발행</button>
+            {% endif %}
+            <button type="button" class="btn btn-sm btn-outline-danger" onclick="rejectDraft()"><i class="bi bi-x-circle"></i> 반려</button>
+            <a href="{{ url_for('admin.ai_draft_list') }}" class="btn btn-sm btn-outline-secondary">목록</a>
+        </div>
+    </div>
+
+    <div class="row">
+        <!-- 좌측: 기사 편집 -->
+        <div class="col-lg-8">
+            <!-- 제목 추천 -->
+            {% if article_result.get('title_alternatives') %}
+            <div class="mb-2">
+                <small class="text-muted">제목 추천안:</small>
+                {% for alt in article_result.get('title_alternatives', []) %}
+                <span class="title-suggestion text-primary" onclick="document.getElementById('titleInput').value=this.textContent">{{ alt }}</span>
+                {% endfor %}
+            </div>
+            {% endif %}
+
+            <div class="mb-3">
+                <label class="form-label fw-bold">제목</label>
+                <input type="text" name="title" id="titleInput" value="{{ draft.title }}" class="form-control">
+            </div>
+            <div class="mb-3">
+                <label class="form-label fw-bold">부제 (리드문)</label>
+                <textarea name="subtitle" rows="2" class="form-control">{{ draft.subtitle }}</textarea>
+            </div>
+            <div class="mb-3">
+                <label class="form-label fw-bold">본문</label>
+                <div id="editorWrap">
+                    <textarea name="content" id="contentEditor" style="display:none;">{{ draft.content }}</textarea>
+                    <div id="editor"></div>
+                </div>
+            </div>
+            <div class="mb-3">
+                <label class="form-label fw-bold">요약</label>
+                <textarea name="summary" rows="3" class="form-control">{{ draft.summary }}</textarea>
+            </div>
+            <div class="row mb-3">
+                <div class="col-md-6">
+                    <label class="form-label">키워드</label>
+                    <input type="text" name="keywords" value="{{ draft.keywords }}" class="form-control form-control-sm">
+                </div>
+                <div class="col-md-3">
+                    <label class="form-label">기자</label>
+                    <input type="text" name="author_name" value="{{ draft.author_name }}" class="form-control form-control-sm">
+                </div>
+                <div class="col-md-3">
+                    <label class="form-label">출처</label>
+                    <input type="text" name="source_text" value="{{ draft.source_text }}" class="form-control form-control-sm">
+                </div>
+            </div>
+            <div class="row mb-3">
+                <div class="col-md-6">
+                    <label class="form-label">섹션</label>
+                    <select name="section_id" id="sectionSelect" class="form-select form-select-sm" onchange="loadSubsections()">
+                        <option value="">선택</option>
+                        {% for s in sections %}
+                        <option value="{{ s.id }}" {% if draft.suggested_section_id == s.id %}selected{% endif %}>{{ s.name }}</option>
+                        {% endfor %}
+                    </select>
+                </div>
+                <div class="col-md-6">
+                    <label class="form-label">2차 섹션</label>
+                    <select name="subsection_id" id="subsectionSelect" class="form-select form-select-sm">
+                        <option value="">선택</option>
+                    </select>
+                </div>
+            </div>
+        </div>
+
+        <!-- 우측: 정보 패널 -->
+        <div class="col-lg-4">
+            <!-- 원본 링크 -->
+            {% if draft.original_url %}
+            <div class="card mb-3">
+                <div class="card-header py-2"><small class="fw-bold">원본 기사</small></div>
+                <div class="card-body py-2">
+                    <a href="{{ draft.original_url }}" target="_blank" class="small text-break">{{ draft.original_url[:60] }}...</a>
+                </div>
+            </div>
+            {% endif %}
+
+            <!-- 관련 기사 링크 -->
+            {% if related_urls %}
+            <div class="card mb-3">
+                <div class="card-header py-2"><small class="fw-bold">관련 기사 ({{ related_urls|length }}건)</small></div>
+                <div class="card-body py-2 info-panel">
+                    {% for r in related_urls %}
+                    <div class="mb-1">
+                        <a href="{{ r.link }}" target="_blank" class="small text-break">{{ r.title[:50] }}</a>
+                    </div>
+                    {% endfor %}
+                </div>
+            </div>
+            {% endif %}
+
+            <!-- 검증 점수 -->
+            {% if draft.validation_score %}
+            <div class="card mb-3">
+                <div class="card-header py-2"><small class="fw-bold">검증 점수</small></div>
+                <div class="card-body py-2">
+                    <div class="d-flex align-items-center gap-2">
+                        <div class="display-6 {{ 'text-success' if draft.validation_score >= 70 else 'text-warning' if draft.validation_score >= 40 else 'text-danger' }}">
+                            {{ draft.validation_score }}
+                        </div>
+                        <small class="text-muted">/ 100</small>
+                    </div>
+                </div>
+            </div>
+            {% endif %}
+
+            <!-- 검증 이슈 -->
+            {% if validation.get('hallucination', {}).get('hallucinations') %}
+            <div class="card mb-3 border-danger">
+                <div class="card-header py-2 bg-danger text-white"><small class="fw-bold">할루시네이션 경고</small></div>
+                <div class="card-body py-2 info-panel">
+                    {% for h in validation.get('hallucination', {}).get('hallucinations', []) %}
+                    <div class="hallucination-item">
+                        <small class="text-danger fw-bold">[{{ h.severity }}] {{ h.type }}</small>
+                        <br><small>{{ h.text }}</small>
+                    </div>
+                    {% endfor %}
+                </div>
+            </div>
+            {% endif %}
+
+            {% if validation.get('mechanical', {}).get('issues') %}
+            <div class="card mb-3 border-warning">
+                <div class="card-header py-2"><small class="fw-bold">교정 이슈</small></div>
+                <div class="card-body py-2 info-panel">
+                    {% for issue in validation.get('mechanical', {}).get('issues', []) %}
+                    <div class="mb-2">
+                        <small class="badge bg-warning text-dark">{{ issue.type }}</small>
+                        <br><small>{{ issue.text[:80] }}</small>
+                        {% if issue.suggestion %}<br><small class="text-success">→ {{ issue.suggestion }}</small>{% endif %}
+                    </div>
+                    {% endfor %}
+                </div>
+            </div>
+            {% endif %}
+
+            <!-- 자료 패키지 (접기) -->
+            {% if fact_package %}
+            <div class="card mb-3">
+                <div class="card-header py-2">
+                    <a class="small fw-bold text-decoration-none" data-bs-toggle="collapse" href="#factPackage">
+                        자료 패키지 <i class="bi bi-chevron-down"></i>
+                    </a>
+                </div>
+                <div id="factPackage" class="collapse">
+                    <div class="card-body py-2 info-panel" style="max-height:500px;">
+                        {% if fact_package.get('verified_facts') %}
+                        <p class="fw-bold mb-1 small">검증된 사실 ({{ fact_package.verified_facts|length }}건)</p>
+                        {% for f in fact_package.get('verified_facts', []) %}
+                        <div class="fact-item">
+                            <small>{{ f.fact }}</small>
+                            <br><small class="text-muted">출처: {{ f.sources|join(', ') }}</small>
+                        </div>
+                        {% endfor %}
+                        {% endif %}
+                        {% if fact_package.get('quotes') %}
+                        <p class="fw-bold mb-1 small mt-2">인용 ({{ fact_package.quotes|length }}건)</p>
+                        {% for q in fact_package.get('quotes', []) %}
+                        <div class="fact-item">
+                            <small>"{{ q.quote }}" — {{ q.speaker }}</small>
+                        </div>
+                        {% endfor %}
+                        {% endif %}
+                        {% if fact_package.get('unverified') %}
+                        <p class="fw-bold mb-1 small mt-2 text-warning">미검증 ({{ fact_package.unverified|length }}건)</p>
+                        {% for u in fact_package.get('unverified', []) %}
+                        <div class="mb-1"><small class="text-muted">{{ u.fact }} ({{ u.source }})</small></div>
+                        {% endfor %}
+                        {% endif %}
+                    </div>
+                </div>
+            </div>
+            {% endif %}
+
+            <!-- 메타 정보 -->
+            <div class="card mb-3">
+                <div class="card-header py-2"><small class="fw-bold">메타 정보</small></div>
+                <div class="card-body py-2">
+                    <small class="d-block">생성일: {{ draft.created_at.strftime('%Y-%m-%d %H:%M') if draft.created_at else '-' }}</small>
+                    <small class="d-block">소요시간: {{ '%.1f초' % draft.generation_time_sec if draft.generation_time_sec else '-' }}</small>
+                    <small class="d-block">토큰: {{ '{:,}'.format(draft.total_tokens_used) if draft.total_tokens_used else '-' }}</small>
+                    <small class="d-block">모델: {{ draft.ai_models_used or '-' }}</small>
+                </div>
+            </div>
+        </div>
+    </div>
+</form>
+{% endblock %}
+
+{% block extra_scripts %}
+<!-- CKEditor 5 -->
+<script type="importmap">
+    { "imports": { "ckeditor5": "https://cdn.ckeditor.com/ckeditor5/43.3.1/ckeditor5.js", "ckeditor5/": "https://cdn.ckeditor.com/ckeditor5/43.3.1/" } }
+</script>
+<script type="module">
+import { ClassicEditor, Essentials, Paragraph, Bold, Italic, Heading, Link,
+         List, BlockQuote, Undo, SourceEditing, HtmlSupport,
+         Image, ImageCaption, ImageResize, ImageStyle, ImageToolbar
+} from 'ckeditor5';
+
+const editor = await ClassicEditor.create(document.getElementById('editor'), {
+    plugins: [Essentials, Paragraph, Bold, Italic, Heading, Link,
+              List, BlockQuote, Undo, SourceEditing, HtmlSupport,
+              Image, ImageCaption, ImageResize, ImageStyle, ImageToolbar],
+    toolbar: ['heading', '|', 'bold', 'italic', 'link', '|',
+              'bulletedList', 'numberedList', 'blockQuote', '|',
+              'undo', 'redo', '|', 'sourceEditing'],
+    htmlSupport: { allow: [{ name: /.*/, attributes: true, classes: true, styles: true }] },
+    language: 'ko',
+});
+// 초기 데이터 로드
+const initial = document.getElementById('contentEditor').value;
+if (initial) editor.setData(initial);
+// 폼 제출 시 에디터 → textarea
+document.querySelector('form').addEventListener('submit', () => {
+    document.getElementById('contentEditor').value = editor.getData();
+});
+</script>
+
+<script>
+function publishDraft() {
+    if (!confirm('이 초안을 기사로 발행하시겠습니까? (미승인 상태로 등록됩니다)')) return;
+    const form = document.createElement('form');
+    form.method = 'POST';
+    form.action = '{{ url_for("admin.ai_draft_publish", draft_id=draft.id) }}';
+    document.body.appendChild(form);
+    form.submit();
+}
+
+function rejectDraft() {
+    if (!confirm('이 초안을 반려하시겠습니까?')) return;
+    const form = document.createElement('form');
+    form.method = 'POST';
+    form.action = '{{ url_for("admin.ai_draft_reject", draft_id=draft.id) }}';
+    document.body.appendChild(form);
+    form.submit();
+}
+
+// 2차 섹션 로드 (article_form.html 패턴)
+const subsectionData = {
+    {% for s in sections %}
+    {{ s.id }}: [
+        {% for sub in s.subsections %}
+        {id: {{ sub.id }}, name: '{{ sub.name }}'},
+        {% endfor %}
+    ],
+    {% endfor %}
+};
+
+function loadSubsections() {
+    const sectionId = document.getElementById('sectionSelect').value;
+    const sel = document.getElementById('subsectionSelect');
+    sel.innerHTML = '<option value="">선택</option>';
+    if (sectionId && subsectionData[sectionId]) {
+        subsectionData[sectionId].forEach(sub => {
+            const opt = document.createElement('option');
+            opt.value = sub.id;
+            opt.textContent = sub.name;
+            if (sub.id == {{ draft.suggested_subsection_id or 0 }}) opt.selected = true;
+            sel.appendChild(opt);
+        });
+    }
+}
+// 초기 로드
+loadSubsections();
+</script>
+{% endblock %}

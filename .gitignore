@@ -4,17 +4,17 @@
 # Python
 __pycache__/
 *.pyc
+*.pyo
 app/static/uploads/
 .venv/
-__pycache__/
-*.pyc
-*.pyo
 .DS_Store
 *.egg-info/
 dist/
 build/
 .idea/
 .claude/
-.env
 welldying.db
 credentials/
+crawling/
+logs/
+*.log

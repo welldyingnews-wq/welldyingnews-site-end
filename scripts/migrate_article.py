@@ -6,7 +6,7 @@
     python scripts/migrate_article.py --idxno 1735
 
     # 리모트 서버에 POST
-    python scripts/migrate_article.py --idxno 1735 --remote https://comekjh.pythonanywhere.com
+    python scripts/migrate_article.py --idxno 1735 --remote https://www.welldyingnews.com
 
     # 확인만 (DB 저장 없음)
     python scripts/migrate_article.py --idxno 1735 --dry-run
@@ -391,7 +391,7 @@ if __name__ == '__main__':
     parser = argparse.ArgumentParser(description='원본 기사 마이그레이션')
     parser.add_argument('--idxno', type=int, required=True, help='원본 기사 번호')
     parser.add_argument('--remote', type=str, default=None,
-                        help='리모트 서버 URL (예: https://comekjh.pythonanywhere.com)')
+                        help='리모트 서버 URL (예: https://www.welldyingnews.com)')
     parser.add_argument('--admin-id', type=str, default=None, help='관리자 ID')
     parser.add_argument('--admin-pw', type=str, default=None, help='관리자 비밀번호')
     parser.add_argument('--dry-run', action='store_true', help='DB 저장 없이 확인만')

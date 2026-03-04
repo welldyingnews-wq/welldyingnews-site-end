@@ -55,55 +55,21 @@ python reset_admin_pw.py mypassword123
 python reset_admin_pw.py mypassword123 admin
 ```
 
-## PythonAnywhere 배포
+## Vultr 배포 (프로덕션)
+
+- 서버: Vultr VPS (158.247.196.251)
+- 프로젝트 경로: `/home/deploy/welldying-news`
+- 프로세스: gunicorn + nginx (systemd: `welldying.service`)
+- SSL: Let's Encrypt (certbot 자동갱신)
+- DB 백업: 매일 한국시간 새벽 3시 자동 (`backups/` 디렉토리, 30일 보관)
 
 ```bash
-# 1. 코드 가져오기
-git clone https://github.com/comekjh/welldying-news.git
-cd welldying-news
+# 서비스 재시작
+ssh root@158.247.196.251 "systemctl restart welldying"
 
-# 2. 가상환경 생성 및 패키지 설치
-python3.10 -m venv .venv
-source .venv/bin/activate
-pip install -r requirements.txt
-
-# 3. 환경변수 설정
-cp .env.sample .env
-nano .env   # SECRET_KEY, ADMIN_PASSWORD, CLOUDINARY_* 등 입력
-
-# 4. DB 초기화
-python init_db.py
+# 로그 확인
+ssh root@158.247.196.251 "tail -50 /home/deploy/welldying-news/logs/error.log"
 ```
-
-Web 탭에서 **Manual configuration** 으로 앱 생성 후 아래 설정:
-
-| 항목 | 값 |
-|------|-----|
-| Source code | `/home/USERNAME/welldying-news` |
-| Working directory | `/home/USERNAME/welldying-news` |
-| Virtualenv | `/home/USERNAME/welldying-news/.venv` |
-| Static URL → `/static` | `/home/USERNAME/welldying-news/app/static` |
-
-WSGI configuration file 내용을 아래로 교체:
-
-```python
-import os, time
-os.environ['TZ'] = 'Asia/Seoul'
-time.tzset()
-
-import sys
-project_home = '/home/USERNAME/welldying-news'
-if project_home not in sys.path:
-    sys.path.insert(0, project_home)
-from dotenv import load_dotenv
-load_dotenv(os.path.join(project_home, '.env'))
-from app import create_app
-application = create_app()
-```
-
-> `USERNAME`을 PythonAnywhere 계정명으로 교체하세요.
-
-**Reload** 버튼 클릭 후 `https://USERNAME.pythonanywhere.com` 접속.
 
 ## 서버 종료
 

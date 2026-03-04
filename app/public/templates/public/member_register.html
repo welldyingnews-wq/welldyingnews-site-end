@@ -1,160 +1,59 @@
-<!DOCTYPE html>
-<html lang="ko">
-<head>
-<meta charset="utf-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>회원가입 - 웰다잉뉴스</title>
-<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/foundation-sites@6.7.5/dist/css/foundation.min.css">
-<link href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@300;400;500;700&display=swap" rel="stylesheet">
-<style>
-*{box-sizing:border-box}
-body{margin:0;font-family:'Noto Sans KR','Apple SD Gothic Neo',sans-serif;background:#f5f5f5;color:#333}
-.user-bg{background-color:#5e1985!important}
-.user-point{color:#5e1985!important}
-.user-border{border-color:#5e1985!important}
-#user-wrap{min-height:100vh;display:flex;flex-direction:column}
-.mb-header{text-align:center;padding:40px 0 20px}
-.mb-header .logo img{height:45px}
-.mb-container{max-width:520px;margin:0 auto;padding:0 15px 40px}
-.join-header{text-align:center;margin-bottom:30px}
-.join-header-title{font-size:1.625rem;font-weight:700;color:#222;margin-bottom:8px}
-.join-header-guide{font-size:.875rem;color:#888;margin:0}
-.join-subject{font-size:1.0625rem;font-weight:700;color:#222;margin-bottom:20px;padding-bottom:10px;border-bottom:2px solid #222}
-.mb-content{margin-bottom:30px}
-.mb-content fieldset{margin:0;padding:10px 0;border:none}
-.mb-content fieldset .medium-4{display:flex;align-items:center}
-.mb-content label .key-point{color:#c00}
-.mb-content label strong{font-size:.875rem;font-weight:600}
-.mb-content input[type="text"],.mb-content input[type="password"],.mb-content input[type="email"],.mb-content input[type="tel"]{height:42px;font-size:.875rem;border:1px solid #ccc;border-radius:3px;margin-bottom:0}
-.mb-content input:focus{border-color:#5e1985;box-shadow:none}
-.mb-content .help-text{font-size:.75rem;color:#999;margin-top:4px}
-.mb-content .input-group{margin-bottom:0}
-.mb-content .input-group .button{font-size:.8125rem;padding:0 14px;height:42px;line-height:42px;margin:0;background:#666;border:none}
-.mb-content .input-group .button:hover{background:#555}
-.mb-content .input-group-field{height:42px}
-.button.user-bg{background-color:#5e1985!important;color:#fff}
-.button.user-bg:hover{background-color:#4a1369!important}
-.nd-gray{background:#f0f0f0;color:#333;border:1px solid #ddd}
-.nd-gray:hover{background:#e5e5e5;color:#333}
-.mb-joins-link{display:block;text-align:center;margin-top:20px;font-size:.8125rem;color:#888;text-decoration:none}
-.mb-joins-link span{color:#5e1985;font-weight:500}
-.mb-footer{text-align:center;padding:30px 0;font-size:.75rem;color:#aaa;margin-top:auto}
-.callout{margin-top:10px;font-size:.875rem}
-.callout.alert{background:#fff0f0;color:#c00;border:1px solid #fdd}
-.callout.success{background:#f0fff0;color:#2a7a2a;border:1px solid #b2e6b2}
-.marbtm-5{margin-bottom:5px}
-@media (max-width:639px){
-    .mb-container{padding:0 20px 40px}
-    .mb-content fieldset .medium-4{margin-bottom:4px}
-}
-</style>
-</head>
-<body>
-<div id="user-wrap" class="for-members">
-<div class="row expanded">
+{% extends "public/base_v0.html" %}
+{% block title %}회원가입 — 웰다잉뉴스{% endblock %}
 
-<header class="mb-header">
-    <h1 class="logo">
-        <a href="{{ url_for('public.index') }}">
-            <img src="{{ url_for('static', filename='images/logo.png') }}" alt="웰다잉뉴스">
-        </a>
-    </h1>
-</header>
-
-<div class="mb-container">
-    <header class="join-header">
-        <h1 class="join-header-title">회원가입</h1>
-        <p class="join-header-guide">입력항목중 (<span class="user-point">*</span>) 는 필수입력 표시입니다.</p>
-    </header>
+{% block content %}
+<div class="container section-gap">
+  <div class="auth-card auth-card--wide">
+    <div class="auth-card__header">
+      <h1 class="auth-card__title">회원가입</h1>
+      <p class="auth-card__desc"><span class="auth-required">*</span> 표시는 필수 입력 항목입니다.</p>
+    </div>
 
     {% with messages = get_flashed_messages(with_categories=true) %}
     {% if messages %}
     {% for category, message in messages %}
-    <div class="callout {{ 'alert' if category == 'error' else category }}" data-closable>
-        <p style="margin:0">{{ message }}</p>
+    <div class="auth-alert auth-alert--{{ 'error' if category == 'error' else 'success' }}">
+      <i class="fa-solid {{ 'fa-circle-exclamation' if category == 'error' else 'fa-circle-check' }}"></i>
+      {{ message }}
     </div>
     {% endfor %}
     {% endif %}
     {% endwith %}
 
-    <form name="memberRegForm" id="memberRegForm" method="POST" action="{{ url_for('public.member_register') }}">
-        <article class="mb-content">
-            <h3 class="join-subject">필수입력사항</h3>
+    <form method="POST" action="{{ url_for('public.member_register') }}" class="auth-form">
+      <div class="auth-form__group">
+        <label for="user_id" class="auth-form__label"><span class="auth-required">*</span> 회원 ID</label>
+        <input type="text" name="user_id" id="user_id" class="auth-form__input" placeholder="영문, 숫자 조합 4자 이상" required minlength="4" maxlength="50">
+      </div>
+      <div class="auth-form__group">
+        <label for="name" class="auth-form__label"><span class="auth-required">*</span> 이름</label>
+        <input type="text" name="name" id="name" class="auth-form__input" placeholder="이름을 입력하세요" required maxlength="50">
+      </div>
+      <div class="auth-form__row">
+        <div class="auth-form__group">
+          <label for="password" class="auth-form__label"><span class="auth-required">*</span> 비밀번호</label>
+          <input type="password" name="password" id="password" class="auth-form__input" placeholder="4자 이상" required minlength="4">
+        </div>
+        <div class="auth-form__group">
+          <label for="password2" class="auth-form__label"><span class="auth-required">*</span> 비밀번호 확인</label>
+          <input type="password" name="password2" id="password2" class="auth-form__input" placeholder="비밀번호 재입력" required>
+        </div>
+      </div>
+      <div class="auth-form__group">
+        <label for="email" class="auth-form__label"><span class="auth-required">*</span> 이메일</label>
+        <input type="email" name="email" id="email" class="auth-form__input" placeholder="abc@domain.co.kr">
+      </div>
+      <div class="auth-form__group">
+        <label for="phone" class="auth-form__label">연락처</label>
+        <input type="tel" name="phone" id="phone" class="auth-form__input" placeholder="010-1234-5678">
+      </div>
 
-            <!-- 아이디 -->
-            <fieldset class="row expanded small-collapse medium-uncollapse">
-                <div class="medium-4 columns">
-                    <label for="user_id" class="text-left medium-middle"><strong><span class="key-point">*</span> 회원ID</strong></label>
-                </div>
-                <div class="medium-8 columns">
-                    <input type="text" name="user_id" id="user_id" placeholder="4자 이상 영문/숫자" title="회원ID" required minlength="4" maxlength="50">
-                    <span class="help-text">영문, 숫자 조합 4자 이상</span>
-                </div>
-            </fieldset>
-
-            <!-- 이름 -->
-            <fieldset class="row expanded small-collapse medium-uncollapse">
-                <div class="medium-4 columns">
-                    <label for="name" class="text-left medium-middle"><strong><span class="key-point">*</span> 이름</strong></label>
-                </div>
-                <div class="medium-8 columns">
-                    <input type="text" name="name" id="name" placeholder="이름" title="이름" required maxlength="50">
-                </div>
-            </fieldset>
-
-            <!-- 비밀번호 -->
-            <fieldset class="row expanded small-collapse medium-uncollapse">
-                <div class="medium-4 columns">
-                    <label for="password" class="text-left medium-middle"><strong><span class="key-point">*</span> 비밀번호</strong></label>
-                </div>
-                <div class="medium-8 columns">
-                    <input type="password" name="password" id="password" placeholder="비밀번호 입력" title="비밀번호" required minlength="4">
-                    <span class="help-text">4자 이상 입력해 주세요.</span>
-                </div>
-            </fieldset>
-
-            <!-- 비밀번호 확인 -->
-            <fieldset class="row expanded small-collapse medium-uncollapse">
-                <div class="medium-4 columns">
-                    <label for="password2" class="text-left medium-middle"><strong><span class="key-point">*</span> 비밀번호확인</strong></label>
-                </div>
-                <div class="medium-8 columns">
-                    <input type="password" name="password2" id="password2" placeholder="비밀번호 검증을 위한 입력" title="비밀번호확인" required>
-                </div>
-            </fieldset>
-
-            <!-- 이메일 -->
-            <fieldset class="row expanded small-collapse medium-uncollapse">
-                <div class="medium-4 columns">
-                    <label for="email" class="text-left medium-middle"><strong><span class="key-point">*</span> 이메일</strong></label>
-                </div>
-                <div class="medium-8 columns">
-                    <input type="email" name="email" id="email" placeholder="abc@domain.co.kr" title="이메일">
-                </div>
-            </fieldset>
-
-            <!-- 연락처 -->
-            <fieldset class="row expanded small-collapse medium-uncollapse">
-                <div class="medium-4 columns">
-                    <label for="phone" class="text-left medium-middle"><strong>연락처</strong></label>
-                </div>
-                <div class="medium-8 columns">
-                    <input type="tel" name="phone" id="phone" placeholder="010-1234-5678" title="연락처">
-                </div>
-            </fieldset>
-        </article>
-
-        <button type="submit" class="button user-bg large expanded">등록하기</button>
+      <button type="submit" class="auth-form__submit">회원가입</button>
     </form>
 
-    <a href="{{ url_for('public.member_login') }}" class="mb-joins-link">이미 웰다잉뉴스 회원이신가요? <span class="user-point">로그인</span></a>
+    <div class="auth-card__footer">
+      이미 회원이신가요? <a href="{{ url_for('public.member_login') }}">로그인</a>
+    </div>
+  </div>
 </div>
-
-<footer class="mb-footer">
-    &copy; <span class="user-point">웰다잉뉴스</span> All rights reserved.
-</footer>
-
-</div>
-</div>
-</body>
-</html>
+{% endblock %}

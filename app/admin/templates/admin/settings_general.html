@@ -135,6 +135,16 @@
                 </div>
             </div>
 
+            <h6 class="text-muted border-bottom pb-2 mb-3 mt-4"><i class="bi bi-bar-chart"></i> 외부 분석 서비스</h6>
+            <div class="row g-3">
+                <div class="col-md-6 mb-3">
+                    <label class="form-label fw-bold">Google Analytics 4 측정 ID</label>
+                    <input type="text" name="ga4_measurement_id" class="form-control" value="{{ sv('ga4_measurement_id') }}" placeholder="G-XXXXXXXXXX">
+                    <div class="form-text">GA4 속성의 측정 ID를 입력하세요. (예: G-ABC123DEF4)<br>
+                    <a href="https://analytics.google.com/" target="_blank">Google Analytics</a> → 관리 → 데이터 스트림 → 웹 스트림에서 확인할 수 있습니다.</div>
+                </div>
+            </div>
+
             <div class="d-grid mt-4">
                 <button type="submit" class="btn btn-primary"><i class="bi bi-save"></i> 설정 저장</button>
             </div>

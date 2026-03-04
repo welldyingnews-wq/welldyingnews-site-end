@@ -1,0 +1,192 @@
+{% extends "admin/base.html" %}
+{% block nav_title %}{{ '기자수정' if user and user.id else '기자등록' }}{% endblock %}
+
+{% block content %}
+<div class="row justify-content-center">
+    <div class="col-lg-6">
+        <div class="card">
+            <div class="card-header"><strong>{{ '기자수정' if user and user.id else '기자등록' }}</strong></div>
+            <div class="card-body">
+                <form method="post" enctype="multipart/form-data"
+                    action="{{ url_for('admin.reporter_edit', user_id=user.id) if user and user.id else url_for('admin.reporter_new') }}">
+
+                    <!-- 프로필 사진 -->
+                    <div class="mb-3">
+                        <label class="form-label fw-bold">프로필 사진</label>
+                        <div class="d-flex align-items-start gap-3">
+                            <div style="position:relative;width:80px;height:80px;border-radius:50%;overflow:hidden;border:2px solid #ddd;cursor:grab;flex-shrink:0;background:#f0f0f0;display:flex;align-items:center;justify-content:center"
+                                 id="photoPreviewWrap">
+                                {% if user and user.photo %}
+                                <img src="{{ user.photo }}" id="photoPreview"
+                                     style="width:100%;height:100%;object-fit:cover;object-position:{{ user.photo_pos or 'center center' }}">
+                                {% else %}
+                                <i class="bi bi-person-fill" style="font-size:2.5rem;color:#bbb" id="photoPlaceholder"></i>
+                                <img src="" id="photoPreview" style="width:100%;height:100%;object-fit:cover;object-position:center center;display:none">
+                                {% endif %}
+                            </div>
+                            <div class="flex-grow-1">
+                                <input type="file" name="photo" class="form-control form-control-sm mb-1" accept="image/*"
+                                       onchange="previewPhoto(this)">
+                                <small class="text-muted">원 안을 드래그하여 크롭 위치 조절</small>
+                                {% if user and user.photo %}
+                                <div class="form-check mt-1">
+                                    <input class="form-check-input" type="checkbox" name="delete_photo" value="1" id="delPhoto">
+                                    <label class="form-check-label text-danger" for="delPhoto"><small>사진 삭제</small></label>
+                                </div>
+                                {% endif %}
+                            </div>
+                        </div>
+                        <input type="hidden" name="photo_pos" id="photoPos"
+                               value="{{ user.photo_pos if user and user.photo_pos else 'center center' }}">
+                    </div>
+
+                    <div class="mb-3">
+                        <label class="form-label fw-bold">아이디</label>
+                        {% if user and user.id %}
+                        <input type="text" class="form-control" value="{{ user.user_id }}" readonly>
+                        <input type="hidden" name="user_id" value="{{ user.user_id }}">
+                        {% else %}
+                        <input type="text" name="user_id" class="form-control" placeholder="로그인 아이디" required>
+                        {% endif %}
+                    </div>
+
+                    <div class="mb-3">
+                        <label class="form-label fw-bold">비밀번호</label>
+                        <input type="password" name="password" class="form-control"
+                            placeholder="{{ '변경 시에만 입력' if user and user.id else '비밀번호 입력' }}"
+                            {{ '' if user and user.id else 'required' }}>
+                    </div>
+
+                    <div class="row mb-3">
+                        <div class="col-6">
+                            <label class="form-label fw-bold">이름</label>
+                            <input type="text" name="name" class="form-control"
+                                value="{{ user.name if user else '' }}" required>
+                        </div>
+                        <div class="col-6">
+                            <label class="form-label fw-bold">이메일</label>
+                            <input type="email" name="email" class="form-control"
+                                value="{{ user.email if user else '' }}">
+                        </div>
+                    </div>
+
+                    <div class="row mb-3">
+                        <div class="col-6">
+                            <label class="form-label fw-bold">부서</label>
+                            <input type="text" name="department" class="form-control"
+                                value="{{ user.department if user else '' }}" placeholder="예: 편집국">
+                        </div>
+                        <div class="col-6">
+                            <label class="form-label fw-bold">권한</label>
+                            <select name="level" class="form-select">
+                                <option value="reporter" {{ 'selected' if not user or user.level=='reporter' }}>기자</option>
+                                <option value="editor" {{ 'selected' if user and user.level=='editor' }}>편집자</option>
+                                <option value="admin" {{ 'selected' if user and user.level=='admin' }}>관리자</option>
+                            </select>
+                        </div>
+                    </div>
+
+                    <div class="mb-3">
+                        <div class="form-check">
+                            <input class="form-check-input" type="checkbox" name="is_active" value="1"
+                                id="isActive" {% if not user or user.is_active %}checked{% endif %}>
+                            <label class="form-check-label" for="isActive">활성</label>
+                        </div>
+                    </div>
+
+                    {% if user and user.id %}
+                    <div class="mb-3 p-2 bg-light rounded">
+                        <small class="text-muted">
+                            등록일: {{ user.created_at.strftime('%Y-%m-%d %H:%M') if user.created_at else '-' }} |
+                            상태: {{ '휴면' if user.is_dormant else '정상' }}
+                        </small>
+                    </div>
+                    {% endif %}
+
+                    <div class="d-grid">
+                        <button type="submit" class="btn btn-primary"><i class="bi bi-save"></i> 저장</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+/* ── 프로필 사진 크롭 위치 드래그 조절 ── */
+(function(){
+    const wrap = document.getElementById('photoPreviewWrap');
+    const img = document.getElementById('photoPreview');
+    const posInput = document.getElementById('photoPos');
+    if (!wrap || !img) return;
+
+    let dragging = false, startX, startY, startPosX, startPosY;
+
+    function parsePos() {
+        const val = (posInput.value || 'center center').replace(/%/g, '');
+        const parts = val.split(/\s+/);
+        let x = 50, y = 50;
+        if (parts[0] === 'center') x = 50; else x = parseFloat(parts[0]) || 50;
+        if (parts[1] === 'center') y = 50; else y = parseFloat(parts[1]) || 50;
+        return { x, y };
+    }
+
+    function applyPos(x, y) {
+        x = Math.max(0, Math.min(100, x));
+        y = Math.max(0, Math.min(100, y));
+        img.style.objectPosition = x + '% ' + y + '%';
+        posInput.value = x.toFixed(0) + '% ' + y.toFixed(0) + '%';
+    }
+
+    wrap.addEventListener('mousedown', function(e) {
+        if (img.style.display === 'none') return;
+        e.preventDefault();
+        dragging = true;
+        startX = e.clientX; startY = e.clientY;
+        const p = parsePos(); startPosX = p.x; startPosY = p.y;
+        wrap.style.cursor = 'grabbing';
+    });
+    document.addEventListener('mousemove', function(e) {
+        if (!dragging) return;
+        const dx = (e.clientX - startX) / wrap.offsetWidth * -100;
+        const dy = (e.clientY - startY) / wrap.offsetHeight * -100;
+        applyPos(startPosX + dx, startPosY + dy);
+    });
+    document.addEventListener('mouseup', function() {
+        if (dragging) { dragging = false; wrap.style.cursor = 'grab'; }
+    });
+
+    // 터치
+    wrap.addEventListener('touchstart', function(e) {
+        if (img.style.display === 'none') return;
+        const t = e.touches[0];
+        dragging = true;
+        startX = t.clientX; startY = t.clientY;
+        const p = parsePos(); startPosX = p.x; startPosY = p.y;
+    }, {passive: true});
+    document.addEventListener('touchmove', function(e) {
+        if (!dragging) return;
+        const t = e.touches[0];
+        applyPos(startPosX + (t.clientX - startX) / wrap.offsetWidth * -100,
+                 startPosY + (t.clientY - startY) / wrap.offsetHeight * -100);
+    });
+    document.addEventListener('touchend', function() { dragging = false; });
+})();
+
+/* 새 파일 선택 시 프리뷰 */
+function previewPhoto(input) {
+    if (!input.files || !input.files[0]) return;
+    const reader = new FileReader();
+    reader.onload = function(e) {
+        const img = document.getElementById('photoPreview');
+        const placeholder = document.getElementById('photoPlaceholder');
+        img.src = e.target.result;
+        img.style.display = '';
+        img.style.objectPosition = 'center center';
+        if (placeholder) placeholder.style.display = 'none';
+        document.getElementById('photoPos').value = 'center center';
+    };
+    reader.readAsDataURL(input.files[0]);
+}
+</script>
+{% endblock %}

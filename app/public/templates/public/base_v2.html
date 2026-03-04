@@ -8,16 +8,18 @@
 <meta property="og:title" content="웰다잉뉴스">
 <meta property="og:site_name" content="웰다잉뉴스">
 <meta property="og:description" content="삶과 죽음의 존엄성을 전하는 웰다잉뉴스">
-<meta property="og:url" content="{{ request.url }}">
-<meta property="og:image" content="{{ request.url_root }}static/images/og_default.png">
+<meta property="og:url" content="{{ site_url }}{{ request.path }}">
+<meta property="og:image" content="{{ site_url }}/static/images/og_default.png">
 <meta name="twitter:card" content="summary_large_image">
+{% block canonical %}<link rel="canonical" href="{{ site_url }}{{ request.path }}{% if request.query_string %}?{{ request.query_string.decode('utf-8') }}{% endif %}">{% endblock %}
+<link rel="alternate" type="application/rss+xml" title="웰다잉뉴스 RSS" href="/rss">
 {% block meta %}{% endblock %}
 
-<title>{% block title %}웰다잉뉴스 — 존엄한 삶의 마무리를 위한 전문 미디어{% endblock %}</title>
+<title>{% block title %}웰다잉뉴스 — 삶과 죽음의 존엄성을 전하는 미디어{% endblock %}</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@300;400;500;600;700&family=Noto+Serif+KR:wght@400;600;700&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
-<link rel="stylesheet" href="/static/css/public_v2.css">
+<link rel="stylesheet" href="{{ static_v('css/public_v2.css') }}">
 {% block extra_css %}{% endblock %}
 {% block extra_head %}{% endblock %}
 </head>
@@ -26,7 +28,7 @@
 <!-- =========== UTILITY BAR =========== -->
 <div class="utilbar">
   <div class="utilbar__inner">
-    <span class="utilbar__slogan">존엄한 삶의 마무리를 위한 전문 미디어</span>
+    <span class="utilbar__slogan">삶과 죽음의 존엄성을 전하는 미디어</span>
     <div class="utilbar__links">
       {% if current_member %}
       <a href="/member/mypage.html">{{ current_member.name }}님</a>
@@ -55,7 +57,7 @@
       <button class="header__icon-btn" onclick="toggleSearch()" aria-label="검색">
         <i class="fa-solid fa-magnifying-glass"></i>
       </button>
-      <a href="/news/articleList.html?sc_section_code=S1N6" class="header__cta">뉴스레터</a>
+      <a href="/newsletter/archive" class="header__cta">뉴스레터</a>
     </div>
   </div>
 
@@ -125,7 +127,7 @@
     <div class="footer__grid">
       <div>
         <div class="footer__brand-title">웰다잉뉴스</div>
-        <p class="footer__brand-desc">존엄한 삶의 마무리를 위한 전문 미디어</p>
+        <p class="footer__brand-desc">삶과 죽음의 존엄성을 전하는 미디어</p>
       </div>
       <div>
         <div class="footer__col-title">카테고리</div>

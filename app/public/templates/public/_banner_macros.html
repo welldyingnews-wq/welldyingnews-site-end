@@ -1,0 +1,13 @@
+{# 배너 이미지 렌더링 매크로 — PC/모바일 반응형 #}
+{% macro banner_img(b, css_class='') %}
+{% set src = b.image_path if b.image_path.startswith(('http', '/')) else url_for('static', filename=b.image_path) %}
+{% if b.mobile_image_path %}
+{% set mob_src = b.mobile_image_path if b.mobile_image_path.startswith(('http', '/')) else url_for('static', filename=b.mobile_image_path) %}
+<picture>
+  <source media="(max-width:767px)" srcset="{{ mob_src }}">
+  <img src="{{ src }}" alt="{{ b.name }}"{% if css_class %} class="{{ css_class }}"{% endif %}>
+</picture>
+{% else %}
+<img src="{{ src }}" alt="{{ b.name }}"{% if css_class %} class="{{ css_class }}"{% endif %}>
+{% endif %}
+{% endmacro %}

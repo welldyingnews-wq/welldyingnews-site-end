@@ -29,11 +29,7 @@ from PIL import Image
 HEADERS = {'User-Agent': 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7)'}
 ORIGIN_URL = 'https://www.welldyingnews.com/news/articleView.html?idxno={}'
 
-# PythonAnywhere 설정
-PA_USERNAME = 'comekjh'
-PA_TOKEN = 'a630d9e0e9eac3def6118f3ec3541efda6e789a6'
-PA_HEADERS = {'Authorization': f'Token {PA_TOKEN}'}
-PA_BASE_PATH = '/home/comekjh/welldyingnews'
+# (마이그레이션 완료 — 아래 PA 업로드 함수는 더 이상 사용하지 않음)
 
 # DB 경로
 DB_PATH = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), 'welldying.db')
@@ -208,29 +204,18 @@ def insert_to_db(data, image_files):
 
 
 def upload_images_to_pa(image_files):
-    """PythonAnywhere에 이미지 파일을 업로드한다."""
-    for img in image_files:
-        remote_path = f'{PA_BASE_PATH}/app/static/uploads/{img["filename"]}'
-        url = f'https://www.pythonanywhere.com/api/v0/user/{PA_USERNAME}/files/path{remote_path}'
-        with open(img['filepath'], 'rb') as f:
-            r = http_requests.post(url, headers=PA_HEADERS, files={'content': f})
-        if r.status_code not in (200, 201):
-            print(f'      이미지 업로드 실패: {img["filename"]} ({r.status_code})')
+    """[사용 안 함] 이전 PythonAnywhere 업로드 함수 — 마이그레이션 완료"""
+    pass
 
 
 def upload_db_to_pa():
-    """welldying.db를 PythonAnywhere에 업로드한다."""
-    url = f'https://www.pythonanywhere.com/api/v0/user/{PA_USERNAME}/files/path{PA_BASE_PATH}/welldying.db'
-    with open(DB_PATH, 'rb') as f:
-        r = http_requests.post(url, headers=PA_HEADERS, files={'content': f})
-    return r.status_code in (200, 201)
+    """[사용 안 함] 이전 PythonAnywhere 업로드 함수 — 마이그레이션 완료"""
+    return True
 
 
 def reload_webapp():
-    """PythonAnywhere 웹앱을 리로드한다."""
-    url = f'https://www.pythonanywhere.com/api/v0/user/{PA_USERNAME}/webapps/comekjh.pythonanywhere.com/reload/'
-    r = http_requests.post(url, headers=PA_HEADERS)
-    return r.status_code == 200
+    """[사용 안 함] 이전 PythonAnywhere 리로드 함수 — 마이그레이션 완료"""
+    return True
 
 
 def migrate_one(idxno, log, dry_run=False):

@@ -1,0 +1,663 @@
+{% extends "admin/base.html" %}
+{% block nav_title %}{{ '뉴스레터 수정' if newsletter else '새 뉴스레터' }}{% endblock %}
+
+{% block extra_head %}
+<style>
+.item-row { border:1px solid #dee2e6; border-radius:.375rem; padding:1rem; margin-bottom:.75rem; background:#fafafa; position:relative; }
+.item-row .btn-remove { position:absolute; top:.5rem; right:.5rem; }
+.img-preview { max-height:120px; border-radius:4px; margin-top:.5rem; }
+.yt-thumb { max-height:100px; border-radius:4px; margin-top:.5rem; }
+.accordion-button { font-weight:600; }
+.section-switch { margin-right:.75rem; }
+.article-preview { display:flex; gap:.75rem; align-items:center; padding:.5rem; background:#f0f0f0; border-radius:4px; margin-top:.5rem; }
+.article-preview img { width:60px; height:40px; object-fit:cover; border-radius:4px; }
+.article-preview .ap-info { font-size:13px; }
+.article-preview .ap-title { font-weight:500; }
+</style>
+{% endblock %}
+
+{% set s = newsletter.sections if newsletter else {} %}
+
+{% block content %}
+<form method="post" id="nlForm"
+      action="{{ url_for('admin.newsletter_edit', newsletter_id=newsletter.id) if newsletter else url_for('admin.newsletter_new') }}">
+
+    <!-- 기본 정보 -->
+    <div class="card mb-3">
+        <div class="card-header d-flex align-items-center justify-content-between">
+            <strong>기본 정보</strong>
+            {% if newsletter and newsletter.status == 'published' %}
+            <a href="/newsletter/{{ newsletter.slug }}" target="_blank" class="btn btn-sm btn-outline-secondary">
+                <i class="bi bi-eye"></i> 웹에서 보기
+            </a>
+            {% endif %}
+        </div>
+        <div class="card-body">
+            <div class="row g-3">
+                <div class="col-md-1">
+                    <label class="form-label fw-bold">호수</label>
+                    <input type="number" name="volume_number" class="form-control" value="{{ newsletter.volume_number if newsletter else next_vol }}" required min="1">
+                </div>
+                <div class="col-md-4">
+                    <label class="form-label fw-bold">제목</label>
+                    <input type="text" name="title" class="form-control" value="{{ newsletter.title if newsletter else '웰다잉뉴스 Weekly #' ~ next_vol }}" required>
+                </div>
+                <div class="col-md-2">
+                    <label class="form-label fw-bold">슬러그 (URL)</label>
+                    <input type="text" name="slug" class="form-control" value="{{ newsletter.slug if newsletter else 'weekly-' ~ next_vol }}" placeholder="weekly-1">
+                </div>
+                <div class="col-md-2">
+                    <label class="form-label fw-bold">발행일</label>
+                    <input type="date" name="publish_date" class="form-control" value="{{ newsletter.publish_date.strftime('%Y-%m-%d') if newsletter and newsletter.publish_date else '' }}">
+                </div>
+                <div class="col-md-2">
+                    <label class="form-label fw-bold">상태</label>
+                    <select name="status" class="form-select">
+                        <option value="draft" {{ 'selected' if not newsletter or newsletter.status == 'draft' }}>초안</option>
+                        <option value="published" {{ 'selected' if newsletter and newsletter.status == 'published' }}>발행</option>
+                    </select>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- 섹션 아코디언 -->
+    <div class="accordion" id="nlAccordion">
+
+        <!-- ① 주간 브리핑 -->
+        <div class="accordion-item">
+            <h2 class="accordion-header">
+                <button class="accordion-button" type="button" data-bs-toggle="collapse" data-bs-target="#colBriefing">
+                    <span class="section-switch" onclick="event.stopPropagation()">
+                        <input class="form-check-input" type="checkbox" name="briefing_visible" value="1"
+                               {{ 'checked' if not newsletter or newsletter.briefing_visible }}>
+                    </span>
+                    <i class="bi bi-megaphone me-2"></i> 주간 브리핑
+                </button>
+            </h2>
+            <div id="colBriefing" class="accordion-collapse collapse show">
+                <div class="accordion-body">
+                    <div class="mb-3">
+                        <label class="form-label fw-bold">제목</label>
+                        <input type="text" name="briefing_title" class="form-control" value="{{ newsletter.briefing_title if newsletter else '' }}" placeholder="이번 주 주요 소식">
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label fw-bold">대표 이미지 URL</label>
+                        <div class="input-group">
+                            <input type="text" name="briefing_image" id="briefingImage" class="form-control" value="{{ newsletter.briefing_image if newsletter else '' }}" placeholder="이미지 URL">
+                            <label class="btn btn-outline-secondary">
+                                <i class="bi bi-upload"></i> 업로드
+                                <input type="file" accept="image/*" class="d-none" onchange="uploadImage(this, 'briefingImage', 'briefingPreview')">
+                            </label>
+                        </div>
+                        {% if newsletter and newsletter.briefing_image %}
+                        <img src="{{ newsletter.briefing_image }}" class="img-preview" id="briefingPreview">
+                        {% else %}
+                        <img src="" class="img-preview d-none" id="briefingPreview">
+                        {% endif %}
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label fw-bold">본문</label>
+                        <textarea name="briefing_content" id="briefingContent" class="form-control" rows="6" placeholder="HTML 또는 텍스트">{{ newsletter.briefing_content if newsletter else '' }}</textarea>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label fw-bold">연결 기사 ID (선택)</label>
+                        <div class="input-group" style="max-width:300px">
+                            <input type="number" name="briefing_article_id" id="briefingArticleId" class="form-control" value="{{ newsletter.briefing_article_id if newsletter and newsletter.briefing_article_id else '' }}" placeholder="기사 ID" min="1">
+                            <button type="button" class="btn btn-outline-secondary" onclick="previewArticle('briefingArticleId', 'briefingArticlePreview')"><i class="bi bi-search"></i></button>
+                        </div>
+                        <div id="briefingArticlePreview">
+                            {% if newsletter and newsletter.briefing_article %}
+                            <div class="article-preview">
+                                {% if newsletter.briefing_article.thumb_url %}<img src="{{ newsletter.briefing_article.thumb_url }}">{% endif %}
+                                <div class="ap-info">
+                                    <div class="ap-title">{{ newsletter.briefing_article.title }}</div>
+                                    <div class="text-muted">ID: {{ newsletter.briefing_article.id }}</div>
+                                </div>
+                            </div>
+                            {% endif %}
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- ② 주간 포커스 -->
+        {% set focus = s.get('focus', {}) %}
+        <div class="accordion-item">
+            <h2 class="accordion-header">
+                <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#colFocus">
+                    <span class="section-switch" onclick="event.stopPropagation()">
+                        <input class="form-check-input" type="checkbox" name="focus_visible" value="1"
+                               {{ 'checked' if focus.get('visible', true) }}>
+                    </span>
+                    <i class="bi bi-grid-3x2-gap me-2"></i> 주간 포커스
+                </button>
+            </h2>
+            <div id="colFocus" class="accordion-collapse collapse">
+                <div class="accordion-body">
+                    <div class="mb-3">
+                        <label class="form-label fw-bold">섹션 제목</label>
+                        <input type="text" name="focus_title" class="form-control" value="{{ focus.get('title', '주간 포커스') }}" style="max-width:300px">
+                    </div>
+                    <div id="focusItems">
+                        {% for item in focus.get('items', []) %}
+                        <div class="item-row" data-prefix="focus">
+                            <button type="button" class="btn btn-sm btn-outline-danger btn-remove" onclick="this.closest('.item-row').remove()"><i class="bi bi-x-lg"></i></button>
+                            <div class="row g-2 mb-2">
+                                <div class="col-md-2">
+                                    <select name="focus_item_type[]" class="form-select form-select-sm" onchange="toggleItemType(this)">
+                                        <option value="article" {{ 'selected' if item.type == 'article' }}>기사 선택</option>
+                                        <option value="custom" {{ 'selected' if item.type == 'custom' }}>직접 입력</option>
+                                    </select>
+                                </div>
+                                <div class="col-md-10">
+                                    {% if item.type == 'article' %}
+                                    <div class="article-fields">
+                                        <div class="input-group input-group-sm">
+                                            <input type="number" name="focus_item_article_id[]" class="form-control" value="{{ item.article_id }}" placeholder="기사 ID">
+                                            <button type="button" class="btn btn-outline-secondary" onclick="previewItemArticle(this)"><i class="bi bi-search"></i></button>
+                                        </div>
+                                    </div>
+                                    <div class="custom-fields d-none">
+                                        <input type="text" name="focus_item_title[]" class="form-control form-control-sm mb-1" value="" placeholder="제목">
+                                        <input type="text" name="focus_item_summary[]" class="form-control form-control-sm mb-1" value="" placeholder="요약">
+                                        <input type="text" name="focus_item_image[]" class="form-control form-control-sm mb-1" value="" placeholder="이미지 URL">
+                                        <input type="text" name="focus_item_link[]" class="form-control form-control-sm" value="" placeholder="링크 URL">
+                                    </div>
+                                    {% else %}
+                                    <div class="article-fields d-none">
+                                        <div class="input-group input-group-sm">
+                                            <input type="number" name="focus_item_article_id[]" class="form-control" value="" placeholder="기사 ID">
+                                            <button type="button" class="btn btn-outline-secondary" onclick="previewItemArticle(this)"><i class="bi bi-search"></i></button>
+                                        </div>
+                                    </div>
+                                    <div class="custom-fields">
+                                        <input type="text" name="focus_item_title[]" class="form-control form-control-sm mb-1" value="{{ item.title }}" placeholder="제목">
+                                        <input type="text" name="focus_item_summary[]" class="form-control form-control-sm mb-1" value="{{ item.summary }}" placeholder="요약">
+                                        <input type="text" name="focus_item_image[]" class="form-control form-control-sm mb-1" value="{{ item.image }}" placeholder="이미지 URL">
+                                        <input type="text" name="focus_item_link[]" class="form-control form-control-sm" value="{{ item.link }}" placeholder="링크 URL">
+                                    </div>
+                                    {% endif %}
+                                </div>
+                            </div>
+                            <div class="item-article-preview"></div>
+                        </div>
+                        {% endfor %}
+                    </div>
+                    <button type="button" class="btn btn-sm btn-outline-primary" onclick="addItem('focusItems', 'focus')">
+                        <i class="bi bi-plus-lg"></i> 기사 추가
+                    </button>
+                </div>
+            </div>
+        </div>
+
+        <!-- 광고 1 & 2 -->
+        {% set ads = s.get('ads', []) %}
+        <div class="accordion-item">
+            <h2 class="accordion-header">
+                <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#colAd12">
+                    <i class="bi bi-megaphone me-2"></i> 광고 1~2
+                </button>
+            </h2>
+            <div id="colAd12" class="accordion-collapse collapse">
+                <div class="accordion-body">
+                    {% for i in range(2) %}
+                    {% set ad = ads[i] if i < ads|length else {} %}
+                    <div class="card mb-3">
+                        <div class="card-body">
+                            <h6>
+                                <input class="form-check-input me-2" type="checkbox" name="ad_{{ i+1 }}_visible" value="1"
+                                       {{ 'checked' if ad.get('visible', false) }}>
+                                광고 {{ i+1 }}
+                            </h6>
+                            <div class="row g-2">
+                                <div class="col-md-8">
+                                    <label class="form-label">이미지 URL</label>
+                                    <div class="input-group input-group-sm">
+                                        <input type="text" name="ad_{{ i+1 }}_image" id="ad{{ i+1 }}Image" class="form-control" value="{{ ad.get('image', '') }}">
+                                        <label class="btn btn-outline-secondary btn-sm">
+                                            <i class="bi bi-upload"></i>
+                                            <input type="file" accept="image/*" class="d-none" onchange="uploadImage(this, 'ad{{ i+1 }}Image', 'ad{{ i+1 }}Preview')">
+                                        </label>
+                                    </div>
+                                    {% if ad.get('image') %}
+                                    <img src="{{ ad.image }}" class="img-preview" id="ad{{ i+1 }}Preview">
+                                    {% else %}
+                                    <img src="" class="img-preview d-none" id="ad{{ i+1 }}Preview">
+                                    {% endif %}
+                                </div>
+                                <div class="col-md-4">
+                                    <label class="form-label">링크 URL</label>
+                                    <input type="url" name="ad_{{ i+1 }}_link" class="form-control form-control-sm" value="{{ ad.get('link', '') }}">
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    {% endfor %}
+                </div>
+            </div>
+        </div>
+
+        <!-- ③ 주간 오피니언 -->
+        {% set opinion = s.get('opinion', {}) %}
+        <div class="accordion-item">
+            <h2 class="accordion-header">
+                <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#colOpinion">
+                    <span class="section-switch" onclick="event.stopPropagation()">
+                        <input class="form-check-input" type="checkbox" name="opinion_visible" value="1"
+                               {{ 'checked' if opinion.get('visible', true) }}>
+                    </span>
+                    <i class="bi bi-chat-quote me-2"></i> 주간 오피니언
+                </button>
+            </h2>
+            <div id="colOpinion" class="accordion-collapse collapse">
+                <div class="accordion-body">
+                    <div class="mb-3">
+                        <label class="form-label fw-bold">섹션 제목</label>
+                        <input type="text" name="opinion_title" class="form-control" value="{{ opinion.get('title', '주간 오피니언') }}" style="max-width:300px">
+                    </div>
+                    <div id="opinionItems">
+                        {% for item in opinion.get('items', []) %}
+                        <div class="item-row" data-prefix="opinion">
+                            <button type="button" class="btn btn-sm btn-outline-danger btn-remove" onclick="this.closest('.item-row').remove()"><i class="bi bi-x-lg"></i></button>
+                            <div class="row g-2 mb-2">
+                                <div class="col-md-2">
+                                    <select name="opinion_item_type[]" class="form-select form-select-sm" onchange="toggleItemType(this)">
+                                        <option value="article" {{ 'selected' if item.type == 'article' }}>기사 선택</option>
+                                        <option value="custom" {{ 'selected' if item.type == 'custom' }}>직접 입력</option>
+                                    </select>
+                                </div>
+                                <div class="col-md-10">
+                                    {% if item.type == 'article' %}
+                                    <div class="article-fields">
+                                        <div class="input-group input-group-sm">
+                                            <input type="number" name="opinion_item_article_id[]" class="form-control" value="{{ item.article_id }}" placeholder="기사 ID">
+                                            <button type="button" class="btn btn-outline-secondary" onclick="previewItemArticle(this)"><i class="bi bi-search"></i></button>
+                                        </div>
+                                    </div>
+                                    <div class="custom-fields d-none">
+                                        <input type="text" name="opinion_item_title[]" class="form-control form-control-sm mb-1" value="" placeholder="제목">
+                                        <input type="text" name="opinion_item_summary[]" class="form-control form-control-sm mb-1" value="" placeholder="요약">
+                                        <input type="text" name="opinion_item_image[]" class="form-control form-control-sm mb-1" value="" placeholder="이미지 URL">
+                                        <input type="text" name="opinion_item_link[]" class="form-control form-control-sm" value="" placeholder="링크 URL">
+                                    </div>
+                                    {% else %}
+                                    <div class="article-fields d-none">
+                                        <div class="input-group input-group-sm">
+                                            <input type="number" name="opinion_item_article_id[]" class="form-control" value="" placeholder="기사 ID">
+                                            <button type="button" class="btn btn-outline-secondary" onclick="previewItemArticle(this)"><i class="bi bi-search"></i></button>
+                                        </div>
+                                    </div>
+                                    <div class="custom-fields">
+                                        <input type="text" name="opinion_item_title[]" class="form-control form-control-sm mb-1" value="{{ item.title }}" placeholder="제목">
+                                        <input type="text" name="opinion_item_summary[]" class="form-control form-control-sm mb-1" value="{{ item.summary }}" placeholder="요약">
+                                        <input type="text" name="opinion_item_image[]" class="form-control form-control-sm mb-1" value="{{ item.image }}" placeholder="이미지 URL">
+                                        <input type="text" name="opinion_item_link[]" class="form-control form-control-sm" value="{{ item.link }}" placeholder="링크 URL">
+                                    </div>
+                                    {% endif %}
+                                </div>
+                            </div>
+                            <div class="item-article-preview"></div>
+                        </div>
+                        {% endfor %}
+                    </div>
+                    <button type="button" class="btn btn-sm btn-outline-primary" onclick="addItem('opinionItems', 'opinion')">
+                        <i class="bi bi-plus-lg"></i> 기사 추가
+                    </button>
+                </div>
+            </div>
+        </div>
+
+        <!-- ④ 주간 추천 도서 -->
+        {% set book = s.get('book', {}) %}
+        <div class="accordion-item">
+            <h2 class="accordion-header">
+                <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#colBook">
+                    <span class="section-switch" onclick="event.stopPropagation()">
+                        <input class="form-check-input" type="checkbox" name="book_visible" value="1"
+                               {{ 'checked' if book.get('visible', false) }}>
+                    </span>
+                    <i class="bi bi-book me-2"></i> 주간 추천 도서
+                </button>
+            </h2>
+            <div id="colBook" class="accordion-collapse collapse">
+                <div class="accordion-body">
+                    <div class="mb-3">
+                        <label class="form-label fw-bold">섹션 제목</label>
+                        <input type="text" name="book_section_title" class="form-control" value="{{ book.get('title', '주간 추천 도서') }}" style="max-width:300px">
+                    </div>
+                    <div class="row g-3">
+                        <div class="col-md-6">
+                            <label class="form-label fw-bold">도서 제목</label>
+                            <input type="text" name="book_title" class="form-control" value="{{ book.get('book_title', '') }}">
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label fw-bold">저자</label>
+                            <input type="text" name="book_author" class="form-control" value="{{ book.get('author', '') }}">
+                        </div>
+                        <div class="col-md-8">
+                            <label class="form-label fw-bold">도서 이미지 URL</label>
+                            <div class="input-group">
+                                <input type="text" name="book_image" id="bookImage" class="form-control" value="{{ book.get('image', '') }}">
+                                <label class="btn btn-outline-secondary">
+                                    <i class="bi bi-upload"></i>
+                                    <input type="file" accept="image/*" class="d-none" onchange="uploadImage(this, 'bookImage', 'bookPreview')">
+                                </label>
+                            </div>
+                            {% if book.get('image') %}
+                            <img src="{{ book.image }}" class="img-preview" id="bookPreview">
+                            {% else %}
+                            <img src="" class="img-preview d-none" id="bookPreview">
+                            {% endif %}
+                        </div>
+                        <div class="col-md-4">
+                            <label class="form-label fw-bold">링크 URL</label>
+                            <input type="url" name="book_link" class="form-control" value="{{ book.get('link', '') }}">
+                        </div>
+                        <div class="col-12">
+                            <label class="form-label fw-bold">소개 글</label>
+                            <textarea name="book_description" class="form-control" rows="3">{{ book.get('description', '') }}</textarea>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- 광고 3 & 4 -->
+        <div class="accordion-item">
+            <h2 class="accordion-header">
+                <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#colAd34">
+                    <i class="bi bi-megaphone me-2"></i> 광고 3~4
+                </button>
+            </h2>
+            <div id="colAd34" class="accordion-collapse collapse">
+                <div class="accordion-body">
+                    {% for i in range(2, 4) %}
+                    {% set ad = ads[i] if i < ads|length else {} %}
+                    <div class="card mb-3">
+                        <div class="card-body">
+                            <h6>
+                                <input class="form-check-input me-2" type="checkbox" name="ad_{{ i+1 }}_visible" value="1"
+                                       {{ 'checked' if ad.get('visible', false) }}>
+                                광고 {{ i+1 }}
+                            </h6>
+                            <div class="row g-2">
+                                <div class="col-md-8">
+                                    <label class="form-label">이미지 URL</label>
+                                    <div class="input-group input-group-sm">
+                                        <input type="text" name="ad_{{ i+1 }}_image" id="ad{{ i+1 }}Image" class="form-control" value="{{ ad.get('image', '') }}">
+                                        <label class="btn btn-outline-secondary btn-sm">
+                                            <i class="bi bi-upload"></i>
+                                            <input type="file" accept="image/*" class="d-none" onchange="uploadImage(this, 'ad{{ i+1 }}Image', 'ad{{ i+1 }}Preview')">
+                                        </label>
+                                    </div>
+                                    {% if ad.get('image') %}
+                                    <img src="{{ ad.image }}" class="img-preview" id="ad{{ i+1 }}Preview">
+                                    {% else %}
+                                    <img src="" class="img-preview d-none" id="ad{{ i+1 }}Preview">
+                                    {% endif %}
+                                </div>
+                                <div class="col-md-4">
+                                    <label class="form-label">링크 URL</label>
+                                    <input type="url" name="ad_{{ i+1 }}_link" class="form-control form-control-sm" value="{{ ad.get('link', '') }}">
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    {% endfor %}
+                </div>
+            </div>
+        </div>
+
+        <!-- ⑤ 주간 화제의 영상 -->
+        {% set videos = s.get('videos', {}) %}
+        <div class="accordion-item">
+            <h2 class="accordion-header">
+                <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#colVideos">
+                    <span class="section-switch" onclick="event.stopPropagation()">
+                        <input class="form-check-input" type="checkbox" name="videos_visible" value="1"
+                               {{ 'checked' if videos.get('visible', false) }}>
+                    </span>
+                    <i class="bi bi-play-circle me-2"></i> 주간 화제의 영상
+                </button>
+            </h2>
+            <div id="colVideos" class="accordion-collapse collapse">
+                <div class="accordion-body">
+                    <div class="mb-3">
+                        <label class="form-label fw-bold">섹션 제목</label>
+                        <input type="text" name="videos_title" class="form-control" value="{{ videos.get('title', '주간 화제의 영상') }}" style="max-width:300px">
+                    </div>
+                    <div id="videoItems">
+                        {% for v in videos.get('items', []) %}
+                        <div class="item-row">
+                            <button type="button" class="btn btn-sm btn-outline-danger btn-remove" onclick="this.closest('.item-row').remove()"><i class="bi bi-x-lg"></i></button>
+                            <div class="row g-2">
+                                <div class="col-md-6">
+                                    <label class="form-label">YouTube URL</label>
+                                    <input type="url" name="video_url[]" class="form-control form-control-sm yt-url-input" value="{{ v.youtube_url }}" placeholder="https://www.youtube.com/watch?v=..." oninput="updateYtThumb(this)">
+                                    <img src="" class="yt-thumb d-none">
+                                </div>
+                                <div class="col-md-3">
+                                    <label class="form-label">제목</label>
+                                    <input type="text" name="video_title[]" class="form-control form-control-sm" value="{{ v.title }}">
+                                </div>
+                                <div class="col-md-3">
+                                    <label class="form-label">설명</label>
+                                    <input type="text" name="video_desc[]" class="form-control form-control-sm" value="{{ v.description }}">
+                                </div>
+                            </div>
+                        </div>
+                        {% endfor %}
+                    </div>
+                    <button type="button" class="btn btn-sm btn-outline-primary" onclick="addVideo()">
+                        <i class="bi bi-plus-lg"></i> 영상 추가
+                    </button>
+                </div>
+            </div>
+        </div>
+
+        <!-- ⑥ 이 주의 글귀 -->
+        {% set quote = s.get('quote', {}) %}
+        <div class="accordion-item">
+            <h2 class="accordion-header">
+                <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#colQuote">
+                    <span class="section-switch" onclick="event.stopPropagation()">
+                        <input class="form-check-input" type="checkbox" name="quote_visible" value="1"
+                               {{ 'checked' if quote.get('visible', false) }}>
+                    </span>
+                    <i class="bi bi-quote me-2"></i> 이 주의 글귀
+                </button>
+            </h2>
+            <div id="colQuote" class="accordion-collapse collapse">
+                <div class="accordion-body">
+                    <div class="mb-3">
+                        <label class="form-label fw-bold">섹션 제목</label>
+                        <input type="text" name="quote_title" class="form-control" value="{{ quote.get('title', '이 주의 글귀') }}" style="max-width:300px">
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label fw-bold">글귀</label>
+                        <textarea name="quote_text" class="form-control" rows="3" placeholder="인용문을 입력하세요">{{ quote.get('text', '') }}</textarea>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label fw-bold">출처 / 저자</label>
+                        <input type="text" name="quote_author" class="form-control" value="{{ quote.get('author', '') }}" style="max-width:300px" placeholder="저자명">
+                    </div>
+                </div>
+            </div>
+        </div>
+
+    </div>
+
+    <!-- 저장 버튼 -->
+    <div class="d-grid mt-3 mb-5">
+        <button type="submit" class="btn btn-primary btn-lg"><i class="bi bi-save"></i> 저장</button>
+    </div>
+</form>
+
+<!-- 아이템 템플릿 (focus/opinion 공통) -->
+<template id="itemTemplate">
+    <div class="item-row">
+        <button type="button" class="btn btn-sm btn-outline-danger btn-remove" onclick="this.closest('.item-row').remove()"><i class="bi bi-x-lg"></i></button>
+        <div class="row g-2 mb-2">
+            <div class="col-md-2">
+                <select name="__PREFIX___item_type[]" class="form-select form-select-sm" onchange="toggleItemType(this)">
+                    <option value="article">기사 선택</option>
+                    <option value="custom">직접 입력</option>
+                </select>
+            </div>
+            <div class="col-md-10">
+                <div class="article-fields">
+                    <div class="input-group input-group-sm">
+                        <input type="number" name="__PREFIX___item_article_id[]" class="form-control" placeholder="기사 ID">
+                        <button type="button" class="btn btn-outline-secondary" onclick="previewItemArticle(this)"><i class="bi bi-search"></i></button>
+                    </div>
+                </div>
+                <div class="custom-fields d-none">
+                    <input type="text" name="__PREFIX___item_title[]" class="form-control form-control-sm mb-1" placeholder="제목">
+                    <input type="text" name="__PREFIX___item_summary[]" class="form-control form-control-sm mb-1" placeholder="요약">
+                    <input type="text" name="__PREFIX___item_image[]" class="form-control form-control-sm mb-1" placeholder="이미지 URL">
+                    <input type="text" name="__PREFIX___item_link[]" class="form-control form-control-sm" placeholder="링크 URL">
+                </div>
+            </div>
+        </div>
+        <div class="item-article-preview"></div>
+    </div>
+</template>
+
+<!-- 비디오 아이템 템플릿 -->
+<template id="videoTemplate">
+    <div class="item-row">
+        <button type="button" class="btn btn-sm btn-outline-danger btn-remove" onclick="this.closest('.item-row').remove()"><i class="bi bi-x-lg"></i></button>
+        <div class="row g-2">
+            <div class="col-md-6">
+                <label class="form-label">YouTube URL</label>
+                <input type="url" name="video_url[]" class="form-control form-control-sm" placeholder="https://www.youtube.com/watch?v=..." oninput="updateYtThumb(this)">
+                <img src="" class="yt-thumb d-none">
+            </div>
+            <div class="col-md-3">
+                <label class="form-label">제목</label>
+                <input type="text" name="video_title[]" class="form-control form-control-sm">
+            </div>
+            <div class="col-md-3">
+                <label class="form-label">설명</label>
+                <input type="text" name="video_desc[]" class="form-control form-control-sm">
+            </div>
+        </div>
+    </div>
+</template>
+{% endblock %}
+
+{% block extra_scripts %}
+<script>
+// 이미지 업로드
+function uploadImage(fileInput, targetId, previewId) {
+    var file = fileInput.files[0];
+    if (!file) return;
+    var fd = new FormData();
+    fd.append('upload', file);
+    fetch('{{ url_for("admin.upload_image") }}', {method:'POST', body:fd})
+        .then(r => r.json())
+        .then(data => {
+            if (data.url) {
+                document.getElementById(targetId).value = data.url;
+                var img = document.getElementById(previewId);
+                img.src = data.url;
+                img.classList.remove('d-none');
+            }
+        })
+        .catch(e => alert('업로드 실패: ' + e));
+    fileInput.value = '';
+}
+
+// 기사 미리보기 (브리핑용)
+function previewArticle(inputId, containerId) {
+    var aid = document.getElementById(inputId).value;
+    if (!aid) return;
+    fetch('/admin/api/newsletter-article/' + aid)
+        .then(r => r.json())
+        .then(data => {
+            if (data.error) {
+                document.getElementById(containerId).innerHTML = '<div class="text-danger mt-1"><small>기사를 찾을 수 없습니다.</small></div>';
+                return;
+            }
+            var html = '<div class="article-preview">';
+            if (data.thumbnail) html += '<img src="' + data.thumbnail + '">';
+            html += '<div class="ap-info"><div class="ap-title">' + data.title + '</div>';
+            html += '<div class="text-muted">ID: ' + data.id + ' | ' + (data.author_name || '') + ' | ' + data.created_at + '</div></div></div>';
+            document.getElementById(containerId).innerHTML = html;
+        })
+        .catch(() => {
+            document.getElementById(containerId).innerHTML = '<div class="text-danger mt-1"><small>조회 실패</small></div>';
+        });
+}
+
+// 기사 미리보기 (아이템용)
+function previewItemArticle(btn) {
+    var input = btn.closest('.input-group').querySelector('input');
+    var aid = input.value;
+    if (!aid) return;
+    var container = btn.closest('.item-row').querySelector('.item-article-preview');
+    fetch('/admin/api/newsletter-article/' + aid)
+        .then(r => r.json())
+        .then(data => {
+            if (data.error) { container.innerHTML = '<small class="text-danger">기사를 찾을 수 없습니다.</small>'; return; }
+            var html = '<div class="article-preview">';
+            if (data.thumbnail) html += '<img src="' + data.thumbnail + '">';
+            html += '<div class="ap-info"><div class="ap-title">' + data.title + '</div>';
+            html += '<div class="text-muted">' + (data.section_name || '') + ' | ' + (data.author_name || '') + '</div></div></div>';
+            container.innerHTML = html;
+        })
+        .catch(() => { container.innerHTML = '<small class="text-danger">조회 실패</small>'; });
+}
+
+// 아이템 타입 토글 (기사/직접입력)
+function toggleItemType(sel) {
+    var row = sel.closest('.item-row');
+    var af = row.querySelector('.article-fields');
+    var cf = row.querySelector('.custom-fields');
+    if (sel.value === 'article') {
+        af.classList.remove('d-none');
+        cf.classList.add('d-none');
+    } else {
+        af.classList.add('d-none');
+        cf.classList.remove('d-none');
+    }
+}
+
+// 아이템 추가 (focus/opinion)
+function addItem(containerId, prefix) {
+    var tmpl = document.getElementById('itemTemplate').content.cloneNode(true);
+    tmpl.querySelectorAll('[name]').forEach(function(el) {
+        el.name = el.name.replace('__PREFIX__', prefix);
+    });
+    document.getElementById(containerId).appendChild(tmpl);
+}
+
+// 비디오 추가
+function addVideo() {
+    var tmpl = document.getElementById('videoTemplate').content.cloneNode(true);
+    document.getElementById('videoItems').appendChild(tmpl);
+}
+
+// YouTube 썸네일 업데이트
+function updateYtThumb(input) {
+    var url = input.value;
+    var match = url.match(/(?:youtube\.com\/(?:watch\?v=|embed\/)|youtu\.be\/)([\w-]{11})/);
+    var img = input.closest('.item-row').querySelector('.yt-thumb');
+    if (match) {
+        img.src = 'https://img.youtube.com/vi/' + match[1] + '/hqdefault.jpg';
+        img.classList.remove('d-none');
+    } else {
+        img.classList.add('d-none');
+    }
+}
+
+// 페이지 로드 시 기존 YouTube URL 썸네일 표시
+document.addEventListener('DOMContentLoaded', function() {
+    document.querySelectorAll('.yt-url-input').forEach(function(input) {
+        if (input.value) updateYtThumb(input);
+    });
+});
+</script>
+{% endblock %}

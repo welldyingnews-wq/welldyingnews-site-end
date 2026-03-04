@@ -2,17 +2,180 @@ from datetime import datetime, timedelta
 
 import re
 
-from flask import render_template, request, abort, redirect, url_for, flash, session
+from flask import render_template, request, abort, redirect, url_for, flash, session, jsonify, send_from_directory, current_app
 from werkzeug.security import generate_password_hash, check_password_hash
 
 import json
 from app.models import (db, Section, SubSection, Article, ArticleRelation, ArticleComment,
                         CommentVote, SiteSetting, Board, BoardPost, BoardReply,
-                        BoardReplyVote, Banner,
+                        BoardReplyVote, Banner, article_extra_subsection,
                         EventRequest, Popup, Poll, PollOption, Member,
-                        DailyStat, PageView, VisitorLog)
+                        DailyStat, PageView, VisitorLog,
+                        NewsletterSubscriber, Newsletter, Schedule, Resource,
+                        AdminUser)
 from app.public import public_bp
 
+
+
+@public_bp.route('/naver545517745dfc7af9299e6ea019861bf4.html')
+def naver_verify():
+    return send_from_directory(current_app.static_folder, 'naver545517745dfc7af9299e6ea019861bf4.html')
+
+
+@public_bp.route('/robots.txt')
+def robots_txt():
+    content = """User-agent: *
+Allow: /
+Disallow: /admin/
+
+Sitemap: https://www.welldyingnews.com/sitemap.xml
+"""
+    return current_app.response_class(content, mimetype='text/plain')
+
+
+@public_bp.route('/sitemap.xml')
+def sitemap_xml():
+    from flask import make_response
+    now = datetime.now()
+    articles = Article.query.filter(
+        Article.is_deleted == False,  # noqa: E712
+        Article.recognition == 'E',
+        db.or_(Article.embargo_date == None, Article.embargo_date <= now)  # noqa: E711
+    ).order_by(Article.updated_at.desc()).limit(5000).all()
+    sections = Section.query.order_by(Section.sort_order).all()
+
+    xml = ['<?xml version="1.0" encoding="UTF-8"?>']
+    xml.append('<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">')
+
+    # 메인 페이지
+    xml.append('  <url>')
+    xml.append('    <loc>https://www.welldyingnews.com/</loc>')
+    xml.append('    <changefreq>hourly</changefreq>')
+    xml.append('    <priority>1.0</priority>')
+    xml.append('  </url>')
+
+    # 섹션 목록 페이지
+    for section in sections:
+        xml.append('  <url>')
+        xml.append(f'    <loc>https://www.welldyingnews.com/news/articleList.html?sc_section_code={section.code}&amp;view_type=sm</loc>')
+        xml.append('    <changefreq>daily</changefreq>')
+        xml.append('    <priority>0.8</priority>')
+        xml.append('  </url>')
+
+    # 기사 상세 페이지
+    for article in articles:
+        lastmod = article.updated_at.strftime('%Y-%m-%d') if article.updated_at else article.created_at.strftime('%Y-%m-%d')
+        xml.append('  <url>')
+        xml.append(f'    <loc>https://www.welldyingnews.com/news/articleView.html?idxno={article.id}</loc>')
+        xml.append(f'    <lastmod>{lastmod}</lastmod>')
+        xml.append('    <changefreq>monthly</changefreq>')
+        xml.append('    <priority>0.6</priority>')
+        xml.append('  </url>')
+
+    xml.append('</urlset>')
+
+    response = make_response('\n'.join(xml))
+    response.headers['Content-Type'] = 'application/xml; charset=utf-8'
+    return response
+
+
+@public_bp.route('/rss')
+@public_bp.route('/rss.xml')
+def rss_feed():
+    """RSS 2.0 피드 — 네이버 뉴스 제휴용"""
+    from flask import make_response
+    import html as html_lib
+    from email.utils import format_datetime
+    from datetime import timezone, timedelta
+
+    sc_section_code = request.args.get('sc_section_code', '')
+    site_url = current_app.config.get('SITE_URL', 'https://www.welldyingnews.com')
+
+    now = datetime.now()
+    query = Article.query.filter(
+        Article.is_deleted == False,  # noqa: E712
+        Article.recognition == 'E',
+        db.or_(Article.embargo_date == None, Article.embargo_date <= now)  # noqa: E711
+    )
+
+    section = None
+    if sc_section_code:
+        section = Section.query.filter_by(code=sc_section_code).first()
+        if section:
+            query = query.filter(Article.section_id == section.id)
+
+    articles = query.order_by(
+        db.func.coalesce(Article.embargo_date, Article.created_at).desc()
+    ).limit(50).all()
+
+    channel_title = '웰다잉뉴스'
+    if section:
+        channel_title += f' - {section.name}'
+
+    kst = timezone(timedelta(hours=9))
+
+    def to_rfc2822(dt):
+        if dt.tzinfo is None:
+            dt = dt.replace(tzinfo=kst)
+        return format_datetime(dt)
+
+    def strip_html(text):
+        if not text:
+            return ''
+        cleaned = re.sub(r'<[^>]+>', '', text)
+        return html_lib.unescape(cleaned).strip()
+
+    rss_self_url = f'{site_url}/rss'
+    if sc_section_code:
+        rss_self_url += f'?sc_section_code={sc_section_code}'
+
+    xml_parts = [
+        '<?xml version="1.0" encoding="UTF-8"?>',
+        '<rss version="2.0" xmlns:atom="http://www.w3.org/2005/Atom">',
+        '<channel>',
+        f'  <title>{channel_title}</title>',
+        f'  <link>{site_url}</link>',
+        '  <description>호스피스, 사전연명의료의향서, 연명의료결정, 조력사망, 장례, 애도, 고독사, 돌봄 등 생애말기 전 주제를 취재하여 존엄한 마무리를 준비할 수 있도록 돕는 미디어</description>',
+        '  <language>ko</language>',
+        f'  <atom:link href="{rss_self_url}" rel="self" type="application/rss+xml" />',
+    ]
+
+    if articles:
+        pub_date = articles[0].embargo_date or articles[0].created_at
+        xml_parts.append(f'  <lastBuildDate>{to_rfc2822(pub_date)}</lastBuildDate>')
+
+    for article in articles:
+        pub_date = article.embargo_date or article.created_at
+        article_url = f'{site_url}/news/articleView.html?idxno={article.id}'
+        description = strip_html(article.summary_text)
+
+        category_parts = []
+        if article.section:
+            category_parts.append(article.section.name)
+        if article.subsection:
+            category_parts.append(article.subsection.name)
+        category_name = ' > '.join(category_parts)
+
+        xml_parts.append('  <item>')
+        xml_parts.append(f'    <title><![CDATA[{article.title}]]></title>')
+        xml_parts.append(f'    <link>{article_url}</link>')
+        xml_parts.append(f'    <description><![CDATA[{description}]]></description>')
+        xml_parts.append(f'    <pubDate>{to_rfc2822(pub_date)}</pubDate>')
+        xml_parts.append(f'    <guid isPermaLink="true">{article_url}</guid>')
+        if article.author_name:
+            author_email = article.author_email or 'welldyingnews@naver.com'
+            xml_parts.append(f'    <author>{author_email} ({article.author_name})</author>')
+        if category_name:
+            xml_parts.append(f'    <category><![CDATA[{category_name}]]></category>')
+        xml_parts.append('  </item>')
+
+    xml_parts.append('</channel>')
+    xml_parts.append('</rss>')
+
+    response = make_response('\n'.join(xml_parts))
+    response.headers['Content-Type'] = 'application/rss+xml; charset=utf-8'
+    response.headers['Cache-Control'] = 'public, max-age=600'
+    return response
 
 
 def _get_published_query():
@@ -67,7 +230,7 @@ def inject_sections():
     current_member = None
     member_id = session.get('member_id')
     if member_id:
-        current_member = Member.query.get(member_id)
+        current_member = db.session.get(Member, member_id)
     # 헤더 명언
     quotes_setting = SiteSetting.query.filter_by(key='header_quotes').first()
     header_quotes = []
@@ -83,9 +246,23 @@ def inject_sections():
             '삶을 깊이 이해하면 할수록<br>죽음으로 인한 슬픔은 그만큼 줄어들 것입니다.',
             '죽음을 알려고 하지 말고<br>내가 어디에서 왔는지를 알아야 한다.',
         ]
+    ga4_setting = SiteSetting.query.filter_by(key='ga4_measurement_id').first()
+    ga4_id = ga4_setting.value.strip() if ga4_setting and ga4_setting.value else ''
+
+    # 푸터 서브섹션 (뉴스 섹션 하위 16개)
+    news_section = Section.query.filter_by(code='S1N1').first()
+    if news_section:
+        footer_subsections = SubSection.query.filter_by(section_id=news_section.id).order_by(SubSection.sort_order).all()
+    else:
+        footer_subsections = SubSection.query.order_by(SubSection.sort_order).limit(16).all()
+
+    site_url = current_app.config.get('SITE_URL', 'https://www.welldyingnews.com')
+
     return {'nav_sections': sections, 'nav_boards': boards, 'updated_time': updated_time,
             'banners': banners_by_pos, 'popups': active_popups, 'is_mobile': is_mobile,
-            'current_member': current_member, 'header_quotes': header_quotes}
+            'current_member': current_member, 'header_quotes': header_quotes,
+            'ga4_id': ga4_id, 'footer_subsections': footer_subsections,
+            'site_url': site_url}
 
 
 def _detect_device():
@@ -96,6 +273,26 @@ def _detect_device():
     if re.search(r'Mobile|Android|iPhone|iPod|Opera Mini|IEMobile', ua, re.I):
         return 'mobile'
     return 'pc'
+
+
+def _classify_referrer(referrer_url):
+    """Referer 헤더에서 유입경로 분류"""
+    if not referrer_url:
+        return 'direct'
+    ref = referrer_url.lower()
+    if 'naver.com' in ref or 'naver.me' in ref:
+        return 'naver'
+    if 'google.' in ref or 'googleapis.com' in ref:
+        return 'google'
+    if 'daum.net' in ref or 'daum.co.kr' in ref:
+        return 'daum'
+    if 'facebook.com' in ref or 'fb.com' in ref or 'fbcdn.net' in ref:
+        return 'facebook'
+    if 'kakao' in ref:
+        return 'kakao'
+    if request.host and request.host in ref:
+        return 'direct'
+    return 'other'
 
 
 @public_bp.before_request
@@ -111,7 +308,9 @@ def track_visitor():
     ).first()
     if not exists:
         device = _detect_device()
-        log = VisitorLog(ip_address=ip, date=today, article_id=None, user_agent=device)
+        referrer = _classify_referrer(request.referrer)
+        log = VisitorLog(ip_address=ip, date=today, article_id=None,
+                         user_agent=device, referrer_source=referrer)
         db.session.add(log)
         # DailyStat UV 증가
         stat = DailyStat.query.filter_by(date=today).first()
@@ -125,270 +324,60 @@ def track_visitor():
 
 @public_bp.route('/main1/')
 def index_main1():
-    """main1 디자인 (base_new.html 기반)"""
-    query = _get_published_query()
-    headline_articles = []
-    for i in range(1, 4):
-        setting = SiteSetting.query.filter_by(key=f'hero_slot_{i}').first()
-        if setting and setting.value and setting.value.strip().isdigit():
-            art = query.filter(Article.id == int(setting.value)).first()
-            if art:
-                headline_articles.append(art)
-    if len(headline_articles) < 3:
-        existing_ids = [a.id for a in headline_articles]
-        auto = query.filter(
-            Article.level.in_(['T', 'I']),
-            ~Article.id.in_(existing_ids) if existing_ids else True
-        ).order_by(db.func.coalesce(Article.embargo_date, Article.created_at).desc()).limit(3 - len(headline_articles)).all()
-        headline_articles.extend(auto)
-    if len(headline_articles) < 3:
-        existing_ids = [a.id for a in headline_articles]
-        extra = query.filter(
-            ~Article.id.in_(existing_ids) if existing_ids else True
-        ).order_by(db.func.coalesce(Article.embargo_date, Article.created_at).desc()).limit(3 - len(headline_articles)).all()
-        headline_articles.extend(extra)
-    latest_articles = query.order_by(db.func.coalesce(Article.embargo_date, Article.created_at).desc()).limit(8).all()
-    popular_setting = SiteSetting.query.filter_by(key='popular_article_ids').first()
-    manual_popular = []
-    if popular_setting and popular_setting.value:
-        for aid in popular_setting.value.split(','):
-            aid = aid.strip()
-            if aid.isdigit():
-                art = Article.query.get(int(aid))
-                if art and not art.is_deleted and art.recognition == 'E':
-                    manual_popular.append(art)
-    weekly_setting = SiteSetting.query.filter_by(key='popular_weekly_article_ids').first()
-    manual_weekly = []
-    if weekly_setting and weekly_setting.value:
-        for aid in weekly_setting.value.split(','):
-            aid = aid.strip()
-            if aid.isdigit():
-                art = Article.query.get(int(aid))
-                if art and not art.is_deleted and art.recognition == 'E':
-                    manual_weekly.append(art)
-    if manual_popular:
-        popular_today = manual_popular[:5]
-    else:
-        today_start = datetime.now().replace(hour=0, minute=0, second=0, microsecond=0)
-        popular_today = _get_published_query().filter(
-            Article.created_at >= today_start
-        ).order_by(Article.view_count.desc()).limit(5).all()
-    if manual_weekly:
-        popular_week = manual_weekly[:5]
-    else:
-        popular_week = _get_published_query().order_by(Article.view_count.desc()).limit(5).all()
-    from app.models import article_extra_subsection
-    section_articles = {}
-    key_subsections = SubSection.query.join(Section).filter(
-        Section.code == 'S1N1'
-    ).order_by(SubSection.sort_order).all()
-    for sub in key_subsections[:16]:
-        articles = query.filter(
-            db.or_(
-                Article.subsection_id == sub.id,
-                Article.id.in_(
-                    db.session.query(article_extra_subsection.c.article_id).filter(
-                        article_extra_subsection.c.subsection_id == sub.id
-                    )
-                )
-            )
-        ).order_by(db.func.coalesce(Article.embargo_date, Article.created_at).desc()).limit(4).all()
-        if articles:
-            section_articles[sub] = articles
-    opinion_section = Section.query.filter_by(code='S1N2').first()
-    opinion_articles = []
-    if opinion_section:
-        opinion_articles = query.filter(
-            Article.section_id == opinion_section.id
-        ).order_by(db.func.coalesce(Article.embargo_date, Article.created_at).desc()).limit(4).all()
-    library_section = Section.query.filter_by(code='S1N4').first()
-    library_articles = []
-    if library_section:
-        library_articles = query.filter(
-            Article.section_id == library_section.id
-        ).order_by(db.func.coalesce(Article.embargo_date, Article.created_at).desc()).limit(5).all()
-    schedule_section = Section.query.filter_by(code='S1N5').first()
-    schedule_articles = []
-    if schedule_section:
-        schedule_articles = query.filter(
-            Article.section_id == schedule_section.id
-        ).order_by(db.func.coalesce(Article.embargo_date, Article.created_at).desc()).limit(5).all()
-    active_poll = Poll.query.filter_by(is_active=True).order_by(Poll.created_at.desc()).first()
-    book_subsection = SubSection.query.filter_by(code='S2N17').first()
-    book_articles = []
-    if book_subsection:
-        book_articles = query.filter(
-            Article.subsection_id == book_subsection.id
-        ).order_by(db.func.coalesce(Article.embargo_date, Article.created_at).desc()).limit(10).all()
-    tv_section = Section.query.filter_by(code='S1N3').first()
-    tv_articles = []
-    if tv_section:
-        tv_articles = query.filter(
-            Article.section_id == tv_section.id
-        ).order_by(db.func.coalesce(Article.embargo_date, Article.created_at).desc()).limit(8).all()
-    popular_articles = popular_today if popular_today else popular_week
-    return render_template('public/index_main1.html',
-                           headline_articles=headline_articles,
-                           latest_articles=latest_articles,
-                           popular_today=popular_today,
-                           popular_week=popular_week,
-                           popular_articles=popular_articles,
-                           section_articles=section_articles,
-                           opinion_articles=opinion_articles,
-                           library_articles=library_articles,
-                           schedule_articles=schedule_articles,
-                           active_poll=active_poll,
-                           book_articles=book_articles,
-                           tv_articles=tv_articles)
+    return redirect(url_for('public.index'), code=301)
 
 
 @public_bp.route('/v1/')
 def index_v1():
-    """첫번째 디자인 (원본 base.html 기반)"""
+    return redirect(url_for('public.index'), code=301)
+
+
+def _build_index_context(hero_slots=4):
+    """메인 페이지 공통 데이터 조회. hero_slots: 1면 헤드 기사 수"""
     query = _get_published_query()
+
+    # 1면 헤드 기사
     headline_articles = []
-    for i in range(1, 4):
+    for i in range(1, hero_slots + 1):
         setting = SiteSetting.query.filter_by(key=f'hero_slot_{i}').first()
         if setting and setting.value and setting.value.strip().isdigit():
             art = query.filter(Article.id == int(setting.value)).first()
             if art:
                 headline_articles.append(art)
-    if len(headline_articles) < 3:
+    if len(headline_articles) < hero_slots:
         existing_ids = [a.id for a in headline_articles]
         auto = query.filter(
             Article.level.in_(['T', 'I']),
             ~Article.id.in_(existing_ids) if existing_ids else True
-        ).order_by(db.func.coalesce(Article.embargo_date, Article.created_at).desc()).limit(3 - len(headline_articles)).all()
+        ).order_by(db.func.coalesce(Article.embargo_date, Article.created_at).desc()).limit(hero_slots - len(headline_articles)).all()
         headline_articles.extend(auto)
-    if len(headline_articles) < 3:
+    if len(headline_articles) < hero_slots:
         existing_ids = [a.id for a in headline_articles]
         extra = query.filter(
             ~Article.id.in_(existing_ids) if existing_ids else True
-        ).order_by(db.func.coalesce(Article.embargo_date, Article.created_at).desc()).limit(3 - len(headline_articles)).all()
-        headline_articles.extend(extra)
-    latest_articles = query.order_by(db.func.coalesce(Article.embargo_date, Article.created_at).desc()).limit(8).all()
-    popular_setting = SiteSetting.query.filter_by(key='popular_article_ids').first()
-    manual_popular = []
-    if popular_setting and popular_setting.value:
-        for aid in popular_setting.value.split(','):
-            aid = aid.strip()
-            if aid.isdigit():
-                art = Article.query.get(int(aid))
-                if art and not art.is_deleted and art.recognition == 'E':
-                    manual_popular.append(art)
-    weekly_setting = SiteSetting.query.filter_by(key='popular_weekly_article_ids').first()
-    manual_weekly = []
-    if weekly_setting and weekly_setting.value:
-        for aid in weekly_setting.value.split(','):
-            aid = aid.strip()
-            if aid.isdigit():
-                art = Article.query.get(int(aid))
-                if art and not art.is_deleted and art.recognition == 'E':
-                    manual_weekly.append(art)
-    if manual_popular:
-        popular_today = manual_popular[:5]
-    else:
-        today_start = datetime.now().replace(hour=0, minute=0, second=0, microsecond=0)
-        popular_today = _get_published_query().filter(
-            Article.created_at >= today_start
-        ).order_by(Article.view_count.desc()).limit(5).all()
-    if manual_weekly:
-        popular_week = manual_weekly[:5]
-    else:
-        popular_week = _get_published_query().order_by(Article.view_count.desc()).limit(5).all()
-    from app.models import article_extra_subsection
-    section_articles = {}
-    key_subsections = SubSection.query.join(Section).filter(
-        Section.code == 'S1N1'
-    ).order_by(SubSection.sort_order).all()
-    for sub in key_subsections[:16]:
-        articles = query.filter(
-            db.or_(
-                Article.subsection_id == sub.id,
-                Article.id.in_(
-                    db.session.query(article_extra_subsection.c.article_id).filter(
-                        article_extra_subsection.c.subsection_id == sub.id
-                    )
-                )
-            )
-        ).order_by(db.func.coalesce(Article.embargo_date, Article.created_at).desc()).limit(4).all()
-        if articles:
-            section_articles[sub] = articles
-    opinion_section = Section.query.filter_by(code='S1N2').first()
-    opinion_articles = []
-    if opinion_section:
-        opinion_articles = query.filter(
-            Article.section_id == opinion_section.id
-        ).order_by(db.func.coalesce(Article.embargo_date, Article.created_at).desc()).limit(4).all()
-    library_section = Section.query.filter_by(code='S1N4').first()
-    library_articles = []
-    if library_section:
-        library_articles = query.filter(
-            Article.section_id == library_section.id
-        ).order_by(db.func.coalesce(Article.embargo_date, Article.created_at).desc()).limit(5).all()
-    schedule_section = Section.query.filter_by(code='S1N5').first()
-    schedule_articles = []
-    if schedule_section:
-        schedule_articles = query.filter(
-            Article.section_id == schedule_section.id
-        ).order_by(db.func.coalesce(Article.embargo_date, Article.created_at).desc()).limit(5).all()
-    active_poll = Poll.query.filter_by(is_active=True).order_by(Poll.created_at.desc()).first()
-    book_subsection = SubSection.query.filter_by(code='S2N17').first()
-    book_articles = []
-    if book_subsection:
-        book_articles = query.filter(
-            Article.subsection_id == book_subsection.id
-        ).order_by(db.func.coalesce(Article.embargo_date, Article.created_at).desc()).limit(10).all()
-    tv_section = Section.query.filter_by(code='S1N3').first()
-    tv_articles = []
-    if tv_section:
-        tv_articles = query.filter(
-            Article.section_id == tv_section.id
-        ).order_by(db.func.coalesce(Article.embargo_date, Article.created_at).desc()).limit(8).all()
-    popular_articles = popular_today if popular_today else popular_week
-    return render_template('public/index_v1.html',
-                           headline_articles=headline_articles,
-                           latest_articles=latest_articles,
-                           popular_today=popular_today,
-                           popular_week=popular_week,
-                           popular_articles=popular_articles,
-                           section_articles=section_articles,
-                           opinion_articles=opinion_articles,
-                           library_articles=library_articles,
-                           schedule_articles=schedule_articles,
-                           active_poll=active_poll,
-                           book_articles=book_articles,
-                           tv_articles=tv_articles)
-
-
-@public_bp.route('/')
-def index():
-    query = _get_published_query()
-
-    # 1면 헤드 기사 — SiteSetting hero_slot_1~3에서 ID 조회, 없으면 자동 선택
-    headline_articles = []
-    for i in range(1, 4):
-        setting = SiteSetting.query.filter_by(key=f'hero_slot_{i}').first()
-        if setting and setting.value and setting.value.strip().isdigit():
-            art = query.filter(Article.id == int(setting.value)).first()
-            if art:
-                headline_articles.append(art)
-    if len(headline_articles) < 3:
-        existing_ids = [a.id for a in headline_articles]
-        auto = query.filter(
-            Article.level.in_(['T', 'I']),
-            ~Article.id.in_(existing_ids) if existing_ids else True
-        ).order_by(db.func.coalesce(Article.embargo_date, Article.created_at).desc()).limit(3 - len(headline_articles)).all()
-        headline_articles.extend(auto)
-    if len(headline_articles) < 3:
-        existing_ids = [a.id for a in headline_articles]
-        extra = query.filter(
-            ~Article.id.in_(existing_ids) if existing_ids else True
-        ).order_by(db.func.coalesce(Article.embargo_date, Article.created_at).desc()).limit(3 - len(headline_articles)).all()
+        ).order_by(db.func.coalesce(Article.embargo_date, Article.created_at).desc()).limit(hero_slots - len(headline_articles)).all()
         headline_articles.extend(extra)
 
-    # 최신 기사 (8개)
-    latest_articles = query.order_by(db.func.coalesce(Article.embargo_date, Article.created_at).desc()).limit(8).all()
+    # 주요 기사 (8개) — 수동 설정 우선, 부족하면 최신 기사로 채움
+    featured_setting = SiteSetting.query.filter_by(key='featured_article_ids').first()
+    manual_featured = []
+    if featured_setting and featured_setting.value:
+        for aid in featured_setting.value.split(','):
+            aid = aid.strip()
+            if aid.isdigit():
+                art = query.filter(Article.id == int(aid)).first()
+                if art:
+                    manual_featured.append(art)
+    if manual_featured:
+        latest_articles = manual_featured[:8]
+        if len(latest_articles) < 8:
+            existing_ids = [a.id for a in latest_articles]
+            fill = query.filter(
+                ~Article.id.in_(existing_ids)
+            ).order_by(db.func.coalesce(Article.embargo_date, Article.created_at).desc()).limit(8 - len(latest_articles)).all()
+            latest_articles.extend(fill)
+    else:
+        latest_articles = query.order_by(db.func.coalesce(Article.embargo_date, Article.created_at).desc()).limit(8).all()
 
     # 많이 본 뉴스 — 수동 설정 우선, 없으면 자동
     popular_setting = SiteSetting.query.filter_by(key='popular_article_ids').first()
@@ -397,7 +386,7 @@ def index():
         for aid in popular_setting.value.split(','):
             aid = aid.strip()
             if aid.isdigit():
-                art = Article.query.get(int(aid))
+                art = db.session.get(Article, int(aid))
                 if art and not art.is_deleted and art.recognition == 'E':
                     manual_popular.append(art)
 
@@ -407,7 +396,7 @@ def index():
         for aid in weekly_setting.value.split(','):
             aid = aid.strip()
             if aid.isdigit():
-                art = Article.query.get(int(aid))
+                art = db.session.get(Article, int(aid))
                 if art and not art.is_deleted and art.recognition == 'E':
                     manual_weekly.append(art)
 
@@ -415,17 +404,16 @@ def index():
         popular_today = manual_popular[:5]
     else:
         today_start = datetime.now().replace(hour=0, minute=0, second=0, microsecond=0)
-        popular_today = _get_published_query().filter(
+        popular_today = query.filter(
             Article.created_at >= today_start
         ).order_by(Article.view_count.desc()).limit(5).all()
 
     if manual_weekly:
         popular_week = manual_weekly[:5]
     else:
-        popular_week = _get_published_query().order_by(Article.view_count.desc()).limit(5).all()
+        popular_week = query.order_by(Article.view_count.desc()).limit(5).all()
 
-    # 섹션별 최신 기사 (하단 4열 카테고리)
-    from app.models import article_extra_subsection
+    # 섹션별 최신 기사
     section_articles = {}
     key_subsections = SubSection.query.join(Section).filter(
         Section.code == 'S1N1'
@@ -444,7 +432,6 @@ def index():
         if articles:
             section_articles[sub] = articles
 
-    # 오피니언 (사이드바: 4개)
     opinion_section = Section.query.filter_by(code='S1N2').first()
     opinion_articles = []
     if opinion_section:
@@ -452,7 +439,6 @@ def index():
             Article.section_id == opinion_section.id
         ).order_by(db.func.coalesce(Article.embargo_date, Article.created_at).desc()).limit(4).all()
 
-    # 자료실 (사이드바: 5개)
     library_section = Section.query.filter_by(code='S1N4').first()
     library_articles = []
     if library_section:
@@ -460,18 +446,12 @@ def index():
             Article.section_id == library_section.id
         ).order_by(db.func.coalesce(Article.embargo_date, Article.created_at).desc()).limit(5).all()
 
-    # 주요 일정 (사이드바: 5개)
-    schedule_section = Section.query.filter_by(code='S1N5').first()
-    schedule_articles = []
-    if schedule_section:
-        schedule_articles = query.filter(
-            Article.section_id == schedule_section.id
-        ).order_by(db.func.coalesce(Article.embargo_date, Article.created_at).desc()).limit(5).all()
+    schedules = Schedule.query.filter_by(is_active=True).order_by(
+        Schedule.event_date.desc()
+    ).limit(5).all()
 
-    # 설문조사 (활성 상태)
     active_poll = Poll.query.filter_by(is_active=True).order_by(Poll.created_at.desc()).first()
 
-    # 도서·출판 (2차섹션 S2N17)
     book_subsection = SubSection.query.filter_by(code='S2N17').first()
     book_articles = []
     if book_subsection:
@@ -479,7 +459,6 @@ def index():
             Article.subsection_id == book_subsection.id
         ).order_by(db.func.coalesce(Article.embargo_date, Article.created_at).desc()).limit(10).all()
 
-    # 웰다잉TV (섹션 S1N3)
     tv_section = Section.query.filter_by(code='S1N3').first()
     tv_articles = []
     if tv_section:
@@ -487,141 +466,51 @@ def index():
             Article.section_id == tv_section.id
         ).order_by(db.func.coalesce(Article.embargo_date, Article.created_at).desc()).limit(8).all()
 
-    # 모바일용 popular_articles (오늘 + 주간 합쳐서 상위 5개)
     popular_articles = popular_today if popular_today else popular_week
 
-    return render_template('public/index.html',
-                           headline_articles=headline_articles,
-                           latest_articles=latest_articles,
-                           popular_today=popular_today,
-                           popular_week=popular_week,
-                           popular_articles=popular_articles,
-                           section_articles=section_articles,
-                           opinion_articles=opinion_articles,
-                           library_articles=library_articles,
-                           schedule_articles=schedule_articles,
-                           active_poll=active_poll,
-                           book_articles=book_articles,
-                           tv_articles=tv_articles)
+    return dict(
+        headline_articles=headline_articles,
+        latest_articles=latest_articles,
+        popular_today=popular_today,
+        popular_week=popular_week,
+        popular_articles=popular_articles,
+        section_articles=section_articles,
+        opinion_articles=opinion_articles,
+        library_articles=library_articles,
+        schedules=schedules,
+        active_poll=active_poll,
+        book_articles=book_articles,
+        tv_articles=tv_articles,
+    )
+
+
+def _build_bottom_section_articles():
+    """하단 섹션별 기사 (뉴스 카테고리의 서브섹션별 최신 4개씩)"""
+    from collections import OrderedDict
+    query = _get_published_query()
+    bottom = OrderedDict()
+    news_section = Section.query.filter_by(code='S1N1').first()
+    if news_section:
+        for sub in SubSection.query.filter_by(section_id=news_section.id).order_by(SubSection.sort_order).all():
+            arts = query.filter(
+                Article.subsection_id == sub.id
+            ).order_by(db.func.coalesce(Article.embargo_date, Article.created_at).desc()).limit(4).all()
+            if arts:
+                bottom[sub] = arts
+    return bottom
+
+
+@public_bp.route('/')
+def index():
+    ctx = _build_index_context(hero_slots=4)
+    ctx['bottom_section_articles'] = _build_bottom_section_articles()
+    return render_template('public/index.html', **ctx)
 
 
 @public_bp.route('/v2/')
 def index_v2():
-    """v2 디자인 (Atlantic/STAT/Pressian 참고)"""
-    query = _get_published_query()
-    headline_articles = []
-    for i in range(1, 4):
-        setting = SiteSetting.query.filter_by(key=f'hero_slot_{i}').first()
-        if setting and setting.value and setting.value.strip().isdigit():
-            art = query.filter(Article.id == int(setting.value)).first()
-            if art:
-                headline_articles.append(art)
-    if len(headline_articles) < 3:
-        existing_ids = [a.id for a in headline_articles]
-        auto = query.filter(
-            Article.level.in_(['T', 'I']),
-            ~Article.id.in_(existing_ids) if existing_ids else True
-        ).order_by(db.func.coalesce(Article.embargo_date, Article.created_at).desc()).limit(3 - len(headline_articles)).all()
-        headline_articles.extend(auto)
-    if len(headline_articles) < 3:
-        existing_ids = [a.id for a in headline_articles]
-        extra = query.filter(
-            ~Article.id.in_(existing_ids) if existing_ids else True
-        ).order_by(db.func.coalesce(Article.embargo_date, Article.created_at).desc()).limit(3 - len(headline_articles)).all()
-        headline_articles.extend(extra)
-    latest_articles = query.order_by(db.func.coalesce(Article.embargo_date, Article.created_at).desc()).limit(8).all()
-    popular_setting = SiteSetting.query.filter_by(key='popular_article_ids').first()
-    manual_popular = []
-    if popular_setting and popular_setting.value:
-        for aid in popular_setting.value.split(','):
-            aid = aid.strip()
-            if aid.isdigit():
-                art = Article.query.get(int(aid))
-                if art and not art.is_deleted and art.recognition == 'E':
-                    manual_popular.append(art)
-    weekly_setting = SiteSetting.query.filter_by(key='popular_weekly_article_ids').first()
-    manual_weekly = []
-    if weekly_setting and weekly_setting.value:
-        for aid in weekly_setting.value.split(','):
-            aid = aid.strip()
-            if aid.isdigit():
-                art = Article.query.get(int(aid))
-                if art and not art.is_deleted and art.recognition == 'E':
-                    manual_weekly.append(art)
-    if manual_popular:
-        popular_today = manual_popular[:5]
-    else:
-        today_start = datetime.now().replace(hour=0, minute=0, second=0, microsecond=0)
-        popular_today = _get_published_query().filter(
-            Article.created_at >= today_start
-        ).order_by(Article.view_count.desc()).limit(5).all()
-    if manual_weekly:
-        popular_week = manual_weekly[:5]
-    else:
-        popular_week = _get_published_query().order_by(Article.view_count.desc()).limit(5).all()
-    from app.models import article_extra_subsection
-    section_articles = {}
-    key_subsections = SubSection.query.join(Section).filter(
-        Section.code == 'S1N1'
-    ).order_by(SubSection.sort_order).all()
-    for sub in key_subsections[:16]:
-        articles = query.filter(
-            db.or_(
-                Article.subsection_id == sub.id,
-                Article.id.in_(
-                    db.session.query(article_extra_subsection.c.article_id).filter(
-                        article_extra_subsection.c.subsection_id == sub.id
-                    )
-                )
-            )
-        ).order_by(db.func.coalesce(Article.embargo_date, Article.created_at).desc()).limit(4).all()
-        if articles:
-            section_articles[sub] = articles
-    opinion_section = Section.query.filter_by(code='S1N2').first()
-    opinion_articles = []
-    if opinion_section:
-        opinion_articles = query.filter(
-            Article.section_id == opinion_section.id
-        ).order_by(db.func.coalesce(Article.embargo_date, Article.created_at).desc()).limit(4).all()
-    library_section = Section.query.filter_by(code='S1N4').first()
-    library_articles = []
-    if library_section:
-        library_articles = query.filter(
-            Article.section_id == library_section.id
-        ).order_by(db.func.coalesce(Article.embargo_date, Article.created_at).desc()).limit(5).all()
-    schedule_section = Section.query.filter_by(code='S1N5').first()
-    schedule_articles = []
-    if schedule_section:
-        schedule_articles = query.filter(
-            Article.section_id == schedule_section.id
-        ).order_by(db.func.coalesce(Article.embargo_date, Article.created_at).desc()).limit(5).all()
-    active_poll = Poll.query.filter_by(is_active=True).order_by(Poll.created_at.desc()).first()
-    book_subsection = SubSection.query.filter_by(code='S2N17').first()
-    book_articles = []
-    if book_subsection:
-        book_articles = query.filter(
-            Article.subsection_id == book_subsection.id
-        ).order_by(db.func.coalesce(Article.embargo_date, Article.created_at).desc()).limit(10).all()
-    tv_section = Section.query.filter_by(code='S1N3').first()
-    tv_articles = []
-    if tv_section:
-        tv_articles = query.filter(
-            Article.section_id == tv_section.id
-        ).order_by(db.func.coalesce(Article.embargo_date, Article.created_at).desc()).limit(8).all()
-    popular_articles = popular_today if popular_today else popular_week
-    return render_template('public/index_v2.html',
-                           headline_articles=headline_articles,
-                           latest_articles=latest_articles,
-                           popular_today=popular_today,
-                           popular_week=popular_week,
-                           popular_articles=popular_articles,
-                           section_articles=section_articles,
-                           opinion_articles=opinion_articles,
-                           library_articles=library_articles,
-                           schedule_articles=schedule_articles,
-                           active_poll=active_poll,
-                           book_articles=book_articles,
-                           tv_articles=tv_articles)
+    ctx = _build_index_context(hero_slots=3)
+    return render_template('public/index_v2.html', **ctx)
 
 
 def _get_sidebar_data():
@@ -641,7 +530,7 @@ def _get_sidebar_data():
         for aid in popular_setting.value.split(','):
             aid = aid.strip()
             if aid.isdigit():
-                art = Article.query.get(int(aid))
+                art = db.session.get(Article, int(aid))
                 if art and not art.is_deleted and art.recognition == 'E':
                     manual_popular.append(art)
 
@@ -651,7 +540,7 @@ def _get_sidebar_data():
         for aid in weekly_setting.value.split(','):
             aid = aid.strip()
             if aid.isdigit():
-                art = Article.query.get(int(aid))
+                art = db.session.get(Article, int(aid))
                 if art and not art.is_deleted and art.recognition == 'E':
                     manual_weekly.append(art)
 
@@ -686,7 +575,8 @@ def article_list():
     sc_sub_section_code = request.args.get('sc_sub_section_code', '')
     sc_area = request.args.get('sc_area', 'A')
     sc_word = request.args.get('sc_word', '').strip()
-    view_type = request.args.get('view_type', 'sm')
+    default_view = '' if sc_section_code == 'S1N4' else 'sm'
+    view_type = request.args.get('view_type', default_view)
 
     query = _get_published_query()
 
@@ -737,6 +627,14 @@ def article_list():
 
     sidebar_opinion, sidebar_popular, popular_today, popular_week = _get_sidebar_data()
 
+    # 검색어가 있으면 일정도 함께 검색
+    schedule_results = []
+    if sc_word:
+        schedule_results = Schedule.query.filter(
+            Schedule.is_active == True,
+            Schedule.title.contains(sc_word)
+        ).order_by(Schedule.event_date.desc()).limit(5).all()
+
     return render_template('public/article_list.html',
                            articles=pagination.items,
                            pagination=pagination,
@@ -750,7 +648,8 @@ def article_list():
                            sidebar_opinion=sidebar_opinion,
                            sidebar_popular=sidebar_popular,
                            popular_today=popular_today,
-                           popular_week=popular_week)
+                           popular_week=popular_week,
+                           schedule_results=schedule_results)
 
 
 @public_bp.route('/news/articleView.html')
@@ -759,8 +658,18 @@ def article_view():
     if not idxno:
         abort(404)
 
-    article = Article.query.get_or_404(idxno)
-    if article.is_deleted or article.recognition != 'E':
+    # ── 301 리다이렉트: 원본 CMS 기사 ID → 새 DB ID ──
+    # DB 우선 조회: 새 DB에 해당 ID 기사가 있으면 바로 표시 (내부 링크 정상 작동)
+    # DB에 없을 때만 마이그레이션 매핑으로 301 리다이렉트
+    article = db.session.get(Article, idxno)
+    if article is None or article.is_deleted or article.recognition != 'E':
+        redirect_map = current_app.config.get('ARTICLE_ID_REDIRECT_MAP', {})
+        new_id = redirect_map.get(idxno)
+        if new_id is not None and new_id != idxno:
+            return redirect(
+                url_for('public.article_view', idxno=new_id),
+                code=301
+            )
         abort(404)
 
     # 조회수 — IP 기반 일별 중복 제거
@@ -772,7 +681,9 @@ def article_view():
     if not already_viewed:
         # VisitorLog 기록
         device = _detect_device()
-        db.session.add(VisitorLog(ip_address=ip, date=today, article_id=article.id, user_agent=device))
+        referrer = _classify_referrer(request.referrer)
+        db.session.add(VisitorLog(ip_address=ip, date=today, article_id=article.id,
+                                  user_agent=device, referrer_source=referrer))
         # Article 누적 조회수
         article.view_count += 1
         # PageView 일별 집계
@@ -820,13 +731,13 @@ def article_view():
                 Article.id != article.id
             ).order_by(db.func.coalesce(Article.embargo_date, Article.created_at).desc()).limit(5).all()
 
-    # 이전/다음 기사
+    # 이전/다음 기사 (게시 시간 기준)
     prev_article = _get_published_query().filter(
-        Article.id < article.id
-    ).order_by(Article.id.desc()).first()
+        Article.created_at < article.created_at
+    ).order_by(Article.created_at.desc()).first()
     next_article = _get_published_query().filter(
-        Article.id > article.id
-    ).order_by(Article.id.asc()).first()
+        Article.created_at > article.created_at
+    ).order_by(Article.created_at.asc()).first()
 
     sidebar_opinion, sidebar_popular, popular_today, popular_week = _get_sidebar_data()
 
@@ -854,10 +765,48 @@ def article_view():
             ArticleComment.parent_id == None
         ).order_by(ArticleComment.like_count.desc()).limit(3).all()
 
-    # v2 디자인 선택 시 Atlantic 스타일 템플릿 사용
+    # 사이드바: 주요일정, 자료실
+    schedules = Schedule.query.filter_by(is_active=True).order_by(
+        Schedule.event_date.desc()
+    ).limit(5).all()
+
+    library_section = Section.query.filter_by(code='S1N4').first()
+    library_articles = []
+    if library_section:
+        library_articles = _get_published_query().filter(
+            Article.section_id == library_section.id
+        ).order_by(db.func.coalesce(Article.embargo_date, Article.created_at).desc()).limit(4).all()
+
+    # 하단 콘텐츠: Books, 웰다잉TV, 섹션별 기사
+    query = _get_published_query()
+    book_subsection = SubSection.query.filter_by(code='S2N17').first()
+    book_articles = []
+    if book_subsection:
+        book_articles = query.filter(
+            Article.subsection_id == book_subsection.id
+        ).order_by(db.func.coalesce(Article.embargo_date, Article.created_at).desc()).limit(10).all()
+
+    tv_section = Section.query.filter_by(code='S1N3').first()
+    tv_articles = []
+    if tv_section:
+        tv_articles = query.filter(
+            Article.section_id == tv_section.id
+        ).order_by(db.func.coalesce(Article.embargo_date, Article.created_at).desc()).limit(5).all()
+
+    bottom_section_articles = _build_bottom_section_articles()
+
+    # 기자 프로필 사진: AdminUser에서 조회
+    reporter = None
+    if article.author_name:
+        reporter = AdminUser.query.filter_by(name=article.author_name, is_active=True).first()
+
+    # 디자인 선택: v2=기존 v2, clean=Atlantic 스타일 클린 디자인
     template = 'public/article_view.html'
-    if request.args.get('design') == 'v2':
+    design = request.args.get('design', '')
+    if design == 'v2':
         template = 'public/article_view_v2.html'
+    elif design == 'clean':
+        template = 'public/article_view_clean.html'
 
     return render_template(template,
                            article=article,
@@ -873,7 +822,13 @@ def article_view():
                            comment_count=comment_count,
                            comment_use=comment_use,
                            comment_max_length=comment_max_length,
-                           comment_sort=comment_sort)
+                           comment_sort=comment_sort,
+                           book_articles=book_articles,
+                           tv_articles=tv_articles,
+                           bottom_section_articles=bottom_section_articles,
+                           schedules=schedules,
+                           library_articles=library_articles,
+                           reporter=reporter)
 
 
 def _get_setting(key, default=''):
@@ -915,7 +870,7 @@ def comment_write():
     # 로그인 회원이면 회원 정보 사용
     member_id = session.get('member_id')
     if member_id:
-        member = Member.query.get(member_id)
+        member = db.session.get(Member, member_id)
         if member:
             author_name = member.name
 
@@ -1056,31 +1011,25 @@ COM_PAGES = {
     'emailno':     {'title': '이메일무단수집거부', 'group': '약관 및 정책', 'content': 'com/emailno.html'},
     'ad':          {'title': '광고문의',           'group': '고객센터',    'content': 'com/event_form.html', 'event_code': 'event1'},
     'jb':          {'title': '기사제보',           'group': '고객센터',    'content': 'com/event_form.html', 'event_code': 'event4'},
-    'kd':          {'title': '구독신청',           'group': '고객센터',    'content': 'com/event_kd.html',   'event_code': 'event5'},
     'copy':        {'title': '저작권문의',         'group': '고객센터',    'content': 'com/event_form.html', 'event_code': 'event3'},
-    'bp':          {'title': '불편신고',           'group': '고객센터',    'content': 'com/event_form.html', 'event_code': 'event6'},
-    'tg':          {'title': '독자투고',           'group': '고객센터',    'content': 'com/event_form.html', 'event_code': 'event7'},
     'jh':          {'title': '제휴문의',           'group': '고객센터',    'content': 'com/event_form.html', 'event_code': 'event2'},
 }
 
 COM_NAV = [
-    {'group': '매체소개', 'links': [
+    {'group': '매체소개', 'group_en': 'ABOUT', 'links': [
         {'code': 'com-1', 'title': '인사말'},
         {'code': 'com-2', 'title': '찾아오시는길'},
     ]},
-    {'group': '약관 및 정책', 'links': [
+    {'group': '약관 및 정책', 'group_en': 'POLICY', 'links': [
         {'code': 'service', 'title': '이용약관'},
         {'code': 'privacy', 'title': '개인정보처리방침'},
         {'code': 'youthpolicy', 'title': '청소년보호정책'},
         {'code': 'copyright', 'title': '저작권보호정책'},
         {'code': 'emailno', 'title': '이메일무단수집거부'},
     ]},
-    {'group': '고객센터', 'links': [
+    {'group': '고객센터', 'group_en': 'SUPPORT', 'links': [
         {'code': 'jb', 'title': '기사제보'},
-        {'code': 'kd', 'title': '구독신청'},
         {'code': 'ad', 'title': '광고문의'},
-        {'code': 'bp', 'title': '불편신고'},
-        {'code': 'tg', 'title': '독자투고'},
         {'code': 'jh', 'title': '제휴문의'},
         {'code': 'copy', 'title': '저작권문의'},
     ]},
@@ -1097,9 +1046,16 @@ def com_page(page_code):
     if 'event_code' in page:
         s = SiteSetting.query.filter_by(key='recaptcha_site_key').first()
         recaptcha_site_key = s.value if s and s.value else ''
+    # DB에 저장된 내용이 있으면 우선 사용 (폼 페이지 제외)
+    db_content = None
+    if 'event_code' not in page:
+        setting = SiteSetting.query.filter_by(key=f'com_page_{page_code}').first()
+        if setting and setting.value:
+            db_content = setting.value
     return render_template('public/com_page.html',
                            page=page, page_code=page_code, com_nav=COM_NAV,
-                           recaptcha_site_key=recaptcha_site_key)
+                           recaptcha_site_key=recaptcha_site_key,
+                           db_content=db_content)
 
 
 @public_bp.route('/com/event/submit', methods=['POST'])
@@ -1227,13 +1183,18 @@ def bbs_list():
     # 전체 글 수 기반 번호 계산용
     total = pagination.total
 
+    sidebar_opinion, sidebar_popular, popular_today, popular_week = _get_sidebar_data()
+
     return render_template('public/bbs_list.html',
                            board=board,
                            posts=pagination.items,
                            pagination=pagination,
                            total=total,
                            sc_area=sc_area,
-                           sc_word=sc_word)
+                           sc_word=sc_word,
+                           sidebar_opinion=sidebar_opinion,
+                           popular_today=popular_today,
+                           popular_week=popular_week)
 
 
 @public_bp.route('/bbs/view.html')
@@ -1289,7 +1250,7 @@ def bbs_view():
     member = None
     member_id = session.get('member_id')
     if member_id:
-        member = Member.query.get(member_id)
+        member = db.session.get(Member, member_id)
 
     return render_template('public/bbs_view.html',
                            board=post.board,
@@ -1311,8 +1272,38 @@ def bbs_write_form():
         abort(404)
     # 답글 모드
     reply_to = request.args.get('reply_to', 0, type=int)
-    parent_post = BoardPost.query.get(reply_to) if reply_to else None
+    parent_post = db.session.get(BoardPost, reply_to) if reply_to else None
     return render_template('public/bbs_write.html', board=board, parent_post=parent_post)
+
+
+@public_bp.route('/bbs/upload', methods=['POST'])
+def bbs_upload():
+    """게시판 이미지/파일 업로드 API"""
+    import uuid, os
+    from werkzeug.utils import secure_filename
+    from app.utils.cloud_storage import upload_file
+
+    f = request.files.get('file')
+    if not f or not f.filename:
+        return jsonify({'error': '파일이 없습니다.'}), 400
+
+    original = secure_filename(f.filename) or 'upload'
+    ext = original.rsplit('.', 1)[-1].lower() if '.' in original else ''
+    allowed = {'jpg', 'jpeg', 'png', 'gif', 'webp', 'pdf', 'doc', 'docx', 'hwp', 'hwpx', 'zip', 'txt'}
+    if ext not in allowed:
+        return jsonify({'error': f'허용되지 않는 파일 형식: .{ext}'}), 400
+
+    filename = f"{uuid.uuid4().hex}.{ext}"
+    filepath = os.path.join(current_app.config['UPLOAD_FOLDER'], filename)
+    f.save(filepath)
+
+    is_image = ext in {'jpg', 'jpeg', 'png', 'gif', 'webp'}
+    resource_type = 'image' if is_image else 'raw'
+    url = upload_file(filepath, folder='welldying/bbs', resource_type=resource_type)
+    if not url:
+        url = f'/static/uploads/{filename}'
+
+    return jsonify({'url': url, 'filename': original, 'is_image': is_image})
 
 
 @public_bp.route('/bbs/write', methods=['POST'])
@@ -1336,7 +1327,7 @@ def bbs_write():
 
     # 로그인 회원이면 member_id 연동
     member_id = session.get('member_id')
-    current_member = Member.query.get(member_id) if member_id else None
+    current_member = db.session.get(Member, member_id) if member_id else None
 
     post = BoardPost(
         board_id=board.id,
@@ -1467,7 +1458,7 @@ def bbs_reply_write():
 
     # 로그인 회원
     member_id = session.get('member_id')
-    member = Member.query.get(member_id) if member_id else None
+    member = db.session.get(Member, member_id) if member_id else None
 
     reply = BoardReply(
         post_id=post_id,
@@ -1610,7 +1601,7 @@ def poll_vote():
         option_ids = [oid] if oid else []
 
     for oid in option_ids:
-        opt = PollOption.query.get(oid)
+        opt = db.session.get(PollOption, oid)
         if opt and opt.poll_id == poll.id:
             opt.vote_count += 1
 
@@ -1764,3 +1755,266 @@ def member_update():
     db.session.commit()
     flash('회원정보가 수정되었습니다.', 'success')
     return redirect(url_for('public.member_mypage'))
+
+
+# ===== 뉴스레터 =====
+
+@public_bp.route('/newsletter/subscribe', methods=['POST'])
+def newsletter_subscribe():
+    from flask import jsonify
+    email = request.form.get('email', '').strip()
+    name = request.form.get('name', '').strip()
+
+    if not email or '@' not in email:
+        if request.headers.get('X-Requested-With') == 'XMLHttpRequest':
+            return jsonify({'error': '올바른 이메일을 입력해주세요.'}), 400
+        flash('올바른 이메일을 입력해주세요.', 'error')
+        return redirect(request.referrer or url_for('public.index'))
+
+    existing = NewsletterSubscriber.query.filter_by(email=email).first()
+    if existing:
+        if existing.is_active:
+            if request.headers.get('X-Requested-With') == 'XMLHttpRequest':
+                return jsonify({'error': '이미 구독 중인 이메일입니다.'})
+            flash('이미 구독 중인 이메일입니다.', 'info')
+        else:
+            existing.is_active = True
+            existing.name = name or existing.name
+            db.session.commit()
+            if request.headers.get('X-Requested-With') == 'XMLHttpRequest':
+                return jsonify({'success': True, 'message': '뉴스레터 구독이 재활성화되었습니다.'})
+            flash('뉴스레터 구독이 재활성화되었습니다.', 'success')
+    else:
+        sub = NewsletterSubscriber(email=email, name=name)
+        db.session.add(sub)
+        db.session.commit()
+        if request.headers.get('X-Requested-With') == 'XMLHttpRequest':
+            return jsonify({'success': True, 'message': '뉴스레터 구독이 완료되었습니다.'})
+        flash('뉴스레터 구독이 완료되었습니다.', 'success')
+
+    return redirect(request.referrer or url_for('public.index'))
+
+
+@public_bp.route('/newsletter/unsubscribe')
+def newsletter_unsubscribe():
+    email = request.args.get('email', '').strip()
+    if email:
+        sub = NewsletterSubscriber.query.filter_by(email=email).first()
+        if sub:
+            sub.is_active = False
+            db.session.commit()
+            flash('뉴스레터 구독이 해지되었습니다.', 'success')
+        else:
+            flash('등록되지 않은 이메일입니다.', 'error')
+    return render_template('public/newsletter_unsubscribe.html')
+
+
+# ===== 뉴스레터 웹 보기 =====
+
+@public_bp.route('/newsletter/archive')
+def newsletter_archive():
+    page = request.args.get('page', 1, type=int)
+    pagination = Newsletter.query.filter_by(status='published').order_by(
+        Newsletter.volume_number.desc()
+    ).paginate(page=page, per_page=12, error_out=False)
+    sidebar_opinion, sidebar_popular, popular_today, popular_week = _get_sidebar_data()
+    return render_template('public/newsletter_archive.html',
+                           newsletters=pagination.items, pagination=pagination,
+                           sidebar_opinion=sidebar_opinion, popular_today=popular_today,
+                           popular_week=popular_week)
+
+
+@public_bp.route('/newsletter/<slug>')
+def newsletter_view(slug):
+    nl = Newsletter.query.filter_by(slug=slug, status='published').first_or_404()
+    nl.view_count = (nl.view_count or 0) + 1
+    db.session.commit()
+    sections = nl.sections
+
+    def _resolve_items(items):
+        resolved = []
+        for item in (items or []):
+            if item.get('type') == 'article' and item.get('article_id'):
+                art = db.session.get(Article, item['article_id'])
+                if art:
+                    resolved.append({
+                        'type': 'article',
+                        'title': art.title,
+                        'summary': art.summary_text,
+                        'image': art.thumb_url,
+                        'link': f'/news/articleView.html?idxno={art.id}',
+                        'author': art.author_name or '',
+                    })
+            elif item.get('type') == 'custom':
+                resolved.append(item)
+        return resolved
+
+    focus_items = _resolve_items(sections.get('focus', {}).get('items', []))
+    opinion_items = _resolve_items(sections.get('opinion', {}).get('items', []))
+
+    video_items = []
+    for v in sections.get('videos', {}).get('items', []):
+        yt_match = re.search(r'(?:youtube\.com/(?:watch\?v=|embed/)|youtu\.be/)([\w-]{11})', v.get('youtube_url', ''))
+        thumb = f"https://img.youtube.com/vi/{yt_match.group(1)}/hqdefault.jpg" if yt_match else ''
+        video_items.append({**v, 'thumbnail': thumb, 'video_id': yt_match.group(1) if yt_match else ''})
+
+    # 지난 뉴스레터 (현재 제외, 최근 4개)
+    recent_newsletters = Newsletter.query.filter(
+        Newsletter.status == 'published', Newsletter.id != nl.id
+    ).order_by(Newsletter.volume_number.desc()).limit(4).all()
+
+    # 모바일 감지
+    ua = request.headers.get('User-Agent', '')
+    mobile = bool(re.search(r'Mobile|Android|iPhone|iPod|Opera Mini|IEMobile', ua, re.I))
+    if request.cookies.get('view_pc') == 'y':
+        mobile = False
+
+    template = 'public/newsletter_view.html' if mobile else 'public/newsletter_view_magazine.html'
+    return render_template(template,
+                           newsletter=nl, sections=sections,
+                           focus_items=focus_items, opinion_items=opinion_items,
+                           video_items=video_items,
+                           recent_newsletters=recent_newsletters)
+
+
+# ===== 주요일정 =====
+
+@public_bp.route('/schedule/list.html')
+def schedule_list():
+    page = request.args.get('page', 1, type=int)
+    category = request.args.get('category', '')
+    view = request.args.get('view', 'list')  # list / calendar
+
+    query = Schedule.query.filter_by(is_active=True)
+    if category:
+        query = query.filter_by(category=category)
+
+    pagination = query.order_by(Schedule.event_date.desc()).paginate(
+        page=page, per_page=20, error_out=False
+    )
+
+    categories = db.session.query(Schedule.category).filter(
+        Schedule.is_active == True, Schedule.category != ''
+    ).distinct().all()
+    categories = [c[0] for c in categories]
+
+    # 캘린더 뷰용: 현재 월의 일정
+    import calendar as cal_module
+    year = request.args.get('year', datetime.now().year, type=int)
+    month = request.args.get('month', datetime.now().month, type=int)
+    first_day = datetime(year, month, 1)
+    if month == 12:
+        last_day = datetime(year + 1, 1, 1)
+    else:
+        last_day = datetime(year, month + 1, 1)
+
+    month_schedules = Schedule.query.filter(
+        Schedule.is_active == True,
+        Schedule.event_date >= first_day,
+        Schedule.event_date < last_day
+    ).order_by(Schedule.event_date).all()
+
+    cal_data = cal_module.monthcalendar(year, month)
+
+    return render_template('public/schedule_list.html',
+                           schedules=pagination.items,
+                           pagination=pagination,
+                           category=category,
+                           categories=categories,
+                           view=view,
+                           year=year, month=month,
+                           cal_data=cal_data,
+                           month_schedules=month_schedules)
+
+
+@public_bp.route('/api/schedules')
+def api_schedules():
+    """React 캘린더용 일정 API"""
+    import calendar as cal_module
+
+    year = request.args.get('year', datetime.now().year, type=int)
+    month = request.args.get('month', datetime.now().month, type=int)
+
+    first_day = datetime(year, month, 1)
+    if month == 12:
+        last_day = datetime(year + 1, 1, 1)
+    else:
+        last_day = datetime(year, month + 1, 1)
+
+    # 해당 월의 일정
+    month_schedules = Schedule.query.filter(
+        Schedule.is_active == True,
+        Schedule.event_date >= first_day,
+        Schedule.event_date < last_day
+    ).order_by(Schedule.event_date).all()
+
+    # 오늘 이후 예정 일정 (최대 15건)
+    now = datetime.now()
+    upcoming = Schedule.query.filter(
+        Schedule.is_active == True,
+        Schedule.event_date >= now
+    ).order_by(Schedule.event_date).limit(15).all()
+
+    # 최신순 전체 일정 (사이드바용)
+    recent = Schedule.query.filter(
+        Schedule.is_active == True
+    ).order_by(Schedule.event_date.desc()).all()
+
+    def serialize(s):
+        return {
+            'id': s.id,
+            'title': s.title,
+            'description': s.description or '',
+            'content': s.content or '',
+            'event_date': s.event_date.isoformat() if s.event_date else '',
+            'end_date': s.end_date.isoformat() if s.end_date else None,
+            'location': s.location or '',
+            'category': s.category or '',
+            'link_url': s.link_url or '',
+            'image_url': s.image_url or '',
+            'is_active': s.is_active,
+        }
+
+    return jsonify({
+        'schedules': [serialize(s) for s in month_schedules],
+        'upcoming': [serialize(s) for s in upcoming],
+        'recent': [serialize(s) for s in recent],
+    })
+
+
+@public_bp.route('/api/schedules/search')
+def api_schedules_search():
+    """일정 제목 검색 API"""
+    q = request.args.get('q', '').strip()
+    if not q:
+        return jsonify({'results': []})
+
+    results = Schedule.query.filter(
+        Schedule.is_active == True,
+        Schedule.title.contains(q)
+    ).order_by(Schedule.event_date.desc()).limit(20).all()
+
+    def serialize(s):
+        return {
+            'id': s.id,
+            'title': s.title,
+            'description': s.description or '',
+            'content': s.content or '',
+            'event_date': s.event_date.isoformat() if s.event_date else '',
+            'end_date': s.end_date.isoformat() if s.end_date else None,
+            'location': s.location or '',
+            'category': s.category or '',
+            'link_url': s.link_url or '',
+            'image_url': s.image_url or '',
+            'is_active': s.is_active,
+        }
+
+    return jsonify({'results': [serialize(s) for s in results]})
+
+
+@public_bp.route('/schedule/view/<int:schedule_id>')
+def schedule_view(schedule_id):
+    schedule = Schedule.query.get_or_404(schedule_id)
+    if not schedule.is_active:
+        abort(404)
+    return render_template('public/schedule_view.html', schedule=schedule)

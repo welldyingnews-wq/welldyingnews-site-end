@@ -1,0 +1,74 @@
+{% extends "admin/base.html" %}
+{% block nav_title %}기자관리{% endblock %}
+
+{% block content %}
+<div class="d-flex justify-content-between align-items-center mb-3">
+    <h4>기자 관리</h4>
+    <a href="{{ url_for('admin.reporter_new') }}" class="btn btn-primary btn-sm">
+        <i class="bi bi-plus-lg"></i> 기자등록
+    </a>
+</div>
+
+<div class="table-responsive">
+    <table class="table table-hover">
+        <thead class="table-light">
+            <tr>
+                <th>이름</th>
+                <th>아이디</th>
+                <th>이메일</th>
+                <th>부서</th>
+                <th>권한</th>
+                <th>상태</th>
+                <th>등록일</th>
+                <th style="width:90px">관리</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for u in users %}
+            <tr>
+                <td>
+                    <a href="{{ url_for('admin.reporter_edit', user_id=u.id) }}" class="text-decoration-none fw-bold d-flex align-items-center gap-2">
+                        {% if u.photo %}
+                        <img src="{{ u.photo }}" style="width:32px;height:32px;border-radius:50%;object-fit:cover;object-position:{{ u.photo_pos or 'center center' }};flex-shrink:0">
+                        {% else %}
+                        <span style="width:32px;height:32px;border-radius:50%;background:#e9ecef;display:inline-flex;align-items:center;justify-content:center;flex-shrink:0"><i class="bi bi-person-fill" style="color:#adb5bd"></i></span>
+                        {% endif %}
+                        {{ u.name }}
+                    </a>
+                </td>
+                <td>{{ u.user_id }}</td>
+                <td>{{ u.email or '-' }}</td>
+                <td>{{ u.department or '-' }}</td>
+                <td>
+                    {% if u.level == 'admin' %}
+                    <span class="badge bg-danger">관리자</span>
+                    {% elif u.level == 'editor' %}
+                    <span class="badge bg-warning text-dark">편집자</span>
+                    {% else %}
+                    <span class="badge bg-info">기자</span>
+                    {% endif %}
+                </td>
+                <td>
+                    {% if u.is_dormant %}
+                    <span class="badge bg-secondary">휴면</span>
+                    {% elif u.is_active %}
+                    <span class="badge bg-success">활성</span>
+                    {% else %}
+                    <span class="badge bg-danger">비활성</span>
+                    {% endif %}
+                </td>
+                <td><small>{{ u.created_at.strftime('%Y-%m-%d') if u.created_at else '-' }}</small></td>
+                <td>
+                    <a href="{{ url_for('admin.reporter_edit', user_id=u.id) }}" class="btn btn-sm btn-outline-primary"><i class="bi bi-pencil"></i></a>
+                    <form method="post" action="{{ url_for('admin.reporter_delete', user_id=u.id) }}" class="d-inline" onsubmit="return confirm('정말 삭제하시겠습니까?')">
+                        <button class="btn btn-sm btn-outline-danger"><i class="bi bi-trash"></i></button>
+                    </form>
+                </td>
+            </tr>
+            {% else %}
+            <tr><td colspan="8" class="text-center text-muted py-4">등록된 기자가 없습니다.</td></tr>
+            {% endfor %}
+        </tbody>
+    </table>
+</div>
+{% endblock %}

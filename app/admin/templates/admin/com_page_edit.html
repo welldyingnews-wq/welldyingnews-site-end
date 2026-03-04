@@ -1,0 +1,121 @@
+{% extends "admin/base.html" %}
+{% block nav_title %}정보페이지 편집{% endblock %}
+
+{% block extra_head %}
+<link rel="stylesheet" href="https://cdn.ckeditor.com/ckeditor5/43.3.1/ckeditor5.css">
+<style>
+    .ck-editor__editable {
+        min-height: 500px;
+        font-size: 15px;
+        line-height: 1.7;
+    }
+    .ck-editor__editable table th,
+    .ck-editor__editable table td {
+        border: 1px solid #ddd;
+        padding: 8px 12px;
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="d-flex align-items-center mb-3">
+    <a href="{{ url_for('admin.com_page_list') }}" class="btn btn-sm btn-outline-secondary me-3">
+        <i class="bi bi-arrow-left"></i> 목록
+    </a>
+    <h5 class="mb-0">
+        <span class="badge bg-secondary me-1">{{ page_info.group }}</span>
+        {{ page_info.title }}
+    </h5>
+    <a href="/com/{{ page_code }}.html" target="_blank" class="btn btn-sm btn-outline-info ms-2">
+        <i class="bi bi-eye"></i> 미리보기
+    </a>
+</div>
+
+<form method="post" action="{{ url_for('admin.com_page_edit', page_code=page_code) }}">
+    <div class="card">
+        <div class="card-body">
+            <textarea name="content" id="editor" style="display:none">{{ content }}</textarea>
+        </div>
+        <div class="card-footer d-flex justify-content-end gap-2">
+            <a href="{{ url_for('admin.com_page_list') }}" class="btn btn-secondary">취소</a>
+            <button type="submit" class="btn btn-primary"><i class="bi bi-check-lg"></i> 저장</button>
+        </div>
+    </div>
+</form>
+{% endblock %}
+
+{% block extra_scripts %}
+<script type="importmap">
+{
+    "imports": {
+        "ckeditor5": "https://cdn.ckeditor.com/ckeditor5/43.3.1/ckeditor5.js",
+        "ckeditor5/": "https://cdn.ckeditor.com/ckeditor5/43.3.1/"
+    }
+}
+</script>
+<script type="module">
+    import {
+        ClassicEditor,
+        Essentials, Paragraph, Heading, Undo,
+        Bold, Italic, Underline, Strikethrough,
+        Link, List, Indent, IndentBlock,
+        Table, TableToolbar, TableProperties, TableCellProperties,
+        Alignment,
+        SourceEditing,
+        HorizontalLine,
+        GeneralHtmlSupport
+    } from 'ckeditor5';
+    import koTranslations from 'ckeditor5/translations/ko.js';
+
+    ClassicEditor.create(document.querySelector('#editor'), {
+        plugins: [
+            Essentials, Paragraph, Heading, Undo,
+            Bold, Italic, Underline, Strikethrough,
+            Link, List, Indent, IndentBlock,
+            Table, TableToolbar, TableProperties, TableCellProperties,
+            Alignment,
+            SourceEditing,
+            HorizontalLine,
+            GeneralHtmlSupport
+        ],
+        toolbar: {
+            items: [
+                'heading', '|',
+                'bold', 'italic', 'underline', 'strikethrough', '|',
+                'link', '|',
+                'bulletedList', 'numberedList', '|',
+                'outdent', 'indent', '|',
+                'alignment', '|',
+                'insertTable', 'horizontalLine', '|',
+                'undo', 'redo', '|',
+                'sourceEditing'
+            ]
+        },
+        heading: {
+            options: [
+                { model: 'paragraph', title: '본문', class: 'ck-heading_paragraph' },
+                { model: 'heading3', view: 'h3', title: '제목 3', class: 'ck-heading_heading3' },
+                { model: 'heading4', view: 'h4', title: '제목 4', class: 'ck-heading_heading4' },
+                { model: 'heading5', view: 'h5', title: '제목 5', class: 'ck-heading_heading5' },
+                { model: 'heading6', view: 'h6', title: '제목 6', class: 'ck-heading_heading6' }
+            ]
+        },
+        table: {
+            contentToolbar: ['tableColumn', 'tableRow', 'mergeTableCells', 'tableProperties', 'tableCellProperties']
+        },
+        htmlSupport: {
+            allow: [
+                { name: /.*/, attributes: true, classes: true, styles: true }
+            ]
+        },
+        language: 'ko',
+        translations: [koTranslations]
+    }).then(editor => {
+        window.editorInstance = editor;
+        // form submit 시 내용 동기화
+        editor.sourceElement.closest('form').addEventListener('submit', function() {
+            document.querySelector('textarea[name="content"]').value = editor.getData();
+        });
+    }).catch(error => console.error('CKEditor 초기화 실패:', error));
+</script>
+{% endblock %}

@@ -1,4 +1,5 @@
 {% extends "public/base_v0.html" %}
+{% from "public/_banner_macros.html" import banner_img %}
 
 {% block content %}
 
@@ -12,7 +13,6 @@
         {% for art in headline_articles %}
         <span class="ticker__item"><a href="/news/articleView.html?idxno={{ art.id }}">{{ art.title }}</a></span>
         {% endfor %}
-        {# duplicate for seamless loop #}
         {% for art in headline_articles %}
         <span class="ticker__item"><a href="/news/articleView.html?idxno={{ art.id }}">{{ art.title }}</a></span>
         {% endfor %}
@@ -22,112 +22,362 @@
 </div>
 {% endif %}
 
-<!-- =========== HERO SLIDER =========== -->
+<!-- =========== HEADLINE (1면 — 왼쪽 메인 + 오른쪽 Top Story) =========== -->
 {% if headline_articles %}
-<section class="hero" id="heroSection" style="background: linear-gradient(135deg, rgba(26,74,74,0.92), rgba(42,107,107,0.75)); color: var(--primary-fg);">
-  <div class="hero__inner">
-    <div class="hero__content">
-      {% for art in headline_articles %}
-      <div class="hero__slide" {% if not loop.first %}style="display:none"{% endif %}>
-        <span class="hero__tag">
-          {% if art.section %}{{ art.section.name }}{% endif %}
-        </span>
-        <h2 class="hero__title">{{ art.title }}</h2>
-        {% if art.subtitle %}
-        <p class="hero__excerpt">{{ art.subtitle }}</p>
-        {% endif %}
-        <div class="hero__meta">
-          <span class="hero__date">{{ art.created_at.strftime('%Y.%m.%d') if art.created_at else '' }}</span>
-          <a href="/news/articleView.html?idxno={{ art.id }}" class="hero__link">자세히 보기</a>
-        </div>
+<div class="container" style="padding-top: 1.5rem; padding-bottom: 1.5rem;">
+  <div class="hl">
+    <!-- 왼쪽: 메인 기사 (이미지 위 오버레이 제목) -->
+    <a href="/news/articleView.html?idxno={{ headline_articles[0].id }}" class="hl__main">
+      {% if headline_articles[0].thumb_url %}
+      <img src="{{ headline_articles[0].thumb_url }}" alt="" class="hl__main-img" loading="eager">
+      {% else %}
+      <div class="hl__main-placeholder"></div>
+      {% endif %}
+      <div class="hl__main-overlay">
+        <h2 class="hl__main-title line-clamp-3">{{ headline_articles[0].title }}</h2>
       </div>
+    </a>
+
+    <!-- 오른쪽: Top Story 리스트 -->
+    <div class="hl__side">
+      {% if headline_articles|length > 1 %}
+      <a href="/news/articleView.html?idxno={{ headline_articles[1].id }}" class="hl__side-featured">
+        <div class="hl__side-featured-img">
+          {% if headline_articles[1].thumb_url %}
+          <img src="{{ headline_articles[1].thumb_url }}" alt="" loading="lazy">
+          {% else %}
+          <div class="hl__side-featured-placeholder"></div>
+          {% endif %}
+        </div>
+        <h3 class="hl__side-featured-title line-clamp-2">{{ headline_articles[1].title }}</h3>
+      </a>
+      {% endif %}
+      {% for art in headline_articles[2:5] %}
+      <a href="/news/articleView.html?idxno={{ art.id }}" class="hl__side-item">
+        {% if art.thumb_url %}
+        <div class="hl__side-thumb">
+          <img src="{{ art.thumb_url }}" alt="" loading="lazy">
+        </div>
+        {% endif %}
+        <div class="hl__side-body">
+          <h3 class="hl__side-title line-clamp-2">{{ art.title }}</h3>
+        </div>
+      </a>
       {% endfor %}
     </div>
   </div>
-
-  <!-- Navigation -->
-  <div class="hero__nav">
-    <button class="hero__nav-btn" onclick="heroNav(-1)" aria-label="이전 기사"><i class="fa-solid fa-chevron-left"></i></button>
-    <span class="hero__nav-count" id="heroCount">1 / {{ headline_articles|length }}</span>
-    <button class="hero__nav-btn" onclick="heroNav(1)" aria-label="다음 기사"><i class="fa-solid fa-chevron-right"></i></button>
-  </div>
-
-  <!-- Dots -->
-  <div class="hero__dots">
-    {% for art in headline_articles %}
-    <button class="hero__dot{% if loop.first %} hero__dot--active{% endif %}" onclick="heroGo({{ loop.index0 }})" aria-label="슬라이드 {{ loop.index }}"></button>
-    {% endfor %}
-  </div>
-</section>
+</div>
 {% endif %}
 
-<!-- =========== MAIN CONTENT =========== -->
+<!-- 하단(footer) 배너 (모바일: 오피니언 위) -->
+{% if banners.get('footer') %}
+<div class="mob-only">
+  <div class="container mob-section">
+    <div class="banner-area" style="text-align:center">
+      {% for b in banners['footer'] %}
+      <a href="{{ url_for('public.banner_click', banner_id=b.id) }}" target="_blank" rel="noopener">
+        {{ banner_img(b, 'banner-bar__img') }}
+      </a>
+      {% endfor %}
+    </div>
+  </div>
+</div>
+{% endif %}
+
+<!-- =========== OPINION (오피니언 — 고정 4카드) =========== -->
+{% if opinion_articles %}
+<div class="opinion-section">
+  <div class="container">
+    <div class="sec-head">
+      <i class="fa-solid fa-pen-nib"></i>
+      <span class="sec-head__title">오피니언</span>
+      <span class="sec-head__line"></span>
+    </div>
+    <div class="opinion-grid">
+      {% for art in opinion_articles[:4] %}
+      <a href="/news/articleView.html?idxno={{ art.id }}" class="opinion-card">
+        <div class="opinion-avatar">
+          {% if art.thumb_url %}
+          <img src="{{ art.thumb_url }}" alt="" style="object-position:{{ art.author_photo_pos or 'center center' }}">
+          {% else %}
+          {{ art.author_name[:1] if art.author_name else '필' }}
+          {% endif %}
+        </div>
+        {% if art.author_title %}
+        <div class="opinion-name">{{ art.author_title }}</div>
+        {% elif art.author_name and art.author_name != '웰다잉뉴스' %}
+        <div class="opinion-name">{{ art.author_name }}</div>
+        {% endif %}
+        <div class="opinion-title line-clamp-2">{{ art.title }}</div>
+      </a>
+      {% endfor %}
+    </div>
+  </div>
+</div>
+{% endif %}
+
+<!-- =========== MOBILE ONLY: 주요일정 + 자료실 =========== -->
+<div class="mob-only">
+  {% if schedules %}
+  <div class="container mob-section">
+    <div class="sec-head">
+      <i class="fa-regular fa-calendar"></i>
+      <span class="sec-head__title">주요 일정</span>
+      <span class="sec-head__line"></span>
+    </div>
+    <div class="sidebar-timeline">
+      {% for s in schedules[:4] %}
+      <a href="{% if s.link_url %}{{ s.link_url }}{% else %}/schedule/list.html{% endif %}" class="stl-item"{% if s.link_url %} target="_blank" rel="noopener"{% endif %}>
+        <span class="stl-dot"></span>
+        <span class="stl-content">
+          <span class="stl-period">{{ s.event_date.strftime('%m.%d') }}{% if s.end_date %} ~ {{ s.end_date.strftime('%m.%d') }}{% endif %}</span>
+          <span class="stl-title line-clamp-2">{{ s.title }}</span>
+        </span>
+      </a>
+      {% endfor %}
+    </div>
+  </div>
+  {% endif %}
+
+  <!-- 사이드바 하단 배너 (모바일: 주요일정 아래) -->
+  {% if banners.get('sidebar_bottom') %}
+  <div class="container mob-section">
+    <div class="banner-area" style="text-align:center">
+      {% for b in banners['sidebar_bottom'] %}
+      <a href="{{ url_for('public.banner_click', banner_id=b.id) }}" target="_blank" rel="noopener">
+        {{ banner_img(b) }}
+      </a>
+      {% endfor %}
+    </div>
+  </div>
+  {% endif %}
+
+  {% if library_articles %}
+  <div class="container mob-section">
+    <div class="sec-head">
+      <i class="fa-regular fa-file-lines"></i>
+      <span class="sec-head__title">자료실</span>
+      <span class="sec-head__line"></span>
+    </div>
+    <div class="mob-res-list">
+      {% for art in library_articles[:5] %}
+      <a href="/news/articleView.html?idxno={{ art.id }}" class="mob-res-item">
+        <span class="mob-res-icon"><i class="fa-regular fa-file-lines"></i></span>
+        <span class="mob-res-title line-clamp-2">{{ art.title }}</span>
+      </a>
+      {% endfor %}
+    </div>
+  </div>
+  {% endif %}
+</div>
+
+<!-- =========== MAIN CONTENT (주요기사 + 사이드바) =========== -->
 <div class="container section-gap">
   <div class="main-grid">
 
-    <!-- ===== CONTENT (2/3) ===== -->
+    <!-- ===== CONTENT (2/3) — 주요 기사 ===== -->
     <div>
-      <!-- Latest Articles -->
       <div class="sec-head">
-        <i class="fa-regular fa-clock"></i>
-        <span class="sec-head__title">최신 기사</span>
+        <i class="fa-regular fa-star"></i>
+        <span class="sec-head__title">주요 기사</span>
         <span class="sec-head__line"></span>
       </div>
-      <div class="latest-list">
+      <div class="latest-grid">
         {% for art in latest_articles %}
-        <a href="/news/articleView.html?idxno={{ art.id }}" class="latest-item">
-          <div class="latest-item__body">
-            <div class="latest-item__meta">
-              <span class="latest-item__cat">
-                {% if art.subsection %}{{ art.subsection.name }}{% elif art.section %}{{ art.section.name }}{% endif %}
-              </span>
-              {% if loop.index <= 2 %}
-              <span class="latest-item__new">NEW</span>
+        <a href="/news/articleView.html?idxno={{ art.id }}" class="latest-card">
+          <div class="latest-card__thumb">
+            {% if art.thumb_url %}
+            <img src="{{ art.thumb_url }}" alt="" loading="lazy">
+            {% endif %}
+          </div>
+          <div class="latest-card__body">
+            <h4 class="latest-card__title line-clamp-2">{{ art.title }}</h4>
+            {% if art.summary_text %}
+            <p class="latest-card__excerpt line-clamp-2">{{ art.summary_text }}</p>
+            {% endif %}
+          </div>
+        </a>
+        {% endfor %}
+      </div>
+
+      <!-- Books (최신 기사 하단, Pressian 스타일) -->
+      {% if book_articles %}
+      <div class="books-inline">
+        <div class="books-header">
+          <span class="books-header__title">Books</span>
+          <a href="/news/articleList.html?sc_sub_section_code=S2N17" class="books-header__more">더보기 <i class="fa-solid fa-chevron-right" style="font-size:0.625rem"></i></a>
+        </div>
+
+        <div class="books-stage">
+          <!-- Featured book slides -->
+          {% for art in book_articles %}
+          <a href="/news/articleView.html?idxno={{ art.id }}" class="books-featured{% if loop.first %} books-featured--active{% endif %}" id="bookSlide{{ loop.index0 }}">
+            <div class="books-featured__cover">
+              {% if art.thumb_url %}
+              <img src="{{ art.thumb_url }}" alt="{{ art.title }}">
+              {% else %}
+              <div class="books-featured__placeholder">{{ art.title }}</div>
               {% endif %}
             </div>
-            <h4 class="latest-item__title line-clamp-2">{{ art.title }}</h4>
-          </div>
-          <time class="latest-item__date tabular-nums">{{ art.created_at.strftime('%Y.%m.%d') if art.created_at else '' }}</time>
-        </a>
-        {% endfor %}
+            <div class="books-featured__info">
+              <h3 class="books-featured__quote line-clamp-3">{{ art.title }}</h3>
+              {% if art.summary_text and art.summary_text.strip() %}
+              <p class="books-featured__desc line-clamp-3">{{ art.summary_text }}</p>
+              {% elif art.subtitle_text %}
+              <p class="books-featured__desc line-clamp-3">{{ art.subtitle_text }}</p>
+              {% endif %}
+              {% if art.author_name and art.author_name != '웰다잉뉴스' %}
+              <span class="books-featured__author">{{ art.author_name }}</span>
+              {% endif %}
+            </div>
+          </a>
+          {% endfor %}
+
+          <!-- Nav arrows -->
+          <button class="books-nav-arrow books-nav-arrow--prev" onclick="bookNav(-1)" aria-label="이전 도서"><i class="fa-solid fa-chevron-left"></i></button>
+          <button class="books-nav-arrow books-nav-arrow--next" onclick="bookNav(1)" aria-label="다음 도서"><i class="fa-solid fa-chevron-right"></i></button>
+        </div>
+
+        <!-- Thumbnail row -->
+        <div class="books-thumbs">
+          {% for art in book_articles %}
+          <a href="javascript:void(0)" class="books-thumb-card" onclick="bookGo({{ loop.index0 }})">
+            {% if art.thumb_url %}
+            <img src="{{ art.thumb_url }}" alt="{{ art.title }}" loading="lazy">
+            {% else %}
+            <div style="width:100%;aspect-ratio:3/4;background:#d5d3cf;border-radius:0.25rem;"></div>
+            {% endif %}
+          </a>
+          {% endfor %}
+        </div>
       </div>
+      {% endif %}
+
+      <!-- 웰다잉TV (Books 하단, 사이드바 옆) -->
+      {% if tv_articles %}
+      <div class="vid-inline">
+        <div class="sec-head">
+          <i class="fa-solid fa-play"></i>
+          <span class="sec-head__title">웰다잉TV</span>
+          <span class="sec-head__line"></span>
+        </div>
+        <div class="vid-inline-grid">
+          <!-- 메인 영상 -->
+          <a href="/news/articleView.html?idxno={{ tv_articles[0].id }}" class="vid-inline-main">
+            <div class="vid-thumb">
+              {% if tv_articles[0].thumb_url %}
+              <img src="{{ tv_articles[0].thumb_url }}" alt="" loading="lazy">
+              {% endif %}
+              <div class="vid-play vid-play--lg"><i class="fa-solid fa-play"></i></div>
+            </div>
+            <div class="vid-inline-main__body">
+              <h4 class="vid-inline-main__title line-clamp-2">{{ tv_articles[0].title }}</h4>
+              <time class="vid-inline-main__date">{{ tv_articles[0].created_at.strftime('%Y.%m.%d') if tv_articles[0].created_at else '' }}</time>
+            </div>
+          </a>
+          <!-- 서브 영상 리스트 -->
+          <div class="vid-inline-list">
+            {% for art in tv_articles[1:5] %}
+            <a href="/news/articleView.html?idxno={{ art.id }}" class="vid-inline-item">
+              <div class="vid-inline-item__thumb">
+                {% if art.thumb_url %}
+                <img src="{{ art.thumb_url }}" alt="" loading="lazy">
+                {% endif %}
+                <div class="vid-play"><i class="fa-solid fa-play"></i></div>
+              </div>
+              <h4 class="vid-inline-item__title line-clamp-2">{{ art.title }}</h4>
+            </a>
+            {% endfor %}
+          </div>
+        </div>
+      </div>
+      {% endif %}
+
     </div>
 
-    <!-- ===== SIDEBAR (1/3) ===== -->
+    <!-- ===== SIDEBAR (1/3) — 주요일정 + 자료실 + 인기기사 ===== -->
     <aside>
-      <!-- Popular Articles -->
+      <!-- 주요 일정 (PC만 — 모바일은 상단 mob-only 블록에서 표시) -->
+      {% if schedules %}
+      <div class="sidebar-schedule-wrap desk-only">
+        <div class="sec-head">
+          <i class="fa-regular fa-calendar"></i>
+          <span class="sec-head__title">주요 일정</span>
+        </div>
+        <div class="sidebar-timeline">
+          {% for s in schedules[:4] %}
+          <a href="{% if s.link_url %}{{ s.link_url }}{% else %}/schedule/list.html{% endif %}" class="stl-item"{% if s.link_url %} target="_blank" rel="noopener"{% endif %}>
+            <span class="stl-dot"></span>
+            <span class="stl-content">
+              <span class="stl-period">{{ s.event_date.strftime('%m.%d') }}{% if s.end_date %} ~ {{ s.end_date.strftime('%m.%d') }}{% endif %}</span>
+              <span class="stl-title line-clamp-2">{{ s.title }}</span>
+            </span>
+          </a>
+          {% endfor %}
+        </div>
+      </div>
+      {% endif %}
+
+      <!-- 자료실 (PC만 — 모바일은 상단 mob-only 블록에서 표시) -->
+      {% if library_articles %}
+      <div class="desk-only">
+        <div class="sec-head" style="margin-top: 1.5rem;">
+          <i class="fa-regular fa-file-lines"></i>
+          <span class="sec-head__title">자료실</span>
+        </div>
+        <div class="sidebar-res">
+          {% for art in library_articles[:4] %}
+          <a href="/news/articleView.html?idxno={{ art.id }}" class="res-item">
+            <h4 class="res-title line-clamp-1">{{ art.title }}</h4>
+          </a>
+          {% endfor %}
+        </div>
+      </div>
+      {% endif %}
+
+      <!-- 많이 본 뉴스 (PC만 — 모바일은 별도 mob-only 블록에서 표시) -->
       {% if popular_today or popular_week %}
-      <div class="sec-head">
-        <i class="fa-solid fa-arrow-trend-up"></i>
-        <span class="sec-head__title">인기 기사</span>
-      </div>
-      <div class="pop-tabs">
-        <button class="pop-tab pop-tab--active" onclick="switchPop(this,'popWeek')">주간</button>
-        <button class="pop-tab" onclick="switchPop(this,'popToday')">오늘</button>
-      </div>
+      <div class="desk-only">
+        <div class="sec-head" style="margin-top: 1.5rem;">
+          <i class="fa-solid fa-arrow-trend-up"></i>
+          <span class="sec-head__title">많이 본 뉴스</span>
+        </div>
+        <div class="pop-tabs">
+          <button class="pop-tab pop-tab--active" onclick="switchPop(this,'popWeek')">주간</button>
+          <button class="pop-tab" onclick="switchPop(this,'popToday')">오늘</button>
+        </div>
 
-      <!-- Weekly -->
-      <div class="pop-list" id="popWeek">
-        {% for art in popular_week %}
-        <a href="/news/articleView.html?idxno={{ art.id }}" class="pop-item">
-          <span class="pop-num {{ 'pop-num--top' if loop.index <= 3 else 'pop-num--rest' }}">{{ loop.index }}</span>
-          {% if art.thumb_url %}
-          <span class="pop-thumb"><img src="{{ art.thumb_url }}" alt="" loading="lazy"></span>
-          {% endif %}
-          <span class="pop-title line-clamp-2">{{ art.title }}</span>
-        </a>
-        {% endfor %}
-      </div>
+        <div class="pop-list" id="popWeek">
+          {% for art in popular_week[:5] %}
+          <a href="/news/articleView.html?idxno={{ art.id }}" class="pop-item">
+            <span class="pop-num {{ 'pop-num--top' if loop.index <= 3 else 'pop-num--rest' }}">{{ loop.index }}</span>
+            {% if art.thumb_url %}
+            <span class="pop-thumb"><img src="{{ art.thumb_url }}" alt="" loading="lazy"></span>
+            {% endif %}
+            <span class="pop-title line-clamp-2">{{ art.title }}</span>
+          </a>
+          {% endfor %}
+        </div>
 
-      <!-- Today -->
-      <div class="pop-list" id="popToday" style="display:none">
-        {% for art in popular_today %}
-        <a href="/news/articleView.html?idxno={{ art.id }}" class="pop-item">
-          <span class="pop-num {{ 'pop-num--top' if loop.index <= 3 else 'pop-num--rest' }}">{{ loop.index }}</span>
-          {% if art.thumb_url %}
-          <span class="pop-thumb"><img src="{{ art.thumb_url }}" alt="" loading="lazy"></span>
-          {% endif %}
-          <span class="pop-title line-clamp-2">{{ art.title }}</span>
+        <div class="pop-list" id="popToday" style="display:none">
+          {% for art in popular_today[:5] %}
+          <a href="/news/articleView.html?idxno={{ art.id }}" class="pop-item">
+            <span class="pop-num {{ 'pop-num--top' if loop.index <= 3 else 'pop-num--rest' }}">{{ loop.index }}</span>
+            {% if art.thumb_url %}
+            <span class="pop-thumb"><img src="{{ art.thumb_url }}" alt="" loading="lazy"></span>
+            {% endif %}
+            <span class="pop-title line-clamp-2">{{ art.title }}</span>
+          </a>
+          {% endfor %}
+        </div>
+      </div>
+      {% endif %}
+
+      {% if banners.get('sidebar_bottom') %}
+      <div class="banner-area desk-only" style="margin-top:1.25rem">
+        {% for b in banners['sidebar_bottom'] %}
+        <a href="{{ url_for('public.banner_click', banner_id=b.id) }}" target="_blank" rel="noopener">
+          {{ banner_img(b) }}
         </a>
         {% endfor %}
       </div>
@@ -137,253 +387,178 @@
   </div>
 </div>
 
-<!-- =========== CATEGORY SECTIONS =========== -->
-{% if section_articles %}
-<div class="container section-gap" style="border-top: 1px solid var(--border); padding-top: 2rem;">
-  <div class="sec-head">
-    <span class="sec-head__title">카테고리별 기사</span>
-    <span class="sec-head__line"></span>
-  </div>
 
-  <!-- Pill tabs -->
-  <div class="cat-pills" id="catPills">
-    {% for sub, arts in section_articles.items() %}
-    <button class="cat-pill{% if loop.first %} cat-pill--active{% endif %}"
-            data-cat="{{ sub.code }}" onclick="switchCat(this)">{{ sub.name }}</button>
-    {% endfor %}
+<!-- =========== VIDEO SECTION (웰다잉TV — 모바일 전용, PC는 main-grid 안에 표시) =========== -->
+{% if tv_articles %}
+<div class="vid-section-dark pc-hide">
+  <div class="container">
+    <div class="sec-head">
+      <i class="fa-solid fa-play"></i>
+      <span class="sec-head__title">웰다잉TV</span>
+      <span class="sec-head__line"></span>
+    </div>
+    <div class="vid-grid-hero">
+      <!-- 중앙 큰 썸네일 (최신) -->
+      <a href="/news/articleView.html?idxno={{ tv_articles[0].id }}" class="vid-card vid-card--hero">
+        <div class="vid-thumb">
+          {% if tv_articles[0].thumb_url %}
+          <img src="{{ tv_articles[0].thumb_url }}" alt="" loading="lazy">
+          {% endif %}
+          <div class="vid-play vid-play--lg"><i class="fa-solid fa-play"></i></div>
+        </div>
+        <div class="vid-card__body">
+          <h4 class="vid-card__title vid-card__title--hero line-clamp-2">{{ tv_articles[0].title }}</h4>
+        </div>
+      </a>
+      <!-- 하단 작은 카드 -->
+      <div class="vid-side">
+        {% for art in tv_articles[1:4] %}
+        <a href="/news/articleView.html?idxno={{ art.id }}" class="vid-card vid-card--sm">
+          <div class="vid-thumb">
+            {% if art.thumb_url %}
+            <img src="{{ art.thumb_url }}" alt="" loading="lazy">
+            {% endif %}
+            <div class="vid-play"><i class="fa-solid fa-play"></i></div>
+          </div>
+          <div class="vid-card__body">
+            <h4 class="vid-card__title line-clamp-2">{{ art.title }}</h4>
+          </div>
+        </a>
+        {% endfor %}
+      </div>
+    </div>
   </div>
+</div>
+{% endif %}
 
-  <!-- Card grids -->
-  {% for sub, arts in section_articles.items() %}
-  <div class="cat-panel" data-cat="{{ sub.code }}" {% if not loop.first %}style="display:none"{% endif %}>
-    <div class="card-grid">
-      {% for art in arts[:3] %}
-      <a href="/news/articleView.html?idxno={{ art.id }}" class="v0-card">
-        <div class="v0-card__date">{{ art.created_at.strftime('%Y.%m.%d') if art.created_at else '' }}</div>
-        <h4 class="v0-card__title line-clamp-2">{{ art.title }}</h4>
-        {% if art.subtitle %}
-        <p class="v0-card__excerpt line-clamp-2">{{ art.subtitle }}</p>
+<!-- =========== MOBILE ONLY: 많이본뉴스 (웰다잉TV 아래) =========== -->
+{% if popular_today or popular_week %}
+<div class="mob-only">
+  <div class="container mob-section">
+    <div class="sec-head">
+      <i class="fa-solid fa-arrow-trend-up"></i>
+      <span class="sec-head__title">많이 본 뉴스</span>
+      <span class="sec-head__line"></span>
+    </div>
+    <div class="mob-pop-list">
+      {% set mob_popular = popular_week if popular_week else popular_today %}
+      {% for art in mob_popular[:5] %}
+      <a href="/news/articleView.html?idxno={{ art.id }}" class="mob-pop-item">
+        <span class="mob-pop-num {{ 'mob-pop-num--top' if loop.index <= 3 else 'mob-pop-num--rest' }}">{{ loop.index }}</span>
+        {% if art.thumb_url %}
+        <span class="mob-pop-thumb"><img src="{{ art.thumb_url }}" alt="" loading="lazy"></span>
         {% endif %}
+        <span class="mob-pop-title line-clamp-2">{{ art.title }}</span>
       </a>
       {% endfor %}
     </div>
-    <div style="text-align:center; margin-top:1.25rem;">
-      <a href="/news/articleList.html?sc_sub_section_code={{ sub.code }}" class="viewall">{{ sub.name }} 기사 전체보기</a>
-    </div>
   </div>
+</div>
+{% endif %}
+
+<!-- 하단(footer) 배너 (PC: 전체 섹션 기사 위) -->
+{% if banners.get('footer') %}
+<div class="container desk-only" style="display:flex; justify-content:center; flex-wrap:wrap; gap:1rem; margin-bottom:1.5rem;">
+  {% for b in banners['footer'] %}
+  <a href="{{ url_for('public.banner_click', banner_id=b.id) }}" target="_blank" rel="noopener">
+    {{ banner_img(b) }}
+  </a>
   {% endfor %}
 </div>
 {% endif %}
 
-<!-- =========== COLUMNISTS (오피니언) =========== -->
-{% if opinion_articles %}
+<!-- =========== BOTTOM SECTION ARTICLES (섹션별 기사 — 첫기사 사진+제목 1줄 말줄임) =========== -->
+{% if bottom_section_articles %}
 <div class="container section-gap">
-  <div class="sec-head">
-    <span class="sec-head__title">칼럼니스트</span>
-    <span class="sec-head__line"></span>
-  </div>
-  <div class="col-grid">
-    {% for art in opinion_articles %}
-    <a href="/news/articleView.html?idxno={{ art.id }}" class="col-card">
-      <div class="col-avatar">
-        {% if art.thumb_url %}
-        <img src="{{ art.thumb_url }}" alt="">
-        {% else %}
-        {{ art.author_name[:1] if art.author_name else '필' }}
-        {% endif %}
-      </div>
-      <div class="col-info">
-        <div>
-          <span class="col-name">{{ art.author_name or '웰다잉뉴스' }}</span>
-          {% if art.subsection %}<span class="col-role">{{ art.subsection.name }}</span>{% endif %}
+  <div class="bottom-sections">
+    {% for sub, arts in bottom_section_articles.items() %}
+    <div class="bottom-sec-col">
+      <div class="bottom-sec-title">{{ sub.name }} <a href="/news/articleList.html?sc_sub_section_code={{ sub.code }}">&gt;</a></div>
+      {% if arts %}
+      <!-- 첫 기사: 사진 상단 -->
+      <a href="/news/articleView.html?idxno={{ arts[0].id }}" class="bottom-sec-featured">
+        {% if arts[0].thumb_url %}
+        <div class="bottom-sec-featured__img">
+          <img src="{{ arts[0].thumb_url }}" alt="" loading="lazy">
         </div>
-        <h4 class="col-title line-clamp-2">{{ art.title }}</h4>
+        {% endif %}
+      </a>
+      <!-- 나머지 기사: 제목 1줄 말줄임 -->
+      <div class="bottom-sec-list">
+        {% for art in arts[1:5] %}
+        <a href="/news/articleView.html?idxno={{ art.id }}" class="bottom-sec-list-item">{{ art.title }}</a>
+        {% endfor %}
       </div>
-    </a>
+      {% endif %}
+    </div>
     {% endfor %}
   </div>
 </div>
 {% endif %}
 
-<!-- =========== BOOK CAROUSEL =========== -->
-{% if book_articles %}
-<div class="container section-gap">
-  <div class="books-section">
-    <div class="books-head">
-      <div class="sec-head" style="margin-bottom:0">
-        <i class="fa-solid fa-book-open"></i>
-        <span class="sec-head__title">추천 도서</span>
-      </div>
-      <div class="books-nav">
-        <button class="books-nav-btn" onclick="scrollBooks(-1)" aria-label="이전 도서"><i class="fa-solid fa-chevron-left" style="font-size:0.75rem"></i></button>
-        <button class="books-nav-btn" onclick="scrollBooks(1)" aria-label="다음 도서"><i class="fa-solid fa-chevron-right" style="font-size:0.75rem"></i></button>
-      </div>
-    </div>
-    <div class="books-track" id="booksTrack">
-      {% for art in book_articles %}
-      <a href="/news/articleView.html?idxno={{ art.id }}" class="book-card">
-        <div class="book-cover">
-          {% if art.thumb_url %}
-          <img src="{{ art.thumb_url }}" alt="{{ art.title }}" loading="lazy">
-          {% else %}
-          <span>{{ art.title }}</span>
-          {% endif %}
-        </div>
-        <div class="book-card__body">
-          <h4 class="book-card__title line-clamp-2">{{ art.title }}</h4>
-        </div>
-      </a>
-      {% endfor %}
-    </div>
-  </div>
-</div>
-{% endif %}
-
-<!-- =========== VIDEO SECTION =========== -->
-{% if tv_articles %}
-<div class="container section-gap">
-  <div class="sec-head">
-    <i class="fa-solid fa-play"></i>
-    <span class="sec-head__title">영상</span>
-    <span class="sec-head__line"></span>
-  </div>
-  <div class="vid-grid">
-    {% for art in tv_articles[:3] %}
-    <a href="/news/articleView.html?idxno={{ art.id }}" class="vid-card">
-      <div class="vid-thumb">
-        {% if art.thumb_url %}
-        <img src="{{ art.thumb_url }}" alt="" loading="lazy">
-        {% endif %}
-        <div class="vid-play"><i class="fa-solid fa-play"></i></div>
-      </div>
-      <div class="vid-card__body">
-        <h4 class="vid-card__title line-clamp-2">{{ art.title }}</h4>
-        <time class="vid-card__date">{{ art.created_at.strftime('%Y.%m.%d') if art.created_at else '' }}</time>
-      </div>
-    </a>
-    {% endfor %}
-  </div>
-</div>
-{% endif %}
-
-<!-- =========== RESOURCES & EVENTS =========== -->
-{% if library_articles or schedule_articles %}
-<div class="container section-gap">
-  <div class="res-grid">
-    <!-- Resources -->
-    {% if library_articles %}
-    <section>
-      <div class="sec-head">
-        <i class="fa-regular fa-file-lines"></i>
-        <span class="sec-head__title">자료실</span>
-        <span class="sec-head__line"></span>
-      </div>
-      {% for art in library_articles %}
-      <a href="/news/articleView.html?idxno={{ art.id }}" class="res-item">
-        <span class="res-badge">자료</span>
-        <div class="res-body">
-          <h4 class="res-title line-clamp-2">{{ art.title }}</h4>
-          <div class="res-org">{{ art.author_name or '웰다잉뉴스' }}</div>
-        </div>
-      </a>
-      {% endfor %}
-    </section>
-    {% endif %}
-
-    <!-- Events -->
-    {% if schedule_articles %}
-    <section>
-      <div class="sec-head">
-        <i class="fa-regular fa-calendar"></i>
-        <span class="sec-head__title">행사 · 세미나</span>
-        <span class="sec-head__line"></span>
-      </div>
-      {% for art in schedule_articles %}
-      <a href="/news/articleView.html?idxno={{ art.id }}" class="res-item">
-        <time class="res-date tabular-nums">{{ art.created_at.strftime('%Y.%m.%d') if art.created_at else '' }}</time>
-        <div class="res-body">
-          <h4 class="res-title line-clamp-2">{{ art.title }}</h4>
-          <div class="res-org">{{ art.author_name or '웰다잉뉴스' }}</div>
-        </div>
-      </a>
-      {% endfor %}
-    </section>
-    {% endif %}
-  </div>
-</div>
-{% endif %}
-
-<!-- =========== NEWSLETTER CTA =========== -->
-<div class="container section-gap">
-  <div class="newsletter">
-    <div class="newsletter__inner">
-      <div class="newsletter__text">
-        <div class="newsletter__title-wrap">
-          <i class="fa-regular fa-envelope"></i>
-          <span class="newsletter__title">뉴스레터 구독</span>
-        </div>
-        <p class="newsletter__desc">웰다잉뉴스의 주요 기사를 매주 이메일로 받아보세요. 존엄한 삶의 마무리를 위한 최신 정보를 놓치지 마세요.</p>
-      </div>
-      <form class="newsletter__form" action="/news/articleList.html?sc_section_code=S1N6" method="get">
-        <input type="email" class="newsletter__input" placeholder="이메일 주소 입력">
-        <button type="submit" class="newsletter__btn">구독</button>
-      </form>
-    </div>
-  </div>
-</div>
 
 {% endblock %}
 
 {% block extra_js %}
 <script>
-/* ===== Hero Slider ===== */
+/* ===== Quote rotation ===== */
 (function(){
-  const slides = document.querySelectorAll('.hero__slide');
-  const dots = document.querySelectorAll('.hero__dot');
-  const countEl = document.getElementById('heroCount');
-  if (!slides.length) return;
-  let cur = 0;
-  const total = slides.length;
-  const gradients = [
-    'linear-gradient(135deg, rgba(26,74,74,0.92), rgba(42,107,107,0.75))',
-    'linear-gradient(135deg, rgba(42,107,107,0.90), rgba(26,74,74,0.72))',
-    'linear-gradient(135deg, rgba(26,74,74,0.85), rgba(55,120,120,0.70))'
-  ];
-
-  function show(idx) {
-    slides.forEach((s,i) => s.style.display = i===idx ? '' : 'none');
-    dots.forEach((d,i) => d.classList.toggle('hero__dot--active', i===idx));
-    if (countEl) countEl.textContent = (idx+1) + ' / ' + total;
-    document.getElementById('heroSection').style.background = gradients[idx % gradients.length];
-    cur = idx;
-  }
-
-  window.heroNav = function(dir) { show((cur + dir + total) % total); };
-  window.heroGo = function(idx) { show(idx); };
-
-  setInterval(function(){ show((cur+1)%total); }, 6000);
+  var quotes = {{ header_quotes|tojson }};
+  if (!quotes || quotes.length < 2) return;
+  var idx = 0;
+  var el = document.getElementById('quoteText');
+  if (!el) return;
+  el.style.transition = 'opacity 0.4s';
+  setInterval(function(){
+    idx = (idx + 1) % quotes.length;
+    el.style.opacity = '0';
+    setTimeout(function(){
+      el.innerHTML = quotes[idx];
+      el.style.opacity = '1';
+    }, 400);
+  }, 8000);
 })();
 
 /* ===== Popular Tabs ===== */
 function switchPop(btn, panelId) {
-  document.querySelectorAll('.pop-tab').forEach(t => t.classList.remove('pop-tab--active'));
+  document.querySelectorAll('.pop-tab').forEach(function(t){ t.classList.remove('pop-tab--active'); });
   btn.classList.add('pop-tab--active');
-  document.querySelectorAll('.pop-list').forEach(p => p.style.display = 'none');
+  document.querySelectorAll('.pop-list').forEach(function(p){ p.style.display = 'none'; });
   document.getElementById(panelId).style.display = '';
 }
 
-/* ===== Category Tabs ===== */
-function switchCat(btn) {
-  const cat = btn.dataset.cat;
-  document.querySelectorAll('.cat-pill').forEach(p => p.classList.remove('cat-pill--active'));
-  btn.classList.add('cat-pill--active');
-  document.querySelectorAll('.cat-panel').forEach(p => p.style.display = p.dataset.cat === cat ? '' : 'none');
+/* ===== Books slider (dissolve, background fixed) ===== */
+var bookIdx = 0;
+var bookTotal = document.querySelectorAll('[id^="bookSlide"]').length;
+var bookAutoTimer = null;
+
+function bookShow(newIdx) {
+  if (newIdx === bookIdx || newIdx < 0 || newIdx >= bookTotal) return;
+  var oldEl = document.getElementById('bookSlide' + bookIdx);
+  var newEl = document.getElementById('bookSlide' + newIdx);
+  if (!oldEl || !newEl) return;
+  oldEl.classList.remove('books-featured--active');
+  newEl.classList.add('books-featured--active');
+  bookIdx = newIdx;
 }
 
-/* ===== Book Carousel ===== */
-function scrollBooks(dir) {
-  const track = document.getElementById('booksTrack');
-  if (track) track.scrollBy({ left: dir * 280, behavior: 'smooth' });
+function bookNav(dir) {
+  if (bookTotal <= 1) return;
+  bookShow((bookIdx + dir + bookTotal) % bookTotal);
+  bookResetAuto();
 }
+
+function bookGo(idx) {
+  bookShow(idx);
+  bookResetAuto();
+}
+
+function bookResetAuto() {
+  clearInterval(bookAutoTimer);
+  bookAutoTimer = setInterval(function(){
+    bookShow((bookIdx + 1) % bookTotal);
+  }, 4000);
+}
+if (bookTotal > 1) bookResetAuto();
 </script>
 {% endblock %}

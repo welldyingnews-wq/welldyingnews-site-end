@@ -7,6 +7,7 @@
 <style>
     .ck-editor__editable {
         min-height: 400px;
+        font-size: 21px !important;
     }
 
     .ck-editor__editable.ck-focused {
@@ -30,6 +31,29 @@
         content: '▼ 여기에 사진설명(캡션)을 입력하세요' !important;
         color: #c0a020 !important;
         font-style: normal !important;
+    }
+
+    /* 에디터 툴바 sticky */
+    #editorWrap { overflow: visible; }
+    .editor-sticky-toolbar {
+        position: sticky;
+        top: 0;
+        z-index: 100;
+        background: #fff;
+        margin: -8px -1rem 0;
+        padding: 8px 1rem 0;
+    }
+    .editor-sticky-toolbar.is-sticky {
+        box-shadow: 0 2px 6px rgba(0,0,0,.1);
+    }
+    /* CKEditor 자체 sticky panel 비활성화 (커스텀으로 대체) */
+    .ck.ck-sticky-panel .ck-sticky-panel__content_sticky {
+        position: static !important;
+        width: auto !important;
+        box-shadow: none !important;
+    }
+    .ck.ck-sticky-panel .ck-sticky-panel__placeholder {
+        display: none !important;
     }
 
     /* 전체화면 모드 */
@@ -125,8 +149,97 @@
 <form method="post" enctype="multipart/form-data"
     action="{{ url_for('admin.article_edit', article_id=article.id) if article and article.id else url_for('admin.article_new') }}">
 
-    <div class="row">
-        <div class="col-lg-9">
+    <!-- 기사 옵션 (중요도/승인/유형/연재/노출시간) -->
+    <div class="card mb-3">
+        <div class="card-body py-2">
+            <div class="row g-3 align-items-end">
+                <div class="col-auto">
+                    <label class="form-label fw-bold small mb-1">중요도</label>
+                    <div>
+                        <div class="form-check form-check-inline">
+                            <input class="form-check-input" type="radio" name="level" id="levelB" value="B"
+                                {{ 'checked' if not article or article.level=='B' }}>
+                            <label class="form-check-label" for="levelB">일반</label>
+                        </div>
+                        <div class="form-check form-check-inline">
+                            <input class="form-check-input" type="radio" name="level" id="levelI" value="I"
+                                {{ 'checked' if article and article.level=='I' }}>
+                            <label class="form-check-label" for="levelI">중요</label>
+                        </div>
+                        <div class="form-check form-check-inline">
+                            <input class="form-check-input" type="radio" name="level" id="levelT" value="T"
+                                {{ 'checked' if article and article.level=='T' }}>
+                            <label class="form-check-label" for="levelT">헤드라인</label>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-auto">
+                    <label class="form-label fw-bold small mb-1">승인</label>
+                    <div>
+                        <div class="form-check form-check-inline">
+                            <input class="form-check-input" type="radio" name="recognition" id="recogC" value="C"
+                                {{ 'checked' if article and article.recognition=='C' }}>
+                            <label class="form-check-label" for="recogC">미승인</label>
+                        </div>
+                        <div class="form-check form-check-inline">
+                            <input class="form-check-input" type="radio" name="recognition" id="recogE" value="E"
+                                {{ 'checked' if not article or article.recognition=='E' }}>
+                            <label class="form-check-label" for="recogE">승인</label>
+                        </div>
+                        <div class="form-check form-check-inline">
+                            <input class="form-check-input" type="radio" name="recognition" id="recogR" value="R"
+                                {{ 'checked' if article and article.recognition=='R' }}>
+                            <label class="form-check-label" for="recogR">반려</label>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-auto">
+                    <label class="form-label fw-bold small mb-1">유형</label>
+                    <div>
+                        <div class="form-check form-check-inline">
+                            <input class="form-check-input" type="radio" name="article_type" id="typeB" value="B"
+                                {{ 'checked' if not article or article.article_type=='B' }}>
+                            <label class="form-check-label" for="typeB">일반</label>
+                        </div>
+                        <div class="form-check form-check-inline">
+                            <input class="form-check-input" type="radio" name="article_type" id="typeP" value="P"
+                                {{ 'checked' if article and article.article_type=='P' }}>
+                            <label class="form-check-label" for="typeP">카드뉴스</label>
+                        </div>
+                        <div class="form-check form-check-inline">
+                            <input class="form-check-input" type="radio" name="article_type" id="typeV" value="V"
+                                {{ 'checked' if article and article.article_type=='V' }}>
+                            <label class="form-check-label" for="typeV">동영상</label>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-auto">
+                    <label class="form-label fw-bold small mb-1">연재</label>
+                    <select name="serial_code_id" class="form-select form-select-sm" style="width:auto">
+                        <option value="">없음</option>
+                        {% for sc in serial_codes %}
+                        <option value="{{ sc.id }}" {% if article and article.serial_code_id==sc.id %}selected{% endif %}>{{ sc.name }}</option>
+                        {% endfor %}
+                    </select>
+                </div>
+                <div class="col-auto">
+                    <label class="form-label fw-bold small mb-1">노출시간</label>
+                    <div class="d-flex gap-1">
+                        <input type="date" name="embargo_date" class="form-control form-control-sm" style="width:140px"
+                            value="{{ article.embargo_date.strftime('%Y-%m-%d') if article and article.embargo_date else '' }}">
+                        <input type="time" name="embargo_time" class="form-control form-control-sm" style="width:110px"
+                            value="{{ article.embargo_date.strftime('%H:%M') if article and article.embargo_date else '' }}">
+                    </div>
+                </div>
+                {% if article and article.id %}
+                <div class="col-auto ms-auto">
+                    <button type="button" class="btn btn-outline-danger btn-sm" onclick="deleteArticle()"><i class="bi bi-trash"></i> 휴지통</button>
+                </div>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+
             <!-- 섹션 -->
             <div class="card mb-3">
                 <div class="card-body">
@@ -154,33 +267,36 @@
                             </select>
                         </div>
                     </div>
-                    <div class="mt-3">
-                        <label class="form-label fw-bold small">추가 섹션 <span class="text-muted fw-normal">(여러 섹션에 동시
-                                게재)</span></label>
-                        <div class="d-flex flex-wrap gap-2">
-                            {% for sec in sections %}
-                            <div class="form-check">
-                                <input class="form-check-input" type="checkbox" name="extra_section_ids"
-                                    value="{{ sec.id }}" id="extra_sec_{{ sec.id }}" {% if article and sec in
-                                    article.extra_sections %}checked{% endif %}>
-                                <label class="form-check-label small" for="extra_sec_{{ sec.id }}">{{ sec.name
-                                    }}</label>
-                            </div>
-                            {% endfor %}
-                        </div>
-                        <div class="mt-2">
-                            <label class="form-label fw-bold small">추가 2차 섹션</label>
-                            <div class="d-flex flex-wrap gap-2">
-                                {% for sec in sections %}
-                                {% for sub in sec.subsections %}
-                                <div class="form-check">
-                                    <input class="form-check-input" type="checkbox" name="extra_subsection_ids"
-                                        value="{{ sub.id }}" id="extra_sub_{{ sub.id }}" {% if article and sub in
-                                        article.extra_subsections %}checked{% endif %}>
-                                    <label class="form-check-label small" for="extra_sub_{{ sub.id }}">{{ sub.name }}</label>
+                    <div class="mt-2">
+                        <a class="small text-muted" data-bs-toggle="collapse" href="#extraSectionCollapse" role="button" aria-expanded="{{ 'true' if article and (article.extra_sections|list or article.extra_subsections|list) else 'false' }}">
+                            <i class="bi bi-plus-circle"></i> 추가 섹션 설정 <span class="text-muted fw-normal">(여러 섹션에 동시 게재)</span>
+                        </a>
+                        <div class="collapse {{ 'show' if article and (article.extra_sections|list or article.extra_subsections|list) else '' }}" id="extraSectionCollapse">
+                            <div class="mt-2 p-2 border rounded bg-light">
+                                <label class="form-label fw-bold small mb-1">추가 1차 섹션</label>
+                                <div class="d-flex flex-wrap gap-2 mb-2">
+                                    {% for sec in sections %}
+                                    <div class="form-check form-check-inline mb-0">
+                                        <input class="form-check-input" type="checkbox" name="extra_section_ids"
+                                            value="{{ sec.id }}" id="extra_sec_{{ sec.id }}" {% if article and sec in
+                                            article.extra_sections %}checked{% endif %}>
+                                        <label class="form-check-label small" for="extra_sec_{{ sec.id }}">{{ sec.name }}</label>
+                                    </div>
+                                    {% endfor %}
                                 </div>
-                                {% endfor %}
-                                {% endfor %}
+                                <label class="form-label fw-bold small mb-1">추가 2차 섹션</label>
+                                <div class="d-flex flex-wrap gap-2">
+                                    {% for sec in sections %}
+                                    {% for sub in sec.subsections %}
+                                    <div class="form-check form-check-inline mb-0">
+                                        <input class="form-check-input" type="checkbox" name="extra_subsection_ids"
+                                            value="{{ sub.id }}" id="extra_sub_{{ sub.id }}" {% if article and sub in
+                                            article.extra_subsections %}checked{% endif %}>
+                                        <label class="form-check-label small" for="extra_sub_{{ sub.id }}">{{ sub.name }}</label>
+                                    </div>
+                                    {% endfor %}
+                                    {% endfor %}
+                                </div>
                             </div>
                         </div>
                     </div>
@@ -207,6 +323,42 @@
                                 placeholder="이메일">
                         </div>
                     </div>
+                    <!-- 오피니언 필진 정보 -->
+                    <div class="row g-3 mt-1">
+                        <div class="col-md-4">
+                            <label class="form-label fw-bold">직함 <span class="badge bg-info">오피니언</span></label>
+                            <input type="text" name="author_title" class="form-control"
+                                value="{{ article.author_title if article else '' }}" placeholder="예: 명예이사장">
+                        </div>
+                        <div class="col-md-4">
+                            <label class="form-label fw-bold">소속</label>
+                            <input type="text" name="author_affiliation" class="form-control"
+                                value="{{ article.author_affiliation if article else '' }}" placeholder="예: 각당복지재단">
+                        </div>
+                        <div class="col-md-4">
+                            <label class="form-label fw-bold">프로필 사진</label>
+                            {% if article and article.author_photo %}
+                            <div class="mb-2 d-flex align-items-start gap-2">
+                                <div style="position:relative;width:80px;height:80px;border-radius:50%;overflow:hidden;border:2px solid #ddd;cursor:grab;flex-shrink:0"
+                                     id="photoPreviewWrap">
+                                    <img src="{{ article.author_photo }}" id="photoPreview"
+                                         style="width:100%;height:100%;object-fit:cover;object-position:{{ article.author_photo_pos or 'center center' }}">
+                                </div>
+                                <div>
+                                    <small class="text-muted d-block mb-1">원 안을 드래그하여<br>크롭 위치 조절</small>
+                                    <div class="form-check form-check-inline">
+                                        <input class="form-check-input" type="checkbox" name="delete_author_photo" value="1" id="delAuthorPhoto">
+                                        <label class="form-check-label text-danger" for="delAuthorPhoto"><small>삭제</small></label>
+                                    </div>
+                                </div>
+                            </div>
+                            <input type="hidden" name="author_photo_pos" id="authorPhotoPos"
+                                   value="{{ article.author_photo_pos or 'center center' }}">
+                            {% endif %}
+                            <input type="file" name="author_photo" class="form-control form-control-sm" accept="image/*"
+                                   onchange="previewAuthorPhoto(this)">
+                        </div>
+                    </div>
                 </div>
             </div>
 
@@ -225,16 +377,6 @@
                     <label class="form-label fw-bold">부제목</label>
                     <textarea name="subtitle" class="form-control" rows="2"
                         placeholder="부제목을 입력하세요">{{ article.subtitle if article else '' }}</textarea>
-                </div>
-            </div>
-
-            <!-- 리드문(요약문) -->
-            <div class="card mb-3">
-                <div class="card-body">
-                    <label class="form-label fw-bold">리드문 <small class="text-muted fw-normal">(요약문 — 목록/OG/검색에
-                            노출)</small></label>
-                    <textarea name="summary" class="form-control" rows="3"
-                        placeholder="기사 요약문을 입력하세요 (미입력 시 본문에서 자동 추출)">{{ article.summary if article else '' }}</textarea>
                 </div>
             </div>
 
@@ -259,28 +401,32 @@
             <!-- 본문 -->
             <div class="card mb-3">
                 <div class="card-body">
-                    <div class="d-flex justify-content-between align-items-center mb-2">
-                        <label class="form-label fw-bold mb-0">본문</label>
-                        <div class="d-flex align-items-center gap-2">
-                            <select id="lineHeightSelect" onchange="setLineHeight(this.value)"
-                                class="form-select form-select-sm" style="width:auto;font-size:12px" title="줄간격">
-                                <option value="">줄간격</option>
-                                <option value="1.0">1.0</option>
-                                <option value="1.2">1.2</option>
-                                <option value="1.5">1.5</option>
-                                <option value="1.8">1.8</option>
-                                <option value="2.0">2.0</option>
-                                <option value="2.5">2.5</option>
-                                <option value="3.0">3.0</option>
-                            </select>
-                            <button type="button" class="btn btn-outline-secondary btn-sm" id="fullscreenBtn"
-                                onclick="toggleFullscreen()" title="전체화면"><i
-                                    class="bi bi-arrows-fullscreen"></i></button>
-                            <div class="btn-group btn-group-sm" id="previewToggle">
-                                <button type="button" class="btn btn-outline-secondary active"
-                                    onclick="setPreview('desktop')"><i class="bi bi-display"></i> 데스크탑</button>
-                                <button type="button" class="btn btn-outline-secondary"
-                                    onclick="setPreview('mobile')"><i class="bi bi-phone"></i> 모바일</button>
+                    <div id="editorStickyToolbar" class="editor-sticky-toolbar">
+                        <div class="d-flex justify-content-between align-items-center mb-2">
+                            <label class="form-label fw-bold mb-0">본문</label>
+                            <div class="d-flex align-items-center gap-2">
+                                <select id="lineHeightSelect" onchange="setLineHeight(this.value)"
+                                    class="form-select form-select-sm" style="width:auto;font-size:12px" title="줄간격">
+                                    <option value="">줄간격</option>
+                                    <option value="1.0">1.0</option>
+                                    <option value="1.2">1.2</option>
+                                    <option value="1.5">1.5</option>
+                                    <option value="1.8">1.8</option>
+                                    <option value="2.0">2.0</option>
+                                    <option value="2.5">2.5</option>
+                                    <option value="3.0">3.0</option>
+                                </select>
+                                <button type="button" class="btn btn-outline-info btn-sm" data-bs-toggle="modal" data-bs-target="#tplModal" title="내용 템플릿"><i class="bi bi-file-earmark-richtext"></i> 템플릿</button>
+                                <button type="button" class="btn btn-outline-danger btn-sm" onclick="clearFormatting()" title="본문 서식 제거 (텍스트만 유지)"><i class="bi bi-eraser"></i> 서식제거</button>
+                                <button type="button" class="btn btn-outline-secondary btn-sm" id="fullscreenBtn"
+                                    onclick="toggleFullscreen()" title="전체화면"><i
+                                        class="bi bi-arrows-fullscreen"></i></button>
+                                <div class="btn-group btn-group-sm" id="previewToggle">
+                                    <button type="button" class="btn btn-outline-secondary active"
+                                        onclick="setPreview('desktop')"><i class="bi bi-display"></i> 데스크탑</button>
+                                    <button type="button" class="btn btn-outline-secondary"
+                                        onclick="setPreview('mobile')"><i class="bi bi-phone"></i> 모바일</button>
+                                </div>
                             </div>
                         </div>
                     </div>
@@ -330,161 +476,87 @@
             <div class="d-grid mb-4">
                 <button type="submit" class="btn btn-primary btn-lg"><i class="bi bi-save"></i> 저장</button>
             </div>
-        </div>
+</form>
 
-        <!-- 사이드바 옵션 -->
-        <div class="col-lg-3">
-            <!-- 기사유형/중요도/승인 -->
-            <div class="card mb-3">
-                <div class="card-header"><strong>기사 옵션</strong></div>
-                <div class="card-body">
-                    <div class="mb-3">
-                        <label class="form-label fw-bold small">중요도</label>
-                        <div>
-                            <div class="form-check form-check-inline">
-                                <input class="form-check-input" type="radio" name="level" id="levelB" value="B"
-                                    {{ 'checked' if not article or article.level=='B' }}>
-                                <label class="form-check-label" for="levelB">일반</label>
-                            </div>
-                            <div class="form-check form-check-inline">
-                                <input class="form-check-input" type="radio" name="level" id="levelI" value="I"
-                                    {{ 'checked' if article and article.level=='I' }}>
-                                <label class="form-check-label" for="levelI">중요</label>
-                            </div>
-                            <div class="form-check form-check-inline">
-                                <input class="form-check-input" type="radio" name="level" id="levelT" value="T"
-                                    {{ 'checked' if article and article.level=='T' }}>
-                                <label class="form-check-label" for="levelT">헤드라인</label>
-                            </div>
-                        </div>
-                    </div>
-                    <div class="mb-3">
-                        <label class="form-label fw-bold small">승인상태</label>
-                        <div>
-                            <div class="form-check form-check-inline">
-                                <input class="form-check-input" type="radio" name="recognition" id="recogC" value="C"
-                                    {{ 'checked' if article and article.recognition=='C' }}>
-                                <label class="form-check-label" for="recogC">미승인</label>
-                            </div>
-                            <div class="form-check form-check-inline">
-                                <input class="form-check-input" type="radio" name="recognition" id="recogE" value="E"
-                                    {{ 'checked' if not article or article.recognition=='E' }}>
-                                <label class="form-check-label" for="recogE">승인</label>
-                            </div>
-                            <div class="form-check form-check-inline">
-                                <input class="form-check-input" type="radio" name="recognition" id="recogR" value="R"
-                                    {{ 'checked' if article and article.recognition=='R' }}>
-                                <label class="form-check-label" for="recogR">반려</label>
-                            </div>
-                        </div>
-                    </div>
-                    <div class="mb-3">
-                        <label class="form-label fw-bold small">기사유형</label>
-                        <div>
-                            <div class="form-check form-check-inline">
-                                <input class="form-check-input" type="radio" name="article_type" id="typeB" value="B"
-                                    {{ 'checked' if not article or article.article_type=='B' }}>
-                                <label class="form-check-label" for="typeB">일반</label>
-                            </div>
-                            <div class="form-check form-check-inline">
-                                <input class="form-check-input" type="radio" name="article_type" id="typeP" value="P"
-                                    {{ 'checked' if article and article.article_type=='P' }}>
-                                <label class="form-check-label" for="typeP">카드뉴스</label>
-                            </div>
-                            <div class="form-check form-check-inline">
-                                <input class="form-check-input" type="radio" name="article_type" id="typeV" value="V"
-                                    {{ 'checked' if article and article.article_type=='V' }}>
-                                <label class="form-check-label" for="typeV">동영상</label>
-                            </div>
-                        </div>
-                    </div>
+<!-- 내용 템플릿 모달 -->
+<div class="modal fade" id="tplModal" tabindex="-1">
+    <div class="modal-dialog modal-lg modal-dialog-scrollable">
+        <div class="modal-content">
+            <div class="modal-header py-2">
+                <h6 class="modal-title"><i class="bi bi-file-earmark-richtext"></i> 내용 템플릿</h6>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body p-3">
+                <p class="text-muted small mb-3">에디터에서 사용할 템플릿을 선택하십시오</p>
+                <div class="d-flex flex-column gap-2" id="tplList">
+
+                    <button type="button" class="tpl-item" onclick="insertTpl('bigQuote')">
+                        <div class="tpl-icon"><i class="bi bi-quote" style="font-size:1.5rem"></i></div>
+                        <div class="tpl-info"><strong>큰 따옴표</strong><br><small class="text-muted">인용구를 큰 따옴표로 강조합니다</small></div>
+                    </button>
+
+                    <button type="button" class="tpl-item" onclick="insertTpl('leftBorder')">
+                        <div class="tpl-icon" style="border-left:4px solid #5e1985;padding-left:8px;font-size:.85rem;line-height:1.3">텍스트</div>
+                        <div class="tpl-info"><strong>좌측 두꺼운선</strong><br><small class="text-muted">좌측에 브랜드 색상 라인을 넣어 강조합니다</small></div>
+                    </button>
+
+                    <button type="button" class="tpl-item" onclick="insertTpl('bracket')">
+                        <div class="tpl-icon" style="font-size:1.2rem;font-weight:700;letter-spacing:2px">「 」</div>
+                        <div class="tpl-info"><strong>대괄호 강조</strong><br><small class="text-muted">대괄호로 텍스트를 감싸 강조합니다</small></div>
+                    </button>
+
+                    <button type="button" class="tpl-item" onclick="insertTpl('highlight')">
+                        <div class="tpl-icon"><span style="background:#fff3cd;padding:2px 6px;font-size:.85rem">강조</span></div>
+                        <div class="tpl-info"><strong>배경 하이라이트</strong><br><small class="text-muted">노란색 배경으로 핵심 내용을 강조합니다</small></div>
+                    </button>
+
+                    <button type="button" class="tpl-item" onclick="insertTpl('infoBox')">
+                        <div class="tpl-icon"><i class="bi bi-info-circle" style="font-size:1.3rem;color:#0d6efd"></i></div>
+                        <div class="tpl-info"><strong>정보 박스</strong><br><small class="text-muted">참고 정보를 파란색 박스에 담습니다</small></div>
+                    </button>
+
+                    <button type="button" class="tpl-item" onclick="insertTpl('grayBox')">
+                        <div class="tpl-icon"><div style="background:#f5f5f5;border:1px solid #ddd;border-radius:4px;padding:3px 8px;font-size:.75rem">박스</div></div>
+                        <div class="tpl-info"><strong>회색 박스</strong><br><small class="text-muted">배경이 있는 회색 박스로 내용을 구분합니다</small></div>
+                    </button>
+
+                    <button type="button" class="tpl-item" onclick="insertTpl('dividerText')">
+                        <div class="tpl-icon" style="font-size:.75rem;text-align:center"><hr style="margin:2px 0;border-color:#5e1985"><span style="color:#5e1985;font-weight:700">제목</span><hr style="margin:2px 0;border-color:#5e1985"></div>
+                        <div class="tpl-info"><strong>구분선 + 소제목</strong><br><small class="text-muted">상하 구분선 사이에 소제목을 넣습니다</small></div>
+                    </button>
+
+                    <button type="button" class="tpl-item" onclick="insertTpl('numberedTitle')">
+                        <div class="tpl-icon"><span style="display:inline-block;background:#5e1985;color:#fff;border-radius:50%;width:22px;height:22px;text-align:center;line-height:22px;font-size:.75rem;font-weight:700">1</span></div>
+                        <div class="tpl-info"><strong>숫자 소제목</strong><br><small class="text-muted">원형 숫자 배지와 소제목 조합</small></div>
+                    </button>
+
+                    <button type="button" class="tpl-item" onclick="insertTpl('twoColumn')">
+                        <div class="tpl-icon" style="display:flex;gap:3px"><div style="flex:1;background:#eee;border-radius:2px;height:20px"></div><div style="flex:1;background:#eee;border-radius:2px;height:20px"></div></div>
+                        <div class="tpl-info"><strong>2단 레이아웃</strong><br><small class="text-muted">좌우 2단으로 내용을 나눕니다</small></div>
+                    </button>
+
+                    <button type="button" class="tpl-item" onclick="insertTpl('photoCaption')">
+                        <div class="tpl-icon"><i class="bi bi-image" style="font-size:1.3rem;color:#6c757d"></i></div>
+                        <div class="tpl-info"><strong>사진 + 캡션 박스</strong><br><small class="text-muted">사진 아래 중앙 캡션 텍스트 영역</small></div>
+                    </button>
+
+                    <button type="button" class="tpl-item" onclick="insertTpl('interviewQA')">
+                        <div class="tpl-icon" style="font-size:.7rem;line-height:1.5"><span style="color:#5e1985;font-weight:700">Q</span> 질문<br><span style="color:#333;font-weight:700">A</span> 답변</div>
+                        <div class="tpl-info"><strong>인터뷰 Q&A</strong><br><small class="text-muted">질문-답변 형식의 인터뷰 레이아웃</small></div>
+                    </button>
+
                 </div>
             </div>
-
-            <!-- 출처 -->
-            <div class="card mb-3">
-                <div class="card-header"><strong>출처</strong></div>
-                <div class="card-body">
-                    <input type="text" name="source" class="form-control form-control-sm"
-                        value="{{ article.source if article else '' }}" placeholder="기사 출처 (예: 연합뉴스)">
-                </div>
-            </div>
-
-            <!-- 연재 -->
-            <div class="card mb-3">
-                <div class="card-header"><strong>연재</strong></div>
-                <div class="card-body">
-                    <select name="serial_code_id" class="form-select form-select-sm">
-                        <option value="">연재 선택 (없음)</option>
-                        {% for sc in serial_codes %}
-                        <option value="{{ sc.id }}" {% if article and article.serial_code_id==sc.id %}selected{% endif
-                            %}>{{ sc.name }}</option>
-                        {% endfor %}
-                    </select>
-                </div>
-            </div>
-
-            <!-- SNS 자동발행 -->
-            <div class="card mb-3">
-                <div class="card-header"><strong>SNS 자동발행</strong></div>
-                <div class="card-body">
-                    <div class="form-check mb-2">
-                        <input class="form-check-input" type="checkbox" name="sns_facebook" id="snsFacebook" disabled>
-                        <label class="form-check-label" for="snsFacebook">페이스북 <small
-                                class="text-muted">(준비중)</small></label>
-                    </div>
-                    <div class="form-check">
-                        <input class="form-check-input" type="checkbox" name="sns_twitter" id="snsTwitter" disabled>
-                        <label class="form-check-label" for="snsTwitter">X (트위터) <small
-                                class="text-muted">(준비중)</small></label>
-                    </div>
-                </div>
-            </div>
-
-            <!-- 노출시간 -->
-            <div class="card mb-3">
-                <div class="card-header"><strong>노출시간</strong></div>
-                <div class="card-body">
-                    <div class="mb-2">
-                        <input type="date" name="embargo_date" class="form-control"
-                            value="{{ article.embargo_date.strftime('%Y-%m-%d') if article and article.embargo_date else '' }}">
-                    </div>
-                    <input type="time" name="embargo_time" class="form-control"
-                        value="{{ article.embargo_date.strftime('%H:%M') if article and article.embargo_date else '' }}">
-                    <small class="text-muted mt-1 d-block">미래 시간 설정 시 예약기사로 등록됩니다.</small>
-                </div>
-            </div>
-
-            <!-- 썸네일 -->
-            <div class="card mb-3">
-                <div class="card-header"><strong>썸네일 이미지</strong></div>
-                <div class="card-body">
-                    {% if article and article.thumbnail_path %}
-                    <div class="mb-2">
-                        <img src="{{ url_for('static', filename=article.thumbnail_path) }}" class="img-fluid rounded"
-                            alt="썸네일">
-                    </div>
-                    {% endif %}
-                    <input type="file" name="thumbnail" class="form-control" accept="image/*">
-                    <small class="text-muted d-block mt-1">권장: 가로 800px 이상, JPG/PNG, 최대 5MB</small>
-                    <div class="mt-2">
-                        <label class="form-label fw-bold small">사진설명 (캡션)</label>
-                        <textarea name="photo_caption" class="form-control form-control-sm" rows="2" placeholder="사진설명을 입력하세요">{{ article.photo_caption if article and article.photo_caption else '' }}</textarea>
-                    </div>
-                </div>
-            </div>
-
-            {% if article and article.id %}
-            <div class="card mb-3 border-danger">
-                <div class="card-body">
-                    <button type="button" class="btn btn-outline-danger w-100" onclick="deleteArticle()"><i
-                            class="bi bi-trash"></i> 휴지통으로 이동</button>
-                </div>
-            </div>
-            {% endif %}
         </div>
     </div>
-</form>
+</div>
+<style>
+.tpl-item { display:flex; align-items:center; gap:1rem; padding:.75rem 1rem; border:1px solid #dee2e6; border-radius:.5rem; background:#fff; cursor:pointer; text-align:left; width:100%; transition:all .15s; }
+.tpl-item:hover { border-color:#5e1985; background:#faf5ff; }
+.tpl-icon { width:60px; height:44px; display:flex; align-items:center; justify-content:center; flex-shrink:0; }
+.tpl-info { flex:1; line-height:1.4; }
+.tpl-info strong { font-size:.9rem; }
+</style>
 
 <!-- 포토DB 모달 -->
 <div class="modal fade" id="photoDbModal" tabindex="-1">
@@ -700,6 +772,21 @@
         window.editorInstance = editor;
         console.log('[CKEditor] 초기화 성공, editorInstance:', !!window.editorInstance);
 
+        // CKEditor 툴바를 sticky wrapper 안으로 이동
+        var stickyWrap = document.getElementById('editorStickyToolbar');
+        var ckToolbar = document.querySelector('.ck.ck-editor__top');
+        if (stickyWrap && ckToolbar) {
+            stickyWrap.appendChild(ckToolbar);
+        }
+        // sticky 시 그림자 효과
+        var observer = new IntersectionObserver(function(entries) {
+            stickyWrap.classList.toggle('is-sticky', !entries[0].isIntersecting);
+        }, { threshold: 1.0 });
+        var sentinel = document.createElement('div');
+        sentinel.style.height = '1px';
+        stickyWrap.parentNode.insertBefore(sentinel, stickyWrap);
+        observer.observe(sentinel);
+
         // 줄간격 외부 컨트롤
         window.setLineHeight = function (value) {
             editor.model.change(writer => {
@@ -717,6 +804,27 @@
             el.classList.toggle('ck-editor-fullscreen');
             document.getElementById('fullscreenBtn').innerHTML = el.classList.contains('ck-editor-fullscreen') ?
                 '<i class="bi bi-fullscreen-exit"></i>' : '<i class="bi bi-arrows-fullscreen"></i>';
+        };
+
+        // 서식 제거: 인라인 스타일/클래스 제거, 텍스트+이미지+줄바꿈만 유지
+        window.clearFormatting = function () {
+            if (!confirm('본문의 모든 서식(글꼴, 크기, 색상, 배경 등)을 제거합니다.\n이미지와 줄바꿈은 유지됩니다.\n계속하시겠습니까?')) return;
+            var html = editor.getData();
+            // 임시 DOM으로 파싱
+            var tmp = document.createElement('div');
+            tmp.innerHTML = html;
+            // 모든 요소에서 style, class 속성 제거 (img 제외)
+            tmp.querySelectorAll('*').forEach(function(el) {
+                if (el.tagName === 'IMG' || el.tagName === 'FIGURE' || el.tagName === 'FIGCAPTION') return;
+                el.removeAttribute('style');
+                el.removeAttribute('class');
+            });
+            // span 태그를 텍스트로 치환 (span은 보통 인라인 서식 목적)
+            tmp.querySelectorAll('span').forEach(function(span) {
+                span.replaceWith(document.createTextNode(span.textContent));
+            });
+            editor.setData(tmp.innerHTML);
+            editor.editing.view.focus();
         };
 
         // ESC 키로 전체화면 해제
@@ -765,6 +873,41 @@
             document.querySelector('#editor').value = window.editorInstance.getData();
         }
     });
+
+    // 내용 템플릿 삽입
+    var tplHtml = {
+        bigQuote: '<div style="text-align:center;margin:32px auto;max-width:600px;"><p style="font-size:48px;line-height:1;color:#5e1985;margin:0;">\u201C</p><p style="font-size:17px;line-height:2;color:#333;margin:8px 0;">여기에 인용할 내용을 입력하세요.</p><p style="font-size:48px;line-height:1;color:#5e1985;margin:0;">\u201D</p></div>',
+
+        leftBorder: '<div style="border-left:4px solid #5e1985;padding:12px 16px;margin:16px 0;background:#faf5ff;"><p style="margin:0;line-height:1.8;">여기에 강조할 내용을 입력하세요.</p></div>',
+
+        bracket: '<div style="text-align:center;margin:24px 0;"><p style="font-size:20px;font-weight:700;color:#333;">「 여기에 내용을 입력하세요 」</p></div>',
+
+        highlight: '<div style="background:#fff3cd;border-radius:6px;padding:14px 18px;margin:16px 0;"><p style="margin:0;line-height:1.8;"><strong>핵심 포인트:</strong> 여기에 강조할 내용을 입력하세요.</p></div>',
+
+        infoBox: '<div style="background:#e7f1ff;border-left:4px solid #0d6efd;border-radius:0 6px 6px 0;padding:14px 18px;margin:16px 0;"><p style="margin:0;line-height:1.8;"><strong>ℹ 참고</strong>&nbsp; 여기에 참고 정보를 입력하세요.</p></div>',
+
+        grayBox: '<div style="background:#f5f5f5;border:1px solid #e0e0e0;border-radius:6px;padding:16px 20px;margin:16px 0;"><p style="margin:0;line-height:1.8;">여기에 내용을 입력하세요.</p></div>',
+
+        dividerText: '<hr><p style="text-align:center;font-size:18px;font-weight:700;color:#5e1985;margin:8px 0;">소제목을 입력하세요</p><hr>',
+
+        numberedTitle: '<p style="margin:20px 0 8px;"><span style="display:inline-block;background:#5e1985;color:#fff;border-radius:50%;width:26px;height:26px;text-align:center;line-height:26px;font-size:14px;font-weight:700;vertical-align:middle;">1</span>&nbsp; <span style="font-size:18px;font-weight:700;vertical-align:middle;">소제목을 입력하세요</span></p><p>내용을 입력하세요.</p>',
+
+        twoColumn: '<div style="display:flex;gap:20px;margin:16px 0;"><div style="flex:1;background:#f9f9f9;border-radius:6px;padding:14px;"><p style="margin:0;font-weight:600;">왼쪽 제목</p><p style="margin:8px 0 0;">왼쪽 내용을 입력하세요.</p></div><div style="flex:1;background:#f9f9f9;border-radius:6px;padding:14px;"><p style="margin:0;font-weight:600;">오른쪽 제목</p><p style="margin:8px 0 0;">오른쪽 내용을 입력하세요.</p></div></div>',
+
+        photoCaption: '<div style="text-align:center;margin:16px 0;"><p style="color:#999;font-size:48px;">▣</p><p style="font-size:13px;color:#888;margin-top:4px;">▲ 사진 설명을 입력하세요</p></div>',
+
+        interviewQA: '<div style="margin:16px 0;"><p style="margin:0 0 4px;"><strong style="color:#5e1985;font-size:16px;">Q.</strong>&nbsp; 질문을 입력하세요.</p><p style="margin:0 0 16px;padding-left:24px;line-height:1.8;">답변을 입력하세요.</p><p style="margin:0 0 4px;"><strong style="color:#5e1985;font-size:16px;">Q.</strong>&nbsp; 질문을 입력하세요.</p><p style="margin:0;padding-left:24px;line-height:1.8;">답변을 입력하세요.</p></div>'
+    };
+
+    window.insertTpl = function(key) {
+        var editor = window.editorInstance;
+        if (!editor) return;
+        var viewFragment = editor.data.processor.toView(tplHtml[key]);
+        var modelFragment = editor.data.toModel(viewFragment);
+        editor.model.insertContent(modelFragment);
+        editor.editing.view.focus();
+        bootstrap.Modal.getInstance(document.getElementById('tplModal')).hide();
+    };
 </script>
 <script>
     // Dropzone 초기화
@@ -1032,5 +1175,127 @@
         document.getElementById('photoFavFilter').classList.add('btn-outline-warning');
         loadPhotos();
     });
+
+    /* ── 프로필 사진 크롭 위치 드래그 조절 ── */
+    (function(){
+        const wrap = document.getElementById('photoPreviewWrap');
+        if (!wrap) return;
+        const img = document.getElementById('photoPreview');
+        const posInput = document.getElementById('authorPhotoPos');
+        let dragging = false, startX, startY, startPosX, startPosY;
+
+        function parsePos() {
+            const val = (posInput.value || 'center center').replace(/%/g, '');
+            const parts = val.split(/\s+/);
+            let x = 50, y = 50;
+            if (parts[0] === 'center') x = 50; else x = parseFloat(parts[0]) || 50;
+            if (parts[1] === 'center') y = 50; else y = parseFloat(parts[1]) || 50;
+            return { x, y };
+        }
+
+        function applyPos(x, y) {
+            x = Math.max(0, Math.min(100, x));
+            y = Math.max(0, Math.min(100, y));
+            img.style.objectPosition = x + '% ' + y + '%';
+            posInput.value = x.toFixed(0) + '% ' + y.toFixed(0) + '%';
+        }
+
+        wrap.addEventListener('mousedown', function(e) {
+            e.preventDefault();
+            dragging = true;
+            startX = e.clientX; startY = e.clientY;
+            const p = parsePos(); startPosX = p.x; startPosY = p.y;
+            wrap.style.cursor = 'grabbing';
+        });
+        document.addEventListener('mousemove', function(e) {
+            if (!dragging) return;
+            const dx = (e.clientX - startX) / wrap.offsetWidth * -100;
+            const dy = (e.clientY - startY) / wrap.offsetHeight * -100;
+            applyPos(startPosX + dx, startPosY + dy);
+        });
+        document.addEventListener('mouseup', function() {
+            if (dragging) { dragging = false; wrap.style.cursor = 'grab'; }
+        });
+
+        // 터치 지원
+        wrap.addEventListener('touchstart', function(e) {
+            const t = e.touches[0];
+            dragging = true;
+            startX = t.clientX; startY = t.clientY;
+            const p = parsePos(); startPosX = p.x; startPosY = p.y;
+        }, {passive: true});
+        document.addEventListener('touchmove', function(e) {
+            if (!dragging) return;
+            const t = e.touches[0];
+            const dx = (t.clientX - startX) / wrap.offsetWidth * -100;
+            const dy = (t.clientY - startY) / wrap.offsetHeight * -100;
+            applyPos(startPosX + dx, startPosY + dy);
+        });
+        document.addEventListener('touchend', function() { dragging = false; });
+    })();
+
+    /* 새 파일 선택 시 프리뷰 + 드래그 활성화 */
+    function previewAuthorPhoto(input) {
+        if (!input.files || !input.files[0]) return;
+        const reader = new FileReader();
+        reader.onload = function(e) {
+            let wrap = document.getElementById('photoPreviewWrap');
+            if (!wrap) {
+                // 기존 프리뷰가 없는 경우 생성
+                const container = input.closest('.col-md-4');
+                const div = document.createElement('div');
+                div.className = 'mb-2 d-flex align-items-start gap-2';
+                div.innerHTML = '<div style="position:relative;width:80px;height:80px;border-radius:50%;overflow:hidden;border:2px solid #ddd;cursor:grab;flex-shrink:0" id="photoPreviewWrap">'
+                    + '<img id="photoPreview" style="width:100%;height:100%;object-fit:cover;object-position:center center">'
+                    + '</div><div><small class="text-muted d-block mb-1">원 안을 드래그하여<br>크롭 위치 조절</small></div>';
+                container.insertBefore(div, input);
+                // hidden input 추가
+                if (!document.getElementById('authorPhotoPos')) {
+                    const hi = document.createElement('input');
+                    hi.type = 'hidden'; hi.name = 'author_photo_pos'; hi.id = 'authorPhotoPos'; hi.value = 'center center';
+                    container.appendChild(hi);
+                }
+                wrap = document.getElementById('photoPreviewWrap');
+                // 드래그 이벤트 재바인딩
+                bindDrag(wrap);
+            }
+            document.getElementById('photoPreview').src = e.target.result;
+            document.getElementById('authorPhotoPos').value = 'center center';
+            document.getElementById('photoPreview').style.objectPosition = 'center center';
+        };
+        reader.readAsDataURL(input.files[0]);
+    }
+
+    function bindDrag(wrap) {
+        const img = wrap.querySelector('img');
+        const posInput = document.getElementById('authorPhotoPos');
+        let dragging = false, startX, startY, startPosX, startPosY;
+        function parsePos() {
+            const val = (posInput.value || 'center center').replace(/%/g, '');
+            const parts = val.split(/\s+/);
+            let x = 50, y = 50;
+            if (parts[0] === 'center') x = 50; else x = parseFloat(parts[0]) || 50;
+            if (parts[1] === 'center') y = 50; else y = parseFloat(parts[1]) || 50;
+            return { x, y };
+        }
+        function applyPos(x, y) {
+            x = Math.max(0, Math.min(100, x));
+            y = Math.max(0, Math.min(100, y));
+            img.style.objectPosition = x + '% ' + y + '%';
+            posInput.value = x.toFixed(0) + '% ' + y.toFixed(0) + '%';
+        }
+        wrap.addEventListener('mousedown', function(e) {
+            e.preventDefault(); dragging = true;
+            startX = e.clientX; startY = e.clientY;
+            const p = parsePos(); startPosX = p.x; startPosY = p.y;
+            wrap.style.cursor = 'grabbing';
+        });
+        document.addEventListener('mousemove', function(e) {
+            if (!dragging) return;
+            applyPos(startPosX + (e.clientX - startX) / wrap.offsetWidth * -100,
+                     startPosY + (e.clientY - startY) / wrap.offsetHeight * -100);
+        });
+        document.addEventListener('mouseup', function() { if (dragging) { dragging = false; wrap.style.cursor = 'grab'; } });
+    }
 </script>
 {% endblock %}

@@ -1,0 +1,836 @@
+/* ============================================================
+   Article View V2 — Clean, Atlantic-inspired single-column layout
+   ============================================================ */
+
+/* ---------- Reset & Base ---------- */
+.av2-page {
+  background: #fff;
+  min-height: 100vh;
+}
+
+/* ---------- Minimal Header ---------- */
+.av2-header {
+  position: sticky;
+  top: 0;
+  z-index: 100;
+  background: #fff;
+  border-bottom: 1px solid #e8e8e8;
+  transition: box-shadow .2s;
+}
+.av2-header--scrolled {
+  box-shadow: 0 1px 6px rgba(0,0,0,.08);
+}
+.av2-header__inner {
+  max-width: 1200px;
+  margin: 0 auto;
+  padding: 0 24px;
+  height: 56px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+.av2-header__logo {
+  font-family: 'Pretendard', -apple-system, BlinkMacSystemFont, sans-serif;
+  font-weight: 800;
+  font-size: 1.25rem;
+  color: #5e1985;
+  text-decoration: none;
+  letter-spacing: -0.02em;
+}
+.av2-header__logo:hover {
+  opacity: .8;
+}
+.av2-header__nav {
+  display: flex;
+  align-items: center;
+  gap: 20px;
+}
+.av2-header__nav a {
+  font-size: .85rem;
+  color: #666;
+  text-decoration: none;
+  transition: color .15s;
+}
+.av2-header__nav a:hover {
+  color: #5e1985;
+}
+
+/* ---------- Progress Bar ---------- */
+.av2-progress {
+  position: fixed;
+  top: 56px;
+  left: 0;
+  width: 0;
+  height: 2px;
+  background: #5e1985;
+  z-index: 101;
+  transition: width .1s linear;
+}
+
+/* ---------- Article Container ---------- */
+.av2-article {
+  max-width: 960px;
+  margin: 0 auto;
+  padding: 48px 24px 80px;
+}
+
+/* ---------- Section Label ---------- */
+.av2-section {
+  display: inline-block;
+  font-family: 'Pretendard', -apple-system, BlinkMacSystemFont, sans-serif;
+  font-size: .8rem;
+  font-weight: 700;
+  color: #c62828;
+  text-transform: uppercase;
+  letter-spacing: .06em;
+  text-decoration: none;
+  margin-bottom: 16px;
+}
+.av2-section:hover {
+  text-decoration: underline;
+}
+
+/* ---------- Title ---------- */
+.av2-title {
+  font-family: 'Pretendard', -apple-system, BlinkMacSystemFont, sans-serif;
+  font-size: 2.5rem;
+  font-weight: 800;
+  line-height: 1.25;
+  color: #1a1a1a;
+  margin: 0 0 20px;
+  letter-spacing: -0.02em;
+  word-break: keep-all;
+}
+
+/* ---------- Subtitle ---------- */
+.av2-subtitle {
+  font-family: 'Pretendard', -apple-system, BlinkMacSystemFont, sans-serif;
+  font-size: 1.25rem;
+  line-height: 1.6;
+  color: #555;
+  margin: 0 0 28px;
+  word-break: keep-all;
+}
+
+/* ---------- Author / Byline ---------- */
+.av2-byline {
+  font-family: 'Pretendard', -apple-system, BlinkMacSystemFont, sans-serif;
+  font-size: .95rem;
+  color: #333;
+  margin-bottom: 40px;
+}
+.av2-byline__by {
+  color: #888;
+  font-style: italic;
+  margin-right: 2px;
+}
+.av2-byline__name {
+  font-weight: 600;
+}
+
+/* ---------- Hero Image ---------- */
+.av2-hero {
+  margin: 0 0 48px;
+}
+.av2-hero--wide {
+  margin-left: 0;
+  margin-right: 0;
+}
+.av2-hero img {
+  width: 100%;
+  max-height: 480px;
+  object-fit: cover;
+  display: block;
+  border-radius: 6px;
+}
+.av2-hero figcaption {
+  font-family: 'Pretendard', -apple-system, BlinkMacSystemFont, sans-serif;
+  font-size: .78rem;
+  color: #999;
+  padding-top: 10px;
+  line-height: 1.5;
+}
+
+/* ---------- Meta Bar (date + share) ---------- */
+.av2-meta {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding-bottom: 20px;
+  margin-bottom: 32px;
+  border-bottom: 1px solid #e0e0e0;
+}
+.av2-meta__date {
+  font-family: 'Pretendard', -apple-system, BlinkMacSystemFont, sans-serif;
+  font-size: .82rem;
+  color: #888;
+  letter-spacing: .02em;
+  text-transform: uppercase;
+}
+.av2-meta__share {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+.av2-share-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  padding: 6px 12px;
+  border: 1px solid #ddd;
+  border-radius: 4px;
+  background: transparent;
+  font-family: 'Pretendard', -apple-system, BlinkMacSystemFont, sans-serif;
+  font-size: .78rem;
+  color: #555;
+  cursor: pointer;
+  transition: all .15s;
+}
+.av2-share-btn:hover {
+  border-color: #5e1985;
+  color: #5e1985;
+}
+.av2-share-btn i {
+  font-size: .85rem;
+}
+
+/* ---------- Body Content ---------- */
+.av2-body {
+  font-family: 'Pretendard', -apple-system, BlinkMacSystemFont, sans-serif;
+  font-size: 1.25rem;
+  line-height: 1.9;
+  color: #1a1a1a;
+  word-break: keep-all;
+  overflow-wrap: break-word;
+}
+.av2-body p {
+  margin: 0 0 1.6em;
+}
+.av2-body img {
+  max-width: 100%;
+  height: auto;
+  margin: 1.5em 0;
+  display: block;
+}
+.av2-body figure {
+  margin: 2em 0;
+}
+.av2-body figcaption {
+  font-family: 'Pretendard', -apple-system, BlinkMacSystemFont, sans-serif;
+  font-size: .8rem;
+  color: #999;
+  margin-top: 8px;
+}
+.av2-body a {
+  color: #5e1985;
+  text-decoration: underline;
+  text-underline-offset: 2px;
+}
+.av2-body a:hover {
+  color: #3a0f54;
+}
+.av2-body blockquote {
+  margin: 2em 0;
+  padding: 0 0 0 24px;
+  border-left: 3px solid #5e1985;
+  font-style: italic;
+  color: #444;
+}
+.av2-body h2,
+.av2-body h3,
+.av2-body h4 {
+  font-family: 'Pretendard', -apple-system, BlinkMacSystemFont, sans-serif;
+  font-weight: 700;
+  margin: 2em 0 .8em;
+  color: #1a1a1a;
+}
+.av2-body h2 { font-size: 1.5rem; }
+.av2-body h3 { font-size: 1.25rem; }
+.av2-body h4 { font-size: 1.1rem; }
+
+/* ---------- Tags ---------- */
+.av2-tags {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-top: 40px;
+  padding-top: 24px;
+  border-top: 1px solid #e0e0e0;
+}
+.av2-tag {
+  display: inline-block;
+  padding: 5px 14px;
+  border: 1px solid #ddd;
+  border-radius: 20px;
+  font-family: 'Pretendard', -apple-system, BlinkMacSystemFont, sans-serif;
+  font-size: .82rem;
+  color: #555;
+  text-decoration: none;
+  transition: all .15s;
+}
+.av2-tag:hover {
+  border-color: #5e1985;
+  color: #5e1985;
+  background: rgba(94, 25, 133, .04);
+}
+
+/* ---------- Divider ---------- */
+.av2-divider {
+  border: none;
+  border-top: 1px solid #e0e0e0;
+  margin: 48px 0;
+}
+
+/* ---------- Writer Card ---------- */
+.av2-writer {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  padding: 24px 0;
+}
+.av2-writer__avatar {
+  width: 56px;
+  height: 56px;
+  border-radius: 50%;
+  background: #f0e6f6;
+  color: #5e1985;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-family: 'Pretendard', -apple-system, BlinkMacSystemFont, sans-serif;
+  font-weight: 700;
+  font-size: 1.2rem;
+  flex-shrink: 0;
+}
+.av2-writer__info {
+  flex: 1;
+}
+.av2-writer__name {
+  font-family: 'Pretendard', -apple-system, BlinkMacSystemFont, sans-serif;
+  font-weight: 700;
+  font-size: 1rem;
+  color: #1a1a1a;
+  display: block;
+  margin-bottom: 2px;
+}
+.av2-writer__email {
+  font-family: 'Pretendard', -apple-system, BlinkMacSystemFont, sans-serif;
+  font-size: .82rem;
+  color: #888;
+  text-decoration: none;
+}
+.av2-writer__email:hover {
+  color: #5e1985;
+}
+.av2-writer__more {
+  font-family: 'Pretendard', -apple-system, BlinkMacSystemFont, sans-serif;
+  font-size: .82rem;
+  color: #5e1985;
+  text-decoration: none;
+  white-space: nowrap;
+}
+.av2-writer__more:hover {
+  text-decoration: underline;
+}
+
+/* ---------- Copyright ---------- */
+.av2-copy {
+  font-family: 'Pretendard', -apple-system, BlinkMacSystemFont, sans-serif;
+  font-size: .78rem;
+  color: #aaa;
+  text-align: center;
+  padding: 20px 0;
+}
+
+/* ---------- Related Articles ---------- */
+.av2-related {
+  margin: 0 0 48px;
+}
+.av2-related__title {
+  font-family: 'Pretendard', -apple-system, BlinkMacSystemFont, sans-serif;
+  font-size: .85rem;
+  font-weight: 700;
+  color: #1a1a1a;
+  text-transform: uppercase;
+  letter-spacing: .06em;
+  margin-bottom: 16px;
+  padding-bottom: 12px;
+  border-bottom: 2px solid #1a1a1a;
+}
+.av2-related__list {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+}
+.av2-related__list li {
+  border-bottom: 1px solid #f0f0f0;
+}
+.av2-related__list li:last-child {
+  border-bottom: none;
+}
+.av2-related__list a {
+  display: block;
+  padding: 12px 0;
+  font-family: 'Pretendard', -apple-system, BlinkMacSystemFont, sans-serif;
+  font-size: .95rem;
+  color: #333;
+  text-decoration: none;
+  line-height: 1.5;
+  transition: color .15s;
+}
+.av2-related__list a:hover {
+  color: #5e1985;
+}
+
+/* ---------- Prev / Next Navigation ---------- */
+.av2-nav {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 24px;
+  margin: 48px 0;
+}
+.av2-nav__item {
+  text-decoration: none;
+  padding: 20px;
+  border: 1px solid #e8e8e8;
+  border-radius: 8px;
+  transition: all .2s;
+}
+.av2-nav__item:hover {
+  border-color: #5e1985;
+  box-shadow: 0 2px 8px rgba(94, 25, 133, .08);
+}
+.av2-nav__item--next {
+  text-align: right;
+}
+.av2-nav__label {
+  display: block;
+  font-family: 'Pretendard', -apple-system, BlinkMacSystemFont, sans-serif;
+  font-size: .75rem;
+  font-weight: 600;
+  color: #999;
+  text-transform: uppercase;
+  letter-spacing: .05em;
+  margin-bottom: 6px;
+}
+.av2-nav__title {
+  display: block;
+  font-family: 'Pretendard', -apple-system, BlinkMacSystemFont, sans-serif;
+  font-size: .9rem;
+  color: #333;
+  line-height: 1.5;
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+
+/* ---------- Comments Section ---------- */
+.av2-comments {
+  max-width: 960px;
+  margin: 0 auto;
+  padding: 0 24px 80px;
+}
+.av2-comments__head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding-bottom: 16px;
+  border-bottom: 2px solid #1a1a1a;
+  margin-bottom: 24px;
+}
+.av2-comments__count {
+  font-family: 'Pretendard', -apple-system, BlinkMacSystemFont, sans-serif;
+  font-size: .95rem;
+  color: #1a1a1a;
+}
+.av2-comments__count strong {
+  font-weight: 700;
+}
+.av2-comments__sort {
+  display: flex;
+  gap: 12px;
+}
+.av2-comments__sort a {
+  font-family: 'Pretendard', -apple-system, BlinkMacSystemFont, sans-serif;
+  font-size: .82rem;
+  color: #999;
+  text-decoration: none;
+}
+.av2-comments__sort--active {
+  color: #1a1a1a !important;
+  font-weight: 600;
+}
+
+/* Comment write form */
+.av2-cmt-write {
+  background: #fafafa;
+  border: 1px solid #e8e8e8;
+  border-radius: 8px;
+  padding: 20px;
+  margin-bottom: 32px;
+}
+.av2-cmt-write__head {
+  display: flex;
+  gap: 10px;
+  margin-bottom: 12px;
+}
+.av2-cmt-write__member {
+  font-family: 'Pretendard', -apple-system, BlinkMacSystemFont, sans-serif;
+  font-size: .88rem;
+  color: #333;
+}
+.av2-cmt-write__input {
+  font-family: 'Pretendard', -apple-system, BlinkMacSystemFont, sans-serif;
+  font-size: .85rem;
+  padding: 8px 12px;
+  border: 1px solid #ddd;
+  border-radius: 4px;
+  outline: none;
+  width: 140px;
+}
+.av2-cmt-write__input:focus {
+  border-color: #5e1985;
+}
+.av2-cmt-write__textarea {
+  width: 100%;
+  min-height: 80px;
+  padding: 12px;
+  border: 1px solid #ddd;
+  border-radius: 4px;
+  font-family: 'Pretendard', -apple-system, BlinkMacSystemFont, sans-serif;
+  font-size: .88rem;
+  line-height: 1.5;
+  resize: vertical;
+  outline: none;
+  box-sizing: border-box;
+}
+.av2-cmt-write__textarea:focus {
+  border-color: #5e1985;
+}
+.av2-cmt-write__foot {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-top: 10px;
+}
+.av2-cmt-write__len {
+  font-family: 'Pretendard', -apple-system, BlinkMacSystemFont, sans-serif;
+  font-size: .78rem;
+  color: #aaa;
+}
+.av2-cmt-write__btn {
+  padding: 8px 24px;
+  background: #5e1985;
+  color: #fff;
+  border: none;
+  border-radius: 4px;
+  font-family: 'Pretendard', -apple-system, BlinkMacSystemFont, sans-serif;
+  font-size: .85rem;
+  font-weight: 500;
+  cursor: pointer;
+  transition: background .15s;
+}
+.av2-cmt-write__btn:hover {
+  background: #4a1369;
+}
+
+/* Individual comment */
+.av2-cmt {
+  display: flex;
+  gap: 12px;
+  padding: 16px 0;
+  border-bottom: 1px solid #f0f0f0;
+}
+.av2-cmt--reply {
+  margin-left: 40px;
+  padding-left: 16px;
+  border-left: 2px solid #f0f0f0;
+}
+.av2-cmt__avatar {
+  width: 36px;
+  height: 36px;
+  border-radius: 50%;
+  background: #f0e6f6;
+  color: #5e1985;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-family: 'Pretendard', -apple-system, BlinkMacSystemFont, sans-serif;
+  font-weight: 600;
+  font-size: .85rem;
+  flex-shrink: 0;
+  overflow: hidden;
+}
+.av2-cmt__avatar img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+.av2-cmt__body { flex: 1; }
+.av2-cmt__head {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+  margin-bottom: 6px;
+}
+.av2-cmt__name {
+  font-family: 'Pretendard', -apple-system, BlinkMacSystemFont, sans-serif;
+  font-size: .85rem;
+  font-weight: 600;
+  color: #333;
+}
+.av2-cmt__name--member {
+  color: #5e1985;
+}
+.av2-cmt__ip {
+  font-size: .75rem;
+  color: #bbb;
+}
+.av2-cmt__date {
+  font-family: 'Pretendard', -apple-system, BlinkMacSystemFont, sans-serif;
+  font-size: .75rem;
+  color: #bbb;
+}
+.av2-cmt__action {
+  font-size: .75rem;
+  color: #999;
+  text-decoration: none;
+  cursor: pointer;
+}
+.av2-cmt__action:hover { color: #5e1985; }
+.av2-cmt__text {
+  font-family: 'Pretendard', -apple-system, BlinkMacSystemFont, sans-serif;
+  font-size: .88rem;
+  line-height: 1.6;
+  color: #333;
+  margin-bottom: 8px;
+}
+.av2-cmt__actions {
+  display: flex;
+  gap: 12px;
+}
+.av2-cmt__vote,
+.av2-cmt__reply-toggle {
+  background: none;
+  border: none;
+  font-family: 'Pretendard', -apple-system, BlinkMacSystemFont, sans-serif;
+  font-size: .78rem;
+  color: #999;
+  cursor: pointer;
+  padding: 0;
+}
+.av2-cmt__vote:hover,
+.av2-cmt__reply-toggle:hover {
+  color: #5e1985;
+}
+
+/* Reply box */
+.av2-reply-box {
+  margin-left: 52px;
+  padding: 16px;
+  background: #fafafa;
+  border-radius: 8px;
+  margin-bottom: 8px;
+}
+.av2-reply-box__inputs {
+  display: flex;
+  gap: 8px;
+  margin-bottom: 8px;
+}
+.av2-reply-box__inputs input {
+  font-family: 'Pretendard', -apple-system, BlinkMacSystemFont, sans-serif;
+  font-size: .82rem;
+  padding: 6px 10px;
+  border: 1px solid #ddd;
+  border-radius: 4px;
+  outline: none;
+  width: 120px;
+}
+.av2-reply-box textarea {
+  width: 100%;
+  min-height: 60px;
+  padding: 10px;
+  border: 1px solid #ddd;
+  border-radius: 4px;
+  font-family: 'Pretendard', -apple-system, BlinkMacSystemFont, sans-serif;
+  font-size: .85rem;
+  resize: vertical;
+  outline: none;
+  box-sizing: border-box;
+}
+.av2-reply-box__foot {
+  display: flex;
+  justify-content: flex-end;
+  gap: 8px;
+  margin-top: 8px;
+}
+.av2-reply-box__cancel {
+  padding: 6px 14px;
+  background: none;
+  border: 1px solid #ddd;
+  border-radius: 4px;
+  font-size: .82rem;
+  cursor: pointer;
+  color: #666;
+}
+.av2-reply-box__submit {
+  padding: 6px 14px;
+  background: #5e1985;
+  color: #fff;
+  border: none;
+  border-radius: 4px;
+  font-size: .82rem;
+  cursor: pointer;
+}
+
+/* BEST badge */
+.av2-cmt-best {
+  margin-bottom: 16px;
+}
+.av2-cmt-best__label {
+  display: inline-block;
+  padding: 2px 10px;
+  background: #c62828;
+  color: #fff;
+  border-radius: 3px;
+  font-family: 'Pretendard', -apple-system, BlinkMacSystemFont, sans-serif;
+  font-size: .72rem;
+  font-weight: 700;
+  letter-spacing: .03em;
+  margin-bottom: 8px;
+}
+
+.av2-cmt-empty {
+  font-family: 'Pretendard', -apple-system, BlinkMacSystemFont, sans-serif;
+  font-size: .88rem;
+  color: #bbb;
+  text-align: center;
+  padding: 32px 0;
+}
+
+.av2-cmt-more-wrap {
+  text-align: center;
+  padding: 16px 0;
+}
+.av2-cmt-more {
+  font-family: 'Pretendard', -apple-system, BlinkMacSystemFont, sans-serif;
+  font-size: .85rem;
+  color: #5e1985;
+  background: none;
+  border: 1px solid #5e1985;
+  border-radius: 4px;
+  padding: 8px 24px;
+  cursor: pointer;
+  transition: all .15s;
+}
+.av2-cmt-more:hover {
+  background: #5e1985;
+  color: #fff;
+}
+
+/* Flash messages */
+.av2-flash {
+  padding: 10px 16px;
+  border-radius: 6px;
+  font-family: 'Pretendard', -apple-system, BlinkMacSystemFont, sans-serif;
+  font-size: .85rem;
+  margin-bottom: 16px;
+}
+.av2-flash--success { background: #e8f5e9; color: #2e7d32; }
+.av2-flash--error { background: #fce4ec; color: #c62828; }
+.av2-flash--warning { background: #fff3e0; color: #e65100; }
+
+/* ---------- Banner Areas ---------- */
+.av2-banner {
+  text-align: center;
+  margin: 24px 0;
+}
+.av2-banner img {
+  max-width: 100%;
+  height: auto;
+}
+
+/* ---------- Footer ---------- */
+.av2-footer {
+  background: #fafafa;
+  border-top: 1px solid #e8e8e8;
+  padding: 40px 24px;
+  text-align: center;
+}
+.av2-footer__logo {
+  font-family: 'Pretendard', -apple-system, BlinkMacSystemFont, sans-serif;
+  font-weight: 800;
+  font-size: 1.1rem;
+  color: #5e1985;
+  text-decoration: none;
+  display: inline-block;
+  margin-bottom: 12px;
+}
+.av2-footer__copy {
+  font-family: 'Pretendard', -apple-system, BlinkMacSystemFont, sans-serif;
+  font-size: .78rem;
+  color: #999;
+  line-height: 1.6;
+}
+
+/* ---------- Responsive ---------- */
+@media (max-width: 768px) {
+  .av2-title {
+    font-size: 1.75rem;
+  }
+  .av2-subtitle {
+    font-size: 1.05rem;
+  }
+  .av2-body {
+    font-size: 1.1rem;
+    line-height: 1.8;
+  }
+  .av2-article {
+    padding: 32px 20px 60px;
+  }
+  .av2-meta {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 12px;
+  }
+  .av2-nav {
+    grid-template-columns: 1fr;
+    gap: 12px;
+  }
+  .av2-nav__item--next {
+    text-align: left;
+  }
+  .av2-header__nav {
+    gap: 12px;
+  }
+  .av2-writer {
+    flex-wrap: wrap;
+  }
+  .av2-cmt--reply {
+    margin-left: 20px;
+  }
+  .av2-reply-box {
+    margin-left: 20px;
+  }
+}
+
+@media print {
+  .av2-header,
+  .av2-progress,
+  .av2-meta__share,
+  .av2-nav,
+  .av2-comments,
+  .av2-footer {
+    display: none !important;
+  }
+  .av2-article {
+    max-width: 100%;
+    padding: 0;
+  }
+  .av2-body {
+    font-size: 11pt;
+    line-height: 1.7;
+  }
+}

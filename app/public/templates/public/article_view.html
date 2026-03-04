@@ -1,1745 +1,923 @@
-{% extends "public/base.html" %}
-{% block title %}{{ article.title }} < {% if article.subsection %}{{ article.subsection.name }} < {% endif %}{% if
-    article.section %}{{ article.section.name }} < {% endif %}기사본문 - 웰다잉뉴스{% endblock %} {% block meta %} <meta
-    property="og:type" content="article">
-    <meta property="og:title" content="{{ article.title }}">
-    <meta property="og:description" content="{{ article.summary_text|truncate(200) }}">
-    <meta property="og:url" content="{{ request.url }}">
-    {% if article.thumb_url %}
-    <meta property="og:image" content="{{ article.thumb_url }}">
+{% extends "public/base_v0.html" %}
+{% from "public/_banner_macros.html" import banner_img %}
+
+{% block title %}{{ article.title }} — {% if article.subsection %}{{ article.subsection.name }} — {% endif %}{% if article.section %}{{ article.section.name }} — {% endif %}웰다잉뉴스{% endblock %}
+
+{% block og_meta %}
+<meta property="og:type" content="article">
+<meta property="og:title" content="{{ article.title }}">
+<meta property="og:site_name" content="웰다잉뉴스">
+<meta property="og:description" content="{{ article.summary_text|truncate(200) }}">
+<meta property="og:url" content="{{ site_url }}/news/articleView.html?idxno={{ article.id }}">
+{% if article.thumb_url %}<meta property="og:image" content="{{ article.thumb_url }}">{% endif %}
+<meta name="twitter:card" content="summary_large_image">
+<meta name="twitter:title" content="{{ article.title }}">
+<meta name="twitter:description" content="{{ article.summary_text|truncate(200) }}">
+<meta property="article:published_time" content="{{ (article.embargo_date or article.created_at).strftime('%Y-%m-%dT%H:%M:%S+09:00') }}">
+{% if article.updated_at %}<meta property="article:modified_time" content="{{ article.updated_at.strftime('%Y-%m-%dT%H:%M:%S+09:00') }}">{% endif %}
+{% if article.author_name %}<meta property="article:author" content="{{ article.author_name }}">{% endif %}
+{% if article.section %}<meta property="article:section" content="{{ article.section.name }}">{% endif %}
+{% if article.keyword %}{% for tag in article.keyword.split(',') %}{% if tag.strip() %}<meta property="article:tag" content="{{ tag.strip() }}">{% endif %}{% endfor %}{% endif %}
+{% endblock %}
+
+{% block canonical %}<link rel="canonical" href="{{ site_url }}/news/articleView.html?idxno={{ article.id }}">{% endblock %}
+
+{% block jsonld %}
+<script type="application/ld+json">
+{
+  "@context": "https://schema.org",
+  "@type": "NewsArticle",
+  "headline": "{{ article.title|e }}",
+  "description": "{{ article.summary_text|truncate(200)|e }}",
+  "url": "{{ site_url }}/news/articleView.html?idxno={{ article.id }}",
+  {% if article.thumb_url %}"image": "{{ article.thumb_url }}",{% endif %}
+  "datePublished": "{{ (article.embargo_date or article.created_at).strftime('%Y-%m-%dT%H:%M:%S+09:00') }}",
+  {% if article.updated_at %}"dateModified": "{{ article.updated_at.strftime('%Y-%m-%dT%H:%M:%S+09:00') }}",{% endif %}
+  "author": {
+    "@type": "Person",
+    "name": "{{ article.author_name|e }}"
+  },
+  "publisher": {
+    "@type": "NewsMediaOrganization",
+    "name": "웰다잉뉴스",
+    "logo": {
+      "@type": "ImageObject",
+      "url": "{{ site_url }}/static/images/logo.png"
+    }
+  },
+  {% if article.section %}"articleSection": "{{ article.section.name }}",{% endif %}
+  {% if article.keyword %}"keywords": "{{ article.keyword }}",{% endif %}
+  "mainEntityOfPage": {
+    "@type": "WebPage",
+    "@id": "{{ site_url }}/news/articleView.html?idxno={{ article.id }}"
+  },
+  "copyrightHolder": {
+    "@type": "Organization",
+    "name": "웰다잉뉴스"
+  },
+  "copyrightYear": "{{ (article.embargo_date or article.created_at).strftime('%Y') }}",
+  "inLanguage": "ko"
+}
+</script>
+<script type="application/ld+json">
+{
+  "@context": "https://schema.org",
+  "@type": "BreadcrumbList",
+  "itemListElement": [
+    {
+      "@type": "ListItem",
+      "position": 1,
+      "name": "홈",
+      "item": "{{ site_url }}/"
+    }{% if article.section %},
+    {
+      "@type": "ListItem",
+      "position": 2,
+      "name": "{{ article.section.name }}",
+      "item": "{{ site_url }}/news/articleList.html?sc_section_code={{ article.section.code }}&view_type=sm"
+    }{% endif %}{% if article.subsection %},
+    {
+      "@type": "ListItem",
+      "position": 3,
+      "name": "{{ article.subsection.name }}",
+      "item": "{{ site_url }}/news/articleList.html?sc_sub_section_code={{ article.subsection.code }}&view_type=sm"
+    }{% endif %},
+    {
+      "@type": "ListItem",
+      "position": {{ 4 if article.subsection else (3 if article.section else 2) }},
+      "name": "{{ article.title|e }}"
+    }
+  ]
+}
+</script>
+{% endblock %}
+
+{% block content %}
+<!-- Sticky scroll header -->
+<div class="aview-sticky" id="stickyHeader">
+  <div class="aview-sticky__inner">
+    {% if prev_article %}
+    <a href="/news/articleView.html?idxno={{ prev_article.id }}" class="aview-sticky__nav aview-sticky__nav--prev" title="이전기사"><i class="fa-solid fa-angle-left"></i></a>
     {% endif %}
-    <meta name="twitter:card" content="summary_large_image">
-    <meta name="twitter:title" content="{{ article.title }}">
-    <meta name="twitter:description" content="{{ article.summary_text|truncate(200) }}">
-    {% endblock %}
+    {% if next_article %}
+    <a href="/news/articleView.html?idxno={{ next_article.id }}" class="aview-sticky__nav aview-sticky__nav--next" title="다음기사"><i class="fa-solid fa-angle-right"></i></a>
+    {% endif %}
+    <a href="/" class="aview-sticky__logo"><img src="/static/images/logo-header.png" alt="웰다잉뉴스" class="aview-sticky__logo-img"></a>
+    <span class="aview-sticky__title">{{ article.title }}</span>
+  </div>
+  <div class="aview-sticky__catnav">
+    <button class="aview-sticky__menu-btn" onclick="toggleMob()" aria-label="메뉴 열기"><i class="fa-solid fa-bars"></i></button>
+    <ul class="aview-sticky__catlist">
+      {% for sec in nav_sections %}
+      {% if sec.code != 'S1N5' %}
+      <li><a href="{% if sec.code == 'S1N6' %}/newsletter/archive{% else %}/news/articleList.html?sc_section_code={{ sec.code }}{% endif %}">{{ sec.name }}</a></li>
+      {% endif %}
+      {% if sec.code == 'S1N4' %}
+      <li><a href="/schedule/list.html">주요일정</a></li>
+      {% endif %}
+      {% endfor %}
+    </ul>
+  </div>
+  <div class="aview-sticky__bar" id="readBar"></div>
+</div>
 
-    {% block extra_head %}
-    <style type="text/css">
-        {% if is_mobile %}
-        /* 모바일: 단일 컬럼, 사이드바 없음 */
-        #article-view .article-view-content,
-        #article-view .article-view-content>.grid {
-            display: block;
-            width: auto
-        }
+<div class="container section-gap" style="padding-bottom:0">
+  <!-- 브레드크럼 -->
+  <nav class="aview-breadcrumb">
+    <a href="/">홈</a>
+    {% if article.section %}
+    <span class="aview-breadcrumb__sep"><i class="fa-solid fa-chevron-right"></i></span>
+    <a href="/news/articleList.html?sc_section_code={{ article.section.code }}&view_type=sm">{{ article.section.name }}</a>
+    {% endif %}
+    {% if article.subsection %}
+    <span class="aview-breadcrumb__sep"><i class="fa-solid fa-chevron-right"></i></span>
+    <a href="/news/articleList.html?sc_sub_section_code={{ article.subsection.code }}&view_type=sm">{{ article.subsection.name }}</a>
+    {% endif %}
+  </nav>
 
-        #article-view .article-view-content>.grid.body {
-            padding-right: 0
-        }
+  <!-- 기사 헤더 -->
+  <header class="aview-head aview-head--no-border">
+    <h1 class="aview-head__title">{{ article.title }}</h1>
+    <div class="aview-head__meta">
+      <div class="aview-head__info">
+        <span>입력 {{ (article.embargo_date or article.created_at).strftime('%Y.%m.%d %H:%M') }}</span>
+        <span>수정 {{ (article.embargo_date or article.created_at).strftime('%Y.%m.%d %H:%M') }}</span>
+      </div>
+      <span class="aview-head__divider">|</span>
+      <div class="aview-head__share">
+        <div class="aview-share-wrap">
+          <button type="button" class="aview-share-btn aview-share-btn--main" title="공유"><i class="fa-solid fa-share-nodes"></i> 공유</button>
+          <div class="aview-share-dropdown">
+            <button type="button" onclick="window.open('https://www.facebook.com/sharer/sharer.php?u='+encodeURIComponent(location.href),'_blank','width=600,height=400')"><i class="fa-brands fa-facebook-f"></i> 페이스북</button>
+            <button type="button" onclick="window.open('https://twitter.com/intent/tweet?text='+encodeURIComponent('{{ article.title }}')+'&url='+encodeURIComponent(location.href),'_blank','width=600,height=400')"><i class="fa-brands fa-x-twitter"></i> X(트위터)</button>
+            <button type="button" onclick="navigator.clipboard.writeText(location.href).then(function(){alert('URL이 복사되었습니다.')})"><i class="fa-solid fa-link"></i> URL 복사</button>
+            <button type="button" onclick="location.href='mailto:?subject='+encodeURIComponent('{{ article.title }}')+'&body='+encodeURIComponent(location.href)"><i class="fa-regular fa-envelope"></i> 이메일</button>
+            <button type="button" onclick="window.print()"><i class="fa-solid fa-print"></i> 인쇄</button>
+          </div>
+        </div>
+        <button type="button" class="aview-share-btn aview-share-btn--size" id="fontDown" title="글씨 줄이기">가-</button>
+        <button type="button" class="aview-share-btn aview-share-btn--size" id="fontUp" title="글씨 키우기">가+</button>
+      </div>
+    </div>
+    {% if article.subtitle and (not article.section or article.section.code != 'S1N2') %}
+    <p class="aview-head__sub" id="articleSub" style="white-space:pre-line">{{ article.subtitle }}</p>
+    {% endif %}
+  </header>
 
-        #article-view .article-view-content>.grid.side {
-            display: none
-        }
+  <!-- 본문 + 사이드바 -->
+  <div class="main-grid">
+    <div>
+      <!-- 기사 상단 배너 -->
+      {% if banners.get('article_top') %}
+      <div class="banner-area" style="margin-bottom:1.5rem;text-align:center">
+        {% for b in banners['article_top'] %}
+        <a href="{{ url_for('public.banner_click', banner_id=b.id) }}" target="_blank" rel="noopener">
+          {{ banner_img(b) }}
+        </a>
+        {% endfor %}
+      </div>
+      {% endif %}
 
-        #article-view .sticky-article {
-            display: block
-        }
+      <!-- 대표사진 + 캡션 -->
+      {% if article.thumb_url and article.photo_caption %}
+      <figure class="aview-hero-fig">
+        <img src="{{ article.thumb_url }}" alt="{{ article.title }}">
+        <figcaption>{{ article.photo_caption }}</figcaption>
+      </figure>
+      {% endif %}
 
-        #article-view .sticky-article::after {
-            content: '';
-            display: table;
-            clear: both
-        }
+      <!-- 오피니언 필진 프로필 (본문 상단 중앙) -->
+      {% if article.author_photo and article.section and article.section.code == 'S1N2' %}
+      <div class="aview-columnist aview-columnist--top">
+        <img src="{{ article.author_photo }}" alt="{{ article.author_name }}" class="aview-columnist__photo" style="object-position:{{ article.author_photo_pos or 'center center' }}">
+        <div class="aview-columnist__info">
+          <strong class="aview-columnist__name">{% if article.author_title %}{{ article.author_title }}{% elif article.author_name and article.author_name != '웰다잉뉴스' %}{{ article.author_name }}{% endif %}</strong>
+          {% if article.author_affiliation %}
+          <span class="aview-columnist__org">({{ article.author_affiliation }})</span>
+          {% endif %}
+        </div>
+      </div>
+      {% endif %}
 
-        #article-view .article-veiw-body {
-            margin-bottom: 3rem
-        }
+      <!-- 소제목 (오피니언일 때 프로필 아래) -->
+      {% if article.subtitle and article.section and article.section.code == 'S1N2' %}
+      <p class="aview-head__sub aview-head__sub--body" style="white-space:pre-line">{{ article.subtitle }}</p>
+      {% endif %}
 
-        #article-view .social-group {
-            display: inline-block;
-            vertical-align: middle;
-            margin-right: 10px
-        }
+      <!-- 기사 본문 -->
+      <article class="aview-body" id="articleBody">
+        {{ article.content|safe }}
+      </article>
 
-        #article-view .social-group .sns {
-            height: 32px
-        }
+      <!-- 관련기사 -->
+      {% if related_articles %}
+      <div class="aview-related">
+        <div class="aview-related__title"><i class="fa-regular fa-newspaper"></i> 관련기사</div>
+        <ul class="aview-related__list">
+          {% for rel in related_articles %}
+          <li><a href="/news/articleView.html?idxno={{ rel.id }}">{{ rel.title }}</a></li>
+          {% endfor %}
+        </ul>
+      </div>
+      {% endif %}
 
-        #article-view .quick-tool {
-            display: none
-        }
+      <!-- 사이드바 상단 배너 (모바일: 관련기사 아래) -->
+      {% if banners.get('sidebar') %}
+      <div class="banner-area mob-only" style="margin:1.5rem 0;text-align:center">
+        {% for b in banners['sidebar'] %}
+        <a href="{{ url_for('public.banner_click', banner_id=b.id) }}" target="_blank" rel="noopener">
+          {{ banner_img(b) }}
+        </a>
+        {% endfor %}
+      </div>
+      {% endif %}
 
-        .article-view-header .info-group .item:last-child {
-            display: none
-        }
+      <!-- 하단(footer) 배너 — PC: 관련기사 아래 / 모바일: 기자정보 아래로 분리 -->
+      {% if banners.get('footer') %}
+      <div class="banner-area desk-only" style="margin:1.5rem 0;text-align:center">
+        {% for b in banners['footer'] %}
+        <a href="{{ url_for('public.banner_click', banner_id=b.id) }}" target="_blank" rel="noopener">
+          {{ banner_img(b) }}
+        </a>
+        {% endfor %}
+      </div>
+      {% endif %}
 
+      <!-- 기자 정보 -->
+      <div class="aview-writer">
+        {% if reporter and reporter.photo %}
+        <div class="aview-writer__avatar"><img src="{{ reporter.photo }}" alt="{{ article.author_name }}" style="width:100%;height:100%;object-fit:cover;border-radius:50%;object-position:{{ reporter.photo_pos or 'center center' }}"></div>
         {% else %}
-        #article-view .article-view-content {
-            display: table;
-            width: 100%;
-            table-layout: fixed
-        }
-
-        #article-view .article-view-content>.grid {
-            display: table-cell;
-            width: 100%;
-            vertical-align: top
-        }
-
-        #article-view .article-view-content>.grid.body {
-            padding-right: 40px
-        }
-
-        #article-view .article-view-content>.grid.side {
-            width: 341px;
-            padding-left: 40px;
-            border-left: 1px solid rgba(0, 0, 0, .1)
-        }
-
-        #article-view .grid.side .sticky {
-            width: 100%
-        }
-
-        #article-view .grid.side .sticky::after {
-            content: '';
-            display: table;
-            clear: both
-        }
-
-        #article-view .sticky-article {
-            display: block
-        }
-
-        #article-view .sticky-article::after {
-            content: '';
-            display: table;
-            clear: both
-        }
-
-        #article-view .article-veiw-body {
-            margin-bottom: 5rem
-        }
-
-        #article-view .social-group {
-            display: inline-block;
-            vertical-align: middle;
-            margin-right: 10px
-        }
-
-        #article-view .social-group .sns {
-            height: 32px
-        }
-
-        #article-view .quick-tool {
-            display: inline-block
-        }
-
-        @media screen and (max-width: 63.9375em) {
-
-            .row #article-view .article-view-content,
-            .row #article-view .article-view-content>.grid {
-                display: block;
-                width: auto
-            }
-
-            .row #article-view .article-view-content {
-                table-layout: inherit
-            }
-
-            .row #article-view .article-view-content>.grid {
-                vertical-align: inherit
-            }
-
-            .row #article-view .article-view-content>.grid.side {
-                padding-left: 0
-            }
-        }
-
+        <div class="aview-writer__avatar">{{ article.author_name[:1] if article.author_name else '기' }}</div>
         {% endif %}
-
-        /* 기사 본문 스타일 */
-        #article-view-content-div {
-            font-size: 16px;
-            line-height: 1.85;
-            color: #333;
-            word-break: keep-all
-        }
-
-        #article-view-content-div p {
-            margin-bottom: 1.2em
-        }
-
-        #article-view-content-div img {
-            max-width: 100%;
-            height: auto
-        }
-
-        #article-view-content-div figure {
-            margin: 1.5em 0;
-            text-align: center;
-            display: block !important
-        }
-
-        #article-view-content-div figcaption {
-            display: block !important;
-            margin-top: 8px;
-            padding: 0 10px;
-            font-size: 13px;
-            color: #888;
-            line-height: 1.4;
-            text-align: center;
-            font-style: normal;
-            word-break: keep-all
-        }
-
-        #article-view-content-div figure.image {
-            margin: 1.5em auto;
-            text-align: center;
-            display: block !important
-        }
-
-        #article-view-content-div figure.image img {
-            max-width: 100%;
-            height: auto
-        }
-
-        #article-view-content-div figure.image figcaption {
-            display: block !important;
-            caption-side: bottom
-        }
-
-        /* 관련기사 */
-        .relation {
-            margin: 30px 0;
-            padding: 20px;
-            background-color: #f8f8f8;
-            border: 1px solid #eee
-        }
-
-        .relation .list {
-            list-style: none;
-            margin: 0;
-            padding: 0
-        }
-
-        .relation .list li {
-            padding: 5px 0;
-            font-size: 14px;
-            line-height: 1.6
-        }
-
-        .relation .list li::before {
-            content: '▶';
-            margin-right: 6px;
-            color: #5e1985;
-            font-size: 10px
-        }
-
-        .relation .list li a {
-            color: #333
-        }
-
-        .relation .list li a:hover {
-            color: #5e1985
-        }
-
-        /* 기자 정보 */
-        .writer {
-            border-top: 1px solid #eee;
-            border-bottom: 1px solid #eee;
-            padding: 20px 0;
-            margin: 20px 0;
-            overflow: hidden
-        }
-
-        .writer .item {
-            display: table-cell;
-            vertical-align: middle
-        }
-
-        .writer .item:last-child {
-            text-align: right
-        }
-
-        .writer .account {
-            display: flex;
-            align-items: center
-        }
-
-        .writer .account .image {
-            display: inline-block;
-            width: 50px;
-            height: 50px;
-            border-radius: 50%;
-            background-size: cover;
-            background-position: center;
-            background-color: #e0d5ea;
-            margin-right: 12px;
-            flex-shrink: 0
-        }
-
-        .writer .account .name {
-            display: block;
-            font-size: 15px;
-            font-weight: 700;
-            color: #222
-        }
-
-        .writer .account .email {
-            display: block;
-            font-size: 13px;
-            color: #999;
-            margin-top: 2px
-        }
-
-        .article-more {
-            display: inline-block;
-            padding: 6px 16px;
-            border: 1px solid #ddd;
-            border-radius: 3px;
-            font-size: 13px;
-            color: #666
-        }
-
-        .article-more:hover {
-            border-color: #5e1985;
-            color: #5e1985
-        }
-
-        /* 저작권 */
-        .article-copy {
-            margin: 20px 0;
-            padding: 15px;
-            text-align: center;
-            font-size: 13px;
-            color: #999;
-            background-color: #fafafa;
-            border: 1px solid #eee
-        }
-
-        /* 댓글 */
-        #comment {
-            display: block;
-            margin: 2.5rem auto
-        }
-
-        .cmt-header::after {
-            content: '';
-            display: table;
-            clear: both
-        }
-
-        .cmt-header .titles {
-            float: left;
-            font-size: 1.25rem;
-            font-weight: normal;
-            line-height: 35px;
-            color: #000
-        }
-
-        .cmt-header .comment-count {
-            font-weight: bold
-        }
-
-        .comment-write {
-            display: block;
-            overflow: hidden;
-            margin-bottom: 2.1875rem;
-            background-color: #fff;
-            border: 1px solid rgba(0, 0, 0, .25);
-            border-radius: .3125rem
-        }
-
-        .comment-write .wrt-header {
-            display: block;
-            padding: 1.25rem
-        }
-
-        .comment-write .wrt-header::after {
-            content: '';
-            display: table;
-            clear: both
-        }
-
-        #comment-guest {
-            font-size: 0;
-            white-space: nowrap
-        }
-
-        #comment-guest input[type="text"],
-        #comment-guest input[type="password"] {
-            display: inline-block;
-            width: 140px;
-            height: 32px;
-            margin: 0;
-            font-size: .8125rem;
-            border: 1px solid rgba(0, 0, 0, .15);
-            border-radius: 2rem;
-            padding: 0 12px
-        }
-
-        #comment-guest input[type="password"] {
-            margin-left: .25rem
-        }
-
-        .comment-write .comment-content {
-            display: block;
-            min-height: 80px;
-            width: 100%;
-            margin: 0 auto;
-            padding: 0 1.25rem;
-            font-size: .9375rem;
-            font-weight: 300;
-            line-height: 1.625;
-            color: #000;
-            border: none;
-            border-radius: 0;
-            resize: vertical
-        }
-
-        .comment-write .wrt-footer {
-            display: block;
-            padding: .375rem 1.25rem;
-            border-top: 1px solid rgba(0, 0, 0, .08)
-        }
-
-        .comment-write .wrt-footer::after {
-            content: '';
-            display: table;
-            clear: both
-        }
-
-        .comment-write .wrt-footer .cur--length {
-            float: left;
-            font-size: .75rem;
-            font-weight: 300;
-            line-height: 32px;
-            color: #989898
-        }
-
-        .comment-write .wrt-footer .comment-text-cur {
-            color: #000
-        }
-
-        .comment-write .wrt-footer .btn-comment-save {
-            float: right;
-            height: 32px;
-            padding: 0 1.125rem;
-            font-size: .8125rem;
-            line-height: 1;
-            color: #fff;
-            border: none;
-            border-radius: .25rem;
-            background-color: #5e1985;
-            cursor: pointer
-        }
-
-        .comment-write .wrt-footer .btn-comment-save:hover {
-            background-color: #4a1369
-        }
-
-        #comment-list {
-            display: block
-        }
-
-        .comment-item {
-            display: block
-        }
-
-        .comment-item .first {
-            padding: 1.25rem 0;
-            border-top: 1px solid rgba(0, 0, 0, .08)
-        }
-
-        .normal-content>.comment-item:first-child .first {
-            padding-top: 0;
-            border-top: none
-        }
-
-        .comment-item .first::after {
-            content: '';
-            display: table;
-            clear: both
-        }
-
-        .comment-item .photo {
-            float: left
-        }
-
-        .comment-item .photo>.pfile {
-            display: block;
-            overflow: hidden;
-            width: 45px;
-            height: 45px;
-            background-color: #e0d5ea;
-            border-radius: 50%
-        }
-
-        .comment-item .photo+.user-textbox {
-            float: right;
-            width: calc(100% - 65px)
-        }
-
-        .comment-item .textbox-header {
-            margin-bottom: .75rem
-        }
-
-        .comment-item .textbox-header::after {
-            content: '';
-            display: table;
-            clear: both
-        }
-
-        .comment-item .textbox-info {
-            display: block;
-            font-size: 0;
-            text-align: left
-        }
-
-        .comment-item .textbox-info>* {
-            display: inline-block;
-            white-space: nowrap;
-            vertical-align: middle
-        }
-
-        .comment-item .textbox-info> :not(:first-child) {
-            margin-left: .5rem
-        }
-
-        .comment-item .textbox-info>.name {
-            font-size: .9375rem;
-            line-height: 25px;
-            color: #000
-        }
-
-        .comment-item .textbox-info>.datetime {
-            position: relative;
-            padding-left: .75rem;
-            margin-left: .75rem;
-            font-size: .8125rem;
-            font-weight: 300;
-            color: rgba(0, 0, 0, .7)
-        }
-
-        .comment-item .textbox-info>.datetime::before {
-            content: '';
-            overflow: hidden;
-            position: absolute;
-            z-index: 1;
-            left: 0;
-            top: 50%;
-            width: 0;
-            height: .625rem;
-            border-left: 1px solid rgba(0, 0, 0, .12);
-            transform: translateY(-50%)
-        }
-
-        .comment-item .textbox-option {
-            float: right;
-            font-size: 0;
-            text-align: right
-        }
-
-        .comment-item .textbox-option>a {
-            display: inline-block;
-            font-size: .8125rem;
-            font-weight: 300;
-            line-height: 25px;
-            color: rgba(0, 0, 0, .65);
-            cursor: pointer
-        }
-
-        .comment-item .comment-content-view {
-            font-size: .9375rem;
-            font-weight: 300;
-            line-height: 1.375;
-            color: #000;
-            white-space: pre-wrap;
-            word-break: break-word
-        }
-
-        .comment-empty {
-            padding: 40px 0;
-            text-align: center;
-            font-size: .9375rem;
-            color: rgba(0, 0, 0, .45)
-        }
-
-        /* 정렬 */
-        .cmt-header .cmt-sort {
-            float: right;
-            font-size: 0
-        }
-
-        .cmt-sort .sort-btn {
-            display: inline-block;
-            padding: 0 8px;
-            font-size: .8125rem;
-            line-height: 35px;
-            color: rgba(0, 0, 0, .5);
-            text-decoration: none
-        }
-
-        .cmt-sort .sort-btn.active {
-            color: #5e1985;
-            font-weight: 700
-        }
-
-        .cmt-sort .sort-btn+.sort-btn {
-            border-left: 1px solid rgba(0, 0, 0, .12)
-        }
-
-        /* 회원 댓글 작성 */
-        #comment-member {
-            font-size: .9375rem;
-            color: #333
-        }
-
-        #comment-member .member-name {
-            font-weight: 600
-        }
-
-        #comment-member .member-name i {
-            margin-right: 4px;
-            color: #5e1985
-        }
-
-        /* IP 표시 */
-        .comment-item .textbox-info>.ip {
-            font-size: .75rem;
-            font-weight: 300;
-            color: rgba(0, 0, 0, .4)
-        }
-
-        /* 회원 이름 강조 */
-        .comment-item .textbox-info>.name.is-member {
-            color: #5e1985
-        }
-
-        /* 더보기 */
-        .comment-hidden {
-            display: none
-        }
-
-        .comment-more-wrap {
-            text-align: center;
-            padding: 1.25rem 0;
-            border-top: 1px solid rgba(0, 0, 0, .08)
-        }
-
-        .btn-comment-more {
-            display: inline-block;
-            padding: .5rem 2rem;
-            font-size: .875rem;
-            color: #666;
-            background: #fff;
-            border: 1px solid #ddd;
-            border-radius: .25rem;
-            cursor: pointer
-        }
-
-        .btn-comment-more:hover {
-            border-color: #5e1985;
-            color: #5e1985
-        }
-
-        .btn-comment-more .more-count {
-            color: #5e1985;
-            font-weight: 600
-        }
-
-        /* 추천/비추천 */
-        .comment-vote {
-            display: inline-flex;
-            gap: 4px;
-            margin-top: .5rem;
-            font-size: 0
-        }
-
-        .comment-vote .vote-btn {
-            display: inline-flex;
-            align-items: center;
-            gap: 3px;
-            padding: 2px 8px;
-            font-size: .75rem;
-            color: rgba(0, 0, 0, .5);
-            background: none;
-            border: 1px solid rgba(0, 0, 0, .12);
-            border-radius: 2rem;
-            cursor: pointer;
-            line-height: 1
-        }
-
-        .comment-vote .vote-btn:hover {
-            border-color: #5e1985;
-            color: #5e1985
-        }
-
-        .comment-vote .vote-btn .cnt {
-            font-weight: 600
-        }
-
-        /* 대댓글 */
-        .comment-item.reply-item {
-            margin-left: 60px
-        }
-
-        .comment-item.reply-item .first {
-            padding-left: 15px;
-            border-left: 2px solid rgba(0, 0, 0, .06)
-        }
-
-        .comment-item.reply-item .photo>.pfile {
-            width: 35px;
-            height: 35px
-        }
-
-        .comment-item.reply-item .photo+.user-textbox {
-            width: calc(100% - 55px)
-        }
-
-        .btn-reply-toggle {
-            display: inline-block;
-            margin-top: .375rem;
-            padding: 0;
-            font-size: .8125rem;
-            color: rgba(0, 0, 0, .5);
-            background: none;
-            border: none;
-            cursor: pointer
-        }
-
-        .btn-reply-toggle:hover {
-            color: #5e1985
-        }
-
-        .reply-write-box {
-            display: none;
-            margin: 10px 0 0 60px;
-            padding: 10px;
-            background: #fafafa;
-            border: 1px solid rgba(0, 0, 0, .1);
-            border-radius: .25rem
-        }
-
-        .reply-write-box textarea {
-            width: 100%;
-            min-height: 50px;
-            padding: 8px;
-            font-size: .875rem;
-            border: 1px solid rgba(0, 0, 0, .15);
-            border-radius: .25rem;
-            resize: vertical
-        }
-
-        .reply-write-box .reply-inputs {
-            display: flex;
-            gap: 6px;
-            margin-bottom: 6px
-        }
-
-        .reply-write-box .reply-inputs input {
-            flex: 1;
-            height: 30px;
-            padding: 0 10px;
-            font-size: .8125rem;
-            border: 1px solid rgba(0, 0, 0, .15);
-            border-radius: 2rem
-        }
-
-        .reply-write-box .reply-footer {
-            display: flex;
-            justify-content: flex-end;
-            margin-top: 6px;
-            gap: 6px
-        }
-
-        .reply-write-box .reply-footer button {
-            height: 28px;
-            padding: 0 12px;
-            font-size: .8125rem;
-            border: none;
-            border-radius: .25rem;
-            cursor: pointer
-        }
-
-        .reply-write-box .btn-reply-submit {
-            background: #5e1985;
-            color: #fff
-        }
-
-        .reply-write-box .btn-reply-cancel {
-            background: #eee;
-            color: #666
-        }
-
-        /* BEST 댓글 */
-        .best-comment-list {
-            margin-bottom: 1.25rem;
-            padding: .75rem;
-            background: #faf5ff;
-            border: 1px solid #e8d5f5;
-            border-radius: .3125rem
-        }
-
-        .best-comment-list .best-label {
-            display: inline-block;
-            padding: 2px 8px;
-            margin-bottom: .5rem;
-            font-size: .6875rem;
-            font-weight: 700;
-            color: #fff;
-            background: #5e1985;
-            border-radius: 2px
-        }
-
-        .best-comment-list .comment-item .first {
-            border-top-color: rgba(94, 25, 133, .1)
-        }
-
-        /* 수정 폼 */
-        .comment-edit-form {
-            margin-top: .5rem
-        }
-
-        .comment-edit-form textarea {
-            width: 100%;
-            min-height: 60px;
-            padding: 8px;
-            font-size: .875rem;
-            border: 1px solid rgba(0, 0, 0, .15);
-            border-radius: .25rem;
-            resize: vertical
-        }
-
-        .comment-edit-form .edit-footer {
-            display: flex;
-            justify-content: flex-end;
-            gap: 6px;
-            margin-top: 6px
-        }
-
-        .comment-edit-form .edit-footer button {
-            height: 28px;
-            padding: 0 12px;
-            font-size: .8125rem;
-            border: none;
-            border-radius: .25rem;
-            cursor: pointer
-        }
-
-        .comment-edit-form .btn-edit-save {
-            background: #5e1985;
-            color: #fff
-        }
-
-        .comment-edit-form .btn-edit-cancel {
-            background: #eee;
-            color: #666
-        }
-
-        /* 옵션 버튼 간격 */
-        .comment-item .textbox-option>a+a {
-            margin-left: .5rem
-        }
-
-        /* flash 메시지 */
-        .comment-flash {
-            padding: 10px 15px;
-            margin-bottom: 15px;
-            border-radius: 4px;
-            font-size: 13px
-        }
-
-        .comment-flash.error {
-            background: #fff0f0;
-            color: #c00;
-            border: 1px solid #fdd
-        }
-
-        /* 이전/다음 기사 — Foundation .label 오버라이드 */
-        .article-navigate {
-            border-top: 2px solid #333;
-            margin-top: 30px
-        }
-
-        .article-navigate .item {
-            display: block;
-            padding: 12px 0;
-            border-bottom: 1px solid #eee;
-            overflow: hidden
-        }
-
-        .article-navigate .item .label {
-            display: inline-block;
-            width: 70px;
-            font-size: 13px;
-            font-weight: 700;
-            color: #5e1985;
-            background: none;
-            padding: 0;
-            border-radius: 0;
-            line-height: inherit;
-            white-space: normal;
-            cursor: default
-        }
-
-        .article-navigate .item a {
-            font-size: 14px;
-            color: #333
-        }
-
-        .article-navigate .item a:hover {
-            color: #5e1985
-        }
-
-        /* sticky 스크롤 헤더 */
-        #sticky-header {
-            position: fixed;
-            z-index: 999;
-            left: 0;
-            top: 0;
-            width: 100%;
-            background: #fff;
-            box-shadow: 0 1px 3px rgba(0, 0, 0, .12);
-            transform: translateY(-100%);
-            transition: transform .25s ease;
-            display: flex;
-            align-items: center;
-            justify-content: center
-        }
-
-        #sticky-header.scroll {
-            transform: translateY(0)
-        }
-
-        #sticky-header .aht-btn {
-            position: absolute;
-            top: 0;
-            width: 50px;
-            height: 100%;
-            border: none;
-            background: none;
-            font-size: 1.25rem;
-            color: #666;
-            cursor: pointer
-        }
-
-        #sticky-header .aht-btn.prev {
-            left: 0
-        }
-
-        #sticky-header .aht-btn.next {
-            right: 0
-        }
-
-        #sticky-header .aht-btn:hover {
-            color: #5e1985
-        }
-
-        #sticky-header .aht-wrapper {
-            display: flex;
-            align-items: center;
-            max-width: {% if is_mobile %}728{% else %}1240{% endif %}px;
-            width: 100%;
-            padding: 10px 60px
-        }
-
-        #sticky-header .aht-wrapper .item.logo {
-            flex-shrink: 0;
-            margin-right: 15px
-        }
-
-        #sticky-header .aht-wrapper .item.logo img {
-            height: 22px
-        }
-
-        #sticky-header .aht-wrapper .item.titles {
-            flex: 1;
-            overflow: hidden
-        }
-
-        #sticky-header .aht-wrapper .aht-title-view {
-            font-size: 14px;
-            font-weight: 500;
-            color: #333;
-            white-space: nowrap;
-            overflow: hidden;
-            text-overflow: ellipsis;
-            display: block
-        }
-
-        #sticky-header .aht-control {
-            position: absolute;
-            left: 0;
-            bottom: 0;
-            width: 100%;
-            height: 2px;
-            background: transparent
-        }
-
-        #sticky-header .aht-bar {
-            height: 2px;
-            width: 0;
-            border-top: 2px solid #5e1985;
-            transition: width .1s linear
-        }
-
-        {% if is_mobile %}
-        #sticky-header .aht-btn {
-            display: none
-        }
-
-        #sticky-header .aht-wrapper {
-            padding: 10px 15px
-        }
-        {% endif %}
-
-        /* 글자크기 아이콘 */
-        #article-view .quick-tool .font-size {
-            display: inline-block;
-            margin: 0 auto
-        }
-
-        #article-view .quick-tool .font-size::before {
-            content: '';
-            display: inline-block;
-            width: 16px;
-            height: 16px;
-            background-size: contain;
-            background-repeat: no-repeat;
-            background-position: center;
-            vertical-align: middle
-        }
-
-        #article-view .quick-tool .font-size.down::before {
-            background-image: url({{ url_for('static', filename='images/font-size-down.svg') }})
-        }
-
-        #article-view .quick-tool .font-size.up::before {
-            background-image: url({{ url_for('static', filename='images/font-size-up.svg') }})
-        }
-
-        /* 다른 공유 모달 */
-        .social-group.for-other {
-            font-size: 0;
-            text-align: left
-        }
-
-        .social-group.for-other::after {
-            content: '';
-            display: table;
-            clear: both
-        }
-
-        .social-group.for-other .sns {
-            float: left;
-            width: calc(20% - 10px);
-            height: auto;
-            margin: 5px;
-            padding: 1.125rem 0;
-            font-size: 1.375rem;
-            text-align: center;
-            cursor: pointer;
-            transition: background-color .25s ease-in-out
-        }
-
-        .social-group.for-other .sns:hover {
-            background-color: rgba(0, 0, 0, .5)
-        }
-    </style>
-    {% endblock %}
-
-    {% block content %}
-    <!-- sticky 스크롤 헤더 -->
-    <div id="sticky-header">
+        <div class="aview-writer__info">
+          <strong class="aview-writer__name">{{ article.author_name }}</strong>
+          {% if article.author_email %}
+          <a href="mailto:{{ article.author_email }}" class="aview-writer__email">{{ article.author_email }}</a>
+          {% endif %}
+        </div>
+        <a href="/news/articleList.html?sc_word={{ article.author_name }}&view_type=sm" class="aview-writer__more">다른기사 보기 <i class="fa-solid fa-chevron-right"></i></a>
+      </div>
+
+      <!-- 저작권 -->
+      <div class="aview-copy">저작권자 &copy; 웰다잉뉴스 무단전재 및 재배포 금지</div>
+
+      <!-- 기사 하단 배너 -->
+      {% if banners.get('article_bottom') %}
+      <div class="banner-area" style="margin:1.5rem 0;text-align:center">
+        {% for b in banners['article_bottom'] %}
+        <a href="{{ url_for('public.banner_click', banner_id=b.id) }}" target="_blank" rel="noopener">
+          {{ banner_img(b) }}
+        </a>
+        {% endfor %}
+      </div>
+      {% endif %}
+
+      <!-- 키워드 -->
+      {% if article.keyword %}
+      <div class="aview-tags">
+        {% for kw in article.keyword.split(',') %}
+        <a href="/news/articleList.html?sc_word={{ kw.strip() }}" class="aview-tag">#{{ kw.strip() }}</a>
+        {% endfor %}
+      </div>
+      {% endif %}
+
+      <!-- 이전/다음 기사 -->
+      <div class="aview-nav">
         {% if prev_article %}
-        <a href="{{ url_for('public.article_view', idxno=prev_article.id) }}" class="aht-btn prev" title="이전기사"><i
-                class="icon-angle-left-thin"></i></a>
+        <a href="/news/articleView.html?idxno={{ prev_article.id }}" class="aview-nav__item">
+          <span class="aview-nav__label"><i class="fa-solid fa-angle-left"></i> 이전기사</span>
+          <span class="aview-nav__title">{{ prev_article.title }}</span>
+        </a>
         {% endif %}
         {% if next_article %}
-        <a href="{{ url_for('public.article_view', idxno=next_article.id) }}" class="aht-btn next" title="다음기사"><i
-                class="icon-angle-right-thin"></i></a>
+        <a href="/news/articleView.html?idxno={{ next_article.id }}" class="aview-nav__item aview-nav__item--next">
+          <span class="aview-nav__label">다음기사 <i class="fa-solid fa-angle-right"></i></span>
+          <span class="aview-nav__title">{{ next_article.title }}</span>
+        </a>
         {% endif %}
-        <div class="aht-wrapper">
-            <div class="item logo"><a href="{{ url_for('public.index') }}"><img
-                        src="{{ url_for('static', filename='images/print-logo.png') }}" alt="웰다잉뉴스"></a></div>
-            <div class="item titles"><span class="aht-title-view">{{ article.title }}</span></div>
+      </div>
+
+      <!-- 댓글 -->
+      {% if comment_use != 'N' %}
+      <div class="aview-comments" id="comment">
+        <div class="aview-comments__head">
+          <span class="aview-comments__count"><strong>{{ comment_count }}</strong>개의 댓글</span>
+          <div class="aview-comments__sort">
+            <a href="/news/articleView.html?idxno={{ article.id }}&csort=newest#comment" class="{% if comment_sort == 'newest' %}aview-comments__sort--active{% endif %}">최신순</a>
+            <a href="/news/articleView.html?idxno={{ article.id }}&csort=oldest#comment" class="{% if comment_sort == 'oldest' %}aview-comments__sort--active{% endif %}">등록순</a>
+          </div>
         </div>
-        <div class="aht-control">
-            <div class="aht-bar user-border-top"></div>
-        </div>
-    </div>
 
-    <div id="article-view" {% if is_mobile %} class="mobile" {% endif %}>
-        <div class="wrapper" style="max-width:{% if is_mobile %}728{% else %}1240{% endif %}px">
-            <div class="clearfix"></div>
+        {% with messages = get_flashed_messages(with_categories=true) %}
+        {% if messages %}
+        {% for category, message in messages %}
+        <div class="aview-flash aview-flash--{{ category }}">{{ message }}</div>
+        {% endfor %}
+        {% endif %}
+        {% endwith %}
 
-            <!-- 기사 헤더 -->
-            <header class="article-view-header">
-                <!-- [Bug 2 fix] 브레드크럼을 기사 하단으로 이동 -->
+        <!-- 댓글 작성 -->
+        <form method="POST" action="{{ url_for('public.comment_write') }}" class="aview-cmt-write">
+          <input type="hidden" name="article_id" value="{{ article.id }}">
+          <div class="aview-cmt-write__head">
+            {% if current_member %}
+            <span class="aview-cmt-write__member"><i class="fa-regular fa-user"></i> {{ current_member.name }}</span>
+            {% else %}
+            <input type="text" name="author_name" placeholder="작성자" required class="aview-cmt-write__input">
+            <input type="password" name="password" placeholder="비밀번호" required class="aview-cmt-write__input">
+            {% endif %}
+          </div>
+          <textarea name="content" class="aview-cmt-write__textarea" placeholder="댓글을 입력하세요. (욕설 및 비하 내용은 관련법률에 의해 제재될 수 있습니다.)" maxlength="{{ comment_max_length }}" required></textarea>
+          <div class="aview-cmt-write__foot">
+            <span class="aview-cmt-write__len"><strong class="aview-cmt-cur">0</strong> / {{ comment_max_length }}</span>
+            <button type="submit" class="aview-cmt-write__btn">등록</button>
+          </div>
+        </form>
 
-                <!-- 제목 -->
-                <H1 class="heading">{{ article.title }}</H1>
-
-                <!-- 정보 그룹 -->
-                <div class="info-group">
-                    <article class="item">
-                        <ul class="infomation">
-                            <li>
-                                <i class="icon-user-o"><span class="show-for-sr">기자명</span></i>
-                                {{ article.author_name }}
-                            </li>
-                            <li><i class="icon-clock-o"></i> 입력 {{ (article.embargo_date or
-                                article.created_at).strftime('%Y.%m.%d %H:%M') }}</li>
-                            {% if article.updated_at and (article.updated_at - (article.embargo_date or
-                            article.created_at)).total_seconds() > 60
-                            %}
-                            <li><i class="icon-check-circle-o"></i> 수정 {{ article.updated_at.strftime('%Y.%m.%d %H:%M')
-                                }}</li>
-                            {% endif %}
-
-                        </ul>
-                    </article>
-
-                    <article class="item">
-                        <!-- 소셜 공유 -->
-                        <div class="social-group">
-                            <button type="button" class="sns sns-share-btns facebook" title="페이스북"
-                                onclick="window.open('https://www.facebook.com/sharer/sharer.php?u='+encodeURIComponent(window.location.href),'_blank','width=600,height=400')">
-                                <i class="icon-facebook"><span class="show-for-sr">페이스북(으)로 기사보내기</span></i>
-                            </button>
-                            <button type="button" class="sns sns-share-btns twitter" title="트위터"
-                                onclick="window.open('https://twitter.com/intent/tweet?text='+encodeURIComponent('{{ article.title }}')+'&url='+encodeURIComponent(window.location.href),'_blank','width=600,height=400')">
-                                <i class="icon-twitter"><span class="show-for-sr">트위터(으)로 기사보내기</span></i>
-                            </button>
-                            <button type="button" class="sns link sns_clipboard" title="URL복사"
-                                onclick="navigator.clipboard.writeText(window.location.href).then(function(){alert('URL이 복사되었습니다.')})">
-                                <i class="icon-link"><span class="show-for-sr">URL복사</span></i>
-                            </button>
-                            <button type="button" class="sns mail right" title="이메일"
-                                onclick="location.href='mailto:?subject='+encodeURIComponent('{{ article.title }}')+'&body='+encodeURIComponent(window.location.href)">
-                                <i class="icon-mail"><span class="show-for-sr">이메일 보내기</span></i>
-                            </button>
-                            <button type="button" class="sns share right" title="다른 공유" data-open="article-sns">
-                                <i class="icon-share-alt"><span class="show-for-sr">다른 공유 찾기</span></i>
-                            </button>
-                            <button type="button" class="sns bookmark scrap-btn user-bg right" title="기사스크랩"
-                                onclick="alert('스크랩 되었습니다.')">
-                                <i class="icon-bookmark"><span class="show-for-sr">기사스크랩하기</span></i>
-                            </button>
-                        </div>
-
-                        <!-- 도구 -->
-                        <div class="quick-tool">
-                            <button type="button" class="tool" onclick="window.print()" title="인쇄" data-tooltip>
-                                <i class="icon-print"><span class="show-for-sr">인쇄</span></i>
-                            </button>
-                            <button type="button" class="tool sns_clipboard" title="URL주소" data-tooltip
-                                onclick="navigator.clipboard.writeText(window.location.href).then(function(){alert('URL이 복사되었습니다.')})">
-                                <i class="icon-link"><span class="show-for-sr">복사하기</span></i>
-                            </button>
-                            <button type="button" class="tool fontsise-btn" value="down" title="본문글씨 줄이기" data-tooltip>
-                                <i class="font-size down"><span class="show-for-sr">본문 글씨 줄이기</span></i><span
-                                    style="font-size:12px;vertical-align:middle">가-</span>
-                            </button>
-                            <button type="button" class="tool fontsise-btn" value="up" title="본문글씨 키우기" data-tooltip>
-                                <i class="font-size up"><span class="show-for-sr">본문 글씨 키우기</span></i><span
-                                    style="font-size:14px;font-weight:bold;vertical-align:middle">가+</span>
-                            </button>
-                        </div>
-                    </article>
-                </div>
-            </header>
-
-            <!-- 기사 본문 영역 (테이블 레이아웃: body + side) -->
-            <section id="articleViewCon" class="article-view-content">
-
-                <!-- 본문 -->
-                <article class="grid body">
-                    <div class="clearfix"></div>
-
-                    <div id="snsAnchor" class="sticky-article">
-                        <div class="article-body">
-                            <!-- 부제 -->
-                            <!-- [Bug 3 fix] 부제 줄바꿈 적용 -->
-                            {% if article.subtitle %}
-                            <H2 class="subheading" style="white-space:pre-line">{{ article.subtitle }}</H2>
-                            {% endif %}
-
-                            <!-- 기사 상단 배너 -->
-                            {% if banners.get('article_top') %}
-                            <div class="banner-area banner-article-top" style="text-align:center;margin-bottom:20px">
-                                {% for b in banners['article_top'] %}
-                                <a href="{{ url_for('public.banner_click', banner_id=b.id) }}" target="_blank"
-                                    rel="noopener"
-                                    style="display:inline-block{% if not loop.first %};margin-left:10px{% endif %}">
-                                    <img src="{{ b.image_path if b.image_path.startswith(('http', '/')) else url_for('static', filename=b.image_path) }}" alt="{{ b.name }}"
-                                        style="max-width:100%">
-                                </a>
-                                {% endfor %}
-                            </div>
-                            {% endif %}
-
-                            <!-- 대표사진 + 캡션 -->
-                            {% if article.thumb_url and article.photo_caption %}
-                            <figure style="margin:0 0 20px 0;text-align:center">
-                                <img src="{{ article.thumb_url }}" alt="{{ article.title }}" style="max-width:100%;height:auto">
-                                <figcaption style="margin-top:8px;font-size:13px;color:#888;line-height:1.4;text-align:center">{{ article.photo_caption }}</figcaption>
-                            </figure>
-                            {% endif %}
-
-                            <!-- 기사 본문 -->
-                            <article id="article-view-content-div" class="article-veiw-body view-page">
-                                {{ article.content|safe }}
-                            </article>
-
-                            <div class="clearfix"></div>
-
-                            <!-- 관련기사 -->
-                            {% if related_articles %}
-                            <article class="relation">
-                                <ul class="list">
-                                    {% for rel in related_articles %}
-                                    <li><a href="{{ url_for('public.article_view', idxno=rel.id) }}">{{ rel.title }}</a>
-                                    </li>
-                                    {% endfor %}
-                                </ul>
-                            </article>
-                            {% endif %}
-
-                            <!-- 기자 정보 -->
-                            <article class="writer">
-                                <div class="item">
-                                    <div class="account">
-                                        <em class="image" style="background-color:#e0d5ea"></em>
-                                        <div>
-                                            <strong class="name">{{ article.author_name }}</strong>
-                                            {% if article.author_email %}
-                                            <a href="mailto:{{ article.author_email }}" class="email">{{
-                                                article.author_email }}</a>
-                                            {% endif %}
-                                        </div>
-                                    </div>
-                                </div>
-                                <div class="item text-right">
-                                    <a href="{{ url_for('public.article_list', sc_word=article.author_name, view_type='sm') }}"
-                                        class="article-more">다른기사 보기</a>
-                                </div>
-                            </article>
-
-                            <!-- 저작권 -->
-                            <article class="article-copy">저작권자 &copy; 웰다잉뉴스 무단전재 및 재배포 금지</article>
-
-                            <!-- 기사 하단 배너 -->
-                            {% if banners.get('article_bottom') %}
-                            <div class="banner-area banner-article-bottom" style="text-align:center;margin:20px 0">
-                                {% for b in banners['article_bottom'] %}
-                                <a href="{{ url_for('public.banner_click', banner_id=b.id) }}" target="_blank"
-                                    rel="noopener"
-                                    style="display:inline-block{% if not loop.first %};margin-left:10px{% endif %}">
-                                    <img src="{{ b.image_path if b.image_path.startswith(('http', '/')) else url_for('static', filename=b.image_path) }}" alt="{{ b.name }}"
-                                        style="max-width:100%">
-                                </a>
-                                {% endfor %}
-                            </div>
-                            {% endif %}
-
-                            <!-- 키워드 -->
-                            {% if article.keyword %}
-                            <div style="margin:15px 0;padding:10px 0;border-top:1px solid #eee">
-                                {% for kw in article.keyword.split(',') %}
-                                <a href="{{ url_for('public.article_list', sc_word=kw.strip()) }}"
-                                    style="display:inline-block;margin:3px;padding:4px 12px;border:1px solid #ddd;border-radius:15px;font-size:13px;color:#666">#{{
-                                    kw.strip() }}</a>
-                                {% endfor %}
-                            </div>
-                            {% endif %}
-                        </div>
-                    </div>
-
-                    <div class="clearfix"></div>
-
-                    <!-- 이전/다음 기사 -->
-                    <div class="article-navigate">
-                        {% if prev_article %}
-                        <div class="item">
-                            <span class="label">이전기사</span>
-                            <a href="{{ url_for('public.article_view', idxno=prev_article.id) }}">{{ prev_article.title
-                                }}</a>
-                        </div>
-                        {% endif %}
-                        {% if next_article %}
-                        <div class="item">
-                            <span class="label">다음기사</span>
-                            <a href="{{ url_for('public.article_view', idxno=next_article.id) }}">{{ next_article.title
-                                }}</a>
-                        </div>
-                        {% endif %}
-                    </div>
-
-                    <!-- [Bug 2 fix] 섹션 내비게이션 (기사 하단으로 이동) -->
-                    <nav role="navigation" style="margin-top:20px">
-                        <ul class="breadcrumbs">
-                            <li><a href="{{ url_for('public.index') }}"><i class="icon-home"></i>&nbsp;홈</a></li>
-                            {% if article.section %}
-                            <li><a
-                                    href="{{ url_for('public.article_list', sc_section_code=article.section.code, view_type='sm') }}">{{
-                                    article.section.name }}</a></li>
-                            {% endif %}
-                            {% if article.subsection %}
-                            <li><a
-                                    href="{{ url_for('public.article_list', sc_sub_section_code=article.subsection.code, view_type='sm') }}">{{
-                                    article.subsection.name }}</a></li>
-                            {% endif %}
-                        </ul>
-                    </nav>
-
-                    <div class="clearfix"></div>
-
-                    <!-- 댓글 -->
-                    {% if comment_use != 'N' %}
-                    <article id="comment">
-                        <header class="cmt-header">
-                            <div class="titles"><strong class="comment-count">{{ comment_count }}</strong>개의 댓글</div>
-                            <div class="cmt-sort">
-                                <a href="{{ url_for('public.article_view', idxno=article.id, csort='newest') }}#comment"
-                                    class="sort-btn{% if comment_sort == 'newest' %} active{% endif %}">최신순</a>
-                                <a href="{{ url_for('public.article_view', idxno=article.id, csort='oldest') }}#comment"
-                                    class="sort-btn{% if comment_sort == 'oldest' %} active{% endif %}">등록순</a>
-                            </div>
-                        </header>
-
-                        <!-- flash 메시지 -->
-                        {% with messages = get_flashed_messages(with_categories=true) %}
-                        {% if messages %}
-                        {% for category, message in messages %}
-                        <div class="comment-flash {{ category }}">{{ message }}</div>
-                        {% endfor %}
-                        {% endif %}
-                        {% endwith %}
-
-                        <!-- 댓글 작성 -->
-                        <article class="comment-write">
-                            <form method="POST" action="{{ url_for('public.comment_write') }}">
-                                <input type="hidden" name="article_id" value="{{ article.id }}">
-                                <header class="wrt-header">
-                                    {% if current_member %}
-                                    <article id="comment-member">
-                                        <span class="member-name"><i class="icon-user-o"></i> {{ current_member.name
-                                            }}</span>
-                                    </article>
-                                    {% else %}
-                                    <article id="comment-guest">
-                                        <label for="guestName" class="show-for-sr">작성자</label>
-                                        <input type="text" name="author_name" id="guestName" placeholder="작성자" required>
-                                        <label for="guestPassword" class="show-for-sr">비밀번호</label>
-                                        <input type="password" name="password" id="guestPassword" placeholder="비밀번호"
-                                            required>
-                                    </article>
-                                    {% endif %}
-                                </header>
-                                <label for="cmtContent" class="show-for-sr">댓글 내용입력</label>
-                                <textarea name="content" id="cmtContent" class="comment-content"
-                                    placeholder="댓글을 입력하세요. (욕설 및 비하 내용은 관련법률에 의해 제재될 수 있습니다.)"
-                                    maxlength="{{ comment_max_length }}" required></textarea>
-                                <footer class="wrt-footer">
-                                    <span class="cur--length"><strong class="comment-text-cur">0</strong> / {{
-                                        comment_max_length }}</span>
-                                    <button type="submit" class="btn-comment-save">등록</button>
-                                </footer>
-                            </form>
-                        </article>
-
-                        {% macro render_comment(cmt, is_reply=false) %}
-                        <div class="comment-item{% if is_reply %} reply-item{% endif %}" id="cmt-{{ cmt.id }}">
-                            <div class="first">
-                                <div class="photo">{% if cmt.member and cmt.member.profile_image %}<em class="pfile"
-                                        style="background-image:url({{ cmt.member.profile_image }});background-size:cover;background-position:center"></em>{%
-                                    else %}<em class="pfile"></em>{% endif %}</div>
-                                <div class="user-textbox"
-                                    style="float:right;width:calc(100% - {% if is_reply %}55{% else %}65{% endif %}px)">
-                                    <div class="textbox-header">
-                                        <div class="textbox-info">
-                                            <span class="name{% if cmt.member_id %} is-member{% endif %}">{{
-                                                cmt.author_name }}</span>
-                                            {% if cmt.ip_address and not cmt.member_id %}
-                                            {% set ip_parts = cmt.ip_address.split('.') %}
-                                            <span class="ip">{{ ip_parts[0] }}.{{ ip_parts[1] }}.***.***</span>
-                                            {% endif %}
-                                            <span class="datetime">{{ cmt.created_at.strftime('%Y.%m.%d %H:%M')
-                                                }}</span>
-                                        </div>
-                                        <div class="textbox-option">
-                                            {% if cmt.member_id and current_member and cmt.member_id ==
-                                            current_member.id %}
-                                            <a href="#" class="btn-edit-comment btn-member-edit"
-                                                data-id="{{ cmt.id }}">수정</a>
-                                            <a href="#" class="btn-delete-comment btn-member-delete"
-                                                data-id="{{ cmt.id }}">삭제</a>
-                                            {% elif cmt.password %}
-                                            <a href="#" class="btn-edit-comment" data-id="{{ cmt.id }}">수정</a>
-                                            <a href="#" class="btn-delete-comment" data-id="{{ cmt.id }}">삭제</a>
-                                            {% endif %}
-                                        </div>
-                                    </div>
-                                    <div class="comment-content-view" id="cmt-text-{{ cmt.id }}">{{ cmt.content }}</div>
-                                    <!-- 추천/비추천 -->
-                                    <div class="comment-vote">
-                                        <button type="button" class="vote-btn" data-id="{{ cmt.id }}"
-                                            data-type="like"><i class="icon-thumbs-up"></i> <span class="cnt">{{
-                                                cmt.like_count or 0 }}</span></button>
-                                        <button type="button" class="vote-btn" data-id="{{ cmt.id }}"
-                                            data-type="dislike"><i class="icon-thumbs-down"></i> <span class="cnt">{{
-                                                cmt.dislike_count or 0 }}</span></button>
-                                    </div>
-                                    {% if not is_reply %}
-                                    <button type="button" class="btn-reply-toggle" data-id="{{ cmt.id }}"><i
-                                            class="icon-reply"></i> 답글</button>
-                                    {% endif %}
-                                </div>
-                            </div>
-                        </div>
-                        {% if not is_reply %}
-                        <!-- 답글 작성 폼 -->
-                        <div class="reply-write-box" id="reply-box-{{ cmt.id }}">
-                            <form method="POST" action="{{ url_for('public.comment_write') }}">
-                                <input type="hidden" name="article_id" value="{{ article.id }}">
-                                <input type="hidden" name="parent_id" value="{{ cmt.id }}">
-                                {% if not current_member %}
-                                <div class="reply-inputs">
-                                    <input type="text" name="author_name" placeholder="작성자">
-                                    <input type="password" name="password" placeholder="비밀번호">
-                                </div>
-                                {% endif %}
-                                <textarea name="content" placeholder="답글을 입력하세요..." maxlength="{{ comment_max_length }}"
-                                    required></textarea>
-                                <div class="reply-footer">
-                                    <button type="button" class="btn-reply-cancel" data-id="{{ cmt.id }}">취소</button>
-                                    <button type="submit" class="btn-reply-submit">등록</button>
-                                </div>
-                            </form>
-                        </div>
-                        <!-- 대댓글 목록 -->
-                        {% set child_comments = cmt.replies.filter_by(is_hidden=False).all() %}
-                        {% for reply in child_comments %}
-                        {{ render_comment(reply, is_reply=true) }}
-                        {% endfor %}
-                        {% endif %}
-                        {% endmacro %}
-
-                        <!-- BEST 댓글 -->
-                        {% if best_comments %}
-                        <article class="best-comment-list">
-                            <span class="best-label">BEST</span>
-                            <section class="normal-content">
-                                {% for cmt in best_comments %}
-                                {{ render_comment(cmt) }}
-                                {% endfor %}
-                            </section>
-                        </article>
-                        {% endif %}
-
-                        <!-- 댓글 목록 -->
-                        <article id="comment-list">
-                            <section class="normal-content">
-                                {% for cmt in comments %}
-                                {% if loop.index > 5 %}<div class="comment-hidden">{% endif %}
-                                    {{ render_comment(cmt) }}
-                                    {% if loop.index > 5 %}</div>{% endif %}
-                                {% else %}
-                                <div class="comment-empty">등록된 댓글이 없습니다.</div>
-                                {% endfor %}
-                            </section>
-                            {% set top_count = comments|length %}
-                            {% if top_count > 5 %}
-                            <div class="comment-more-wrap">
-                                <button type="button" class="btn-comment-more" id="btnCommentMore">댓글 더보기 <span
-                                        class="more-count">({{ top_count - 5 }})</span></button>
-                            </div>
-                            {% endif %}
-                        </article>
-                    </article>
-
-                    <!-- 댓글 삭제/수정용 hidden forms -->
-                    <form id="deleteCommentForm" method="POST" action="{{ url_for('public.comment_delete') }}"
-                        style="display:none">
-                        <input type="hidden" name="comment_id" id="deleteCommentId">
-                        <input type="hidden" name="password" id="deleteCommentPw">
-                        <input type="hidden" name="article_id" value="{{ article.id }}">
-                    </form>
-                    <form id="editCommentForm" method="POST" action="{{ url_for('public.comment_edit') }}"
-                        style="display:none">
-                        <input type="hidden" name="comment_id" id="editCommentId">
-                        <input type="hidden" name="password" id="editCommentPw">
-                        <input type="hidden" name="content" id="editCommentContent">
-                        <input type="hidden" name="article_id" value="{{ article.id }}">
-                    </form>
-                    {% endif %}
-                </article>
-
-                {% if not is_mobile %}
-                <!-- 사이드바 -->
-                <aside class="grid side">
-                    <div class="sticky-container">
-                        <div class="sticky">
-
-                            <!-- 사이드바 배너 -->
-                            {% if banners.get('sidebar') %}
-                            <div class="banner-area banner-sidebar" style="margin-bottom:25px">
-                                {% for b in banners['sidebar'] %}
-                                <a href="{{ url_for('public.banner_click', banner_id=b.id) }}" target="_blank"
-                                    rel="noopener"
-                                    style="display:block{% if not loop.first %};margin-top:10px{% endif %}">
-                                    <img src="{{ b.image_path if b.image_path.startswith(('http', '/')) else url_for('static', filename=b.image_path) }}" alt="{{ b.name }}"
-                                        style="width:100%">
-                                </a>
-                                {% endfor %}
-                            </div>
-                            {% endif %}
-
-                            <!-- 오피니언 -->
-                            {% if sidebar_opinion %}
-                            <article class="box-skin">
-                                <header class="header"><a
-                                        href="{{ url_for('public.article_list', sc_section_code='S1N2', view_type='sm') }}">오피니언</a>
-                                </header>
-                                <section class="content">
-                                    <div id="skin-11" class="auto-article">
-                                        {% for art in sidebar_opinion %}
-                                        <div class="item{% if not loop.first %} martop-15{% endif %}">
-                                            <a href="{{ url_for('public.article_view', idxno=art.id) }}"
-                                                class="auto-valign">
-                                                <div class="frame for-middle">
-                                                    <em class="auto-images radius ratio-11"
-                                                        style="{% if art.thumb_url %}background-image:url({{ art.thumb_url }}){% else %}background-color:#e0d5ea{% endif %}"></em>
-                                                </div>
-                                                <div class="content for-middle">
-                                                    <H2 class="auto-titles size-15 line-3x2 auto-fontA onload">{{
-                                                        art.title }}</H2>
-                                                    <em class="auto-name martop-5 size-12 line-2x1 auto-fontK">{{
-                                                        art.author_name }}</em>
-                                                </div>
-                                            </a>
-                                        </div>
-                                        {% endfor %}
-                                    </div>
-                                </section>
-                            </article>
-                            <div class="box-margins box-solid" style="margin-bottom:25px;margin-top:25px;"></div>
-                            {% endif %}
-
-                            <!-- 많이 본 뉴스 (탭) -->
-                            {% if popular_today or popular_week %}
-                            <div class="tabs-wrap type-E">
-                                <header class="tabs-header">많이 본 뉴스</header>
-                                <ul class="tabs">
-                                    <li class="tabs-title is-active"><a href="#" data-tab="today">오늘</a></li>
-                                    <li class="tabs-title"><a href="#" data-tab="week">주간</a></li>
-                                </ul>
-                                <div class="tabs-panel-today tabs-popular active">
-                                    <div class="auto-article">
-                                        {% for art in popular_today %}
-                                        <div class="item{% if not loop.first %} martop-8{% endif %}">
-                                            <a href="{{ url_for('public.article_view', idxno=art.id) }}"
-                                                style="display:flex;align-items:flex-start">
-                                                <strong
-                                                    class="number size-22 line-2x1 {% if loop.index <= 3 %}user-point{% else %}auto-fontA{% endif %}"
-                                                    style="flex-shrink:0;width:28px;margin-right:8px;font-size:18px;font-weight:700">{{
-                                                    loop.index }}</strong>
-                                                <H2 class="auto-titles auto-fontA onload"
-                                                    style="font-size:14px;line-height:1.5;font-weight:400;color:#333;overflow:hidden;text-overflow:ellipsis;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical">{{
-                                                    art.title }}</H2>
-                                            </a>
-                                        </div>
-                                        {% else %}
-                                        <div style="padding:20px 0;text-align:center;font-size:13px;color:#999">오늘 기사가
-                                            없습니다.</div>
-                                        {% endfor %}
-                                    </div>
-                                </div>
-                                <div class="tabs-panel-week tabs-popular" style="display:none">
-                                    <div class="auto-article">
-                                        {% for art in popular_week %}
-                                        <div class="item{% if not loop.first %} martop-8{% endif %}">
-                                            <a href="{{ url_for('public.article_view', idxno=art.id) }}"
-                                                style="display:flex;align-items:flex-start">
-                                                <strong
-                                                    class="number size-22 line-2x1 {% if loop.index <= 3 %}user-point{% else %}auto-fontA{% endif %}"
-                                                    style="flex-shrink:0;width:28px;margin-right:8px;font-size:18px;font-weight:700">{{
-                                                    loop.index }}</strong>
-                                                <H2 class="auto-titles auto-fontA onload"
-                                                    style="font-size:14px;line-height:1.5;font-weight:400;color:#333;overflow:hidden;text-overflow:ellipsis;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical">{{
-                                                    art.title }}</H2>
-                                            </a>
-                                        </div>
-                                        {% else %}
-                                        <div style="padding:20px 0;text-align:center;font-size:13px;color:#999">주간 기사가
-                                            없습니다.</div>
-                                        {% endfor %}
-                                    </div>
-                                </div>
-                            </div>
-                            {% endif %}
-
-                            <div class="box-margins height-50"></div>
-                        </div>
-                    </div>
-                </aside>
-                {% endif %}
-            </section>
-
-            <div class="clearfix"></div>
-        </div>
-    </div>
-
-    <!-- 다른 공유 모달 -->
-    <div class="reveal" id="article-sns" data-reveal data-v-offset="50">
-        <div class="reveal-header">
-            <div class="reveal-title">이 기사를 공유합니다</div>
-        </div>
-        <section class="reveal-container">
-            <div class="social-group for-other">
-                <button type="button" class="sns facebook" title="페이스북"
-                    onclick="window.open('https://www.facebook.com/sharer/sharer.php?u='+encodeURIComponent(window.location.href),'_blank','width=600,height=400')">
-                    <i class="icon-facebook"><span class="show-for-sr">페이스북</span></i>
-                </button>
-                <button type="button" class="sns twitter" title="트위터"
-                    onclick="window.open('https://twitter.com/intent/tweet?text='+encodeURIComponent('{{ article.title }}')+'&url='+encodeURIComponent(window.location.href),'_blank','width=600,height=400')">
-                    <i class="icon-twitter"><span class="show-for-sr">트위터</span></i>
-                </button>
-                <button type="button" class="sns link" title="URL복사"
-                    onclick="navigator.clipboard.writeText(window.location.href).then(function(){alert('URL이 복사되었습니다.')})">
-                    <i class="icon-link"><span class="show-for-sr">URL복사</span></i>
-                </button>
+        {% macro render_comment(cmt, is_reply=false) %}
+        <div class="aview-cmt{% if is_reply %} aview-cmt--reply{% endif %}" id="cmt-{{ cmt.id }}">
+          <div class="aview-cmt__avatar">{% if cmt.member and cmt.member.profile_image %}<img src="{{ cmt.member.profile_image }}" alt="">{% else %}{{ cmt.author_name[:1] }}{% endif %}</div>
+          <div class="aview-cmt__body">
+            <div class="aview-cmt__head">
+              <span class="aview-cmt__name{% if cmt.member_id %} aview-cmt__name--member{% endif %}">{{ cmt.author_name }}</span>
+              {% if cmt.ip_address and not cmt.member_id %}
+              {% set ip_parts = cmt.ip_address.split('.') %}
+              <span class="aview-cmt__ip">{{ ip_parts[0] }}.{{ ip_parts[1] }}.***.***</span>
+              {% endif %}
+              <span class="aview-cmt__date">{{ cmt.created_at.strftime('%Y.%m.%d %H:%M') }}</span>
+              {% if cmt.member_id and current_member and cmt.member_id == current_member.id %}
+              <a href="#" class="aview-cmt__action btn-edit-comment btn-member-edit" data-id="{{ cmt.id }}">수정</a>
+              <a href="#" class="aview-cmt__action btn-delete-comment btn-member-delete" data-id="{{ cmt.id }}">삭제</a>
+              {% elif cmt.password %}
+              <a href="#" class="aview-cmt__action btn-edit-comment" data-id="{{ cmt.id }}">수정</a>
+              <a href="#" class="aview-cmt__action btn-delete-comment" data-id="{{ cmt.id }}">삭제</a>
+              {% endif %}
             </div>
-        </section>
-        <button class="close-button" data-close aria-label="Close modal" type="button">
-            <i class="icon-close-thin"><span class="show-for-sr">닫기</span></i>
-        </button>
+            <div class="aview-cmt__text" id="cmt-text-{{ cmt.id }}">{{ cmt.content }}</div>
+            <div class="aview-cmt__actions">
+              <button type="button" class="aview-cmt__vote vote-btn" data-id="{{ cmt.id }}" data-type="like"><i class="fa-regular fa-thumbs-up"></i> <span class="cnt">{{ cmt.like_count or 0 }}</span></button>
+              <button type="button" class="aview-cmt__vote vote-btn" data-id="{{ cmt.id }}" data-type="dislike"><i class="fa-regular fa-thumbs-down"></i> <span class="cnt">{{ cmt.dislike_count or 0 }}</span></button>
+              {% if not is_reply %}
+              <button type="button" class="aview-cmt__reply-toggle btn-reply-toggle" data-id="{{ cmt.id }}"><i class="fa-solid fa-reply"></i> 답글</button>
+              {% endif %}
+            </div>
+          </div>
+        </div>
+        {% if not is_reply %}
+        <div class="aview-reply-box" id="reply-box-{{ cmt.id }}" style="display:none">
+          <form method="POST" action="{{ url_for('public.comment_write') }}">
+            <input type="hidden" name="article_id" value="{{ article.id }}">
+            <input type="hidden" name="parent_id" value="{{ cmt.id }}">
+            {% if not current_member %}
+            <div class="aview-reply-box__inputs">
+              <input type="text" name="author_name" placeholder="작성자">
+              <input type="password" name="password" placeholder="비밀번호">
+            </div>
+            {% endif %}
+            <textarea name="content" placeholder="답글을 입력하세요..." maxlength="{{ comment_max_length }}" required></textarea>
+            <div class="aview-reply-box__foot">
+              <button type="button" class="aview-reply-box__cancel btn-reply-cancel" data-id="{{ cmt.id }}">취소</button>
+              <button type="submit" class="aview-reply-box__submit">등록</button>
+            </div>
+          </form>
+        </div>
+        {% set child_comments = cmt.replies.filter_by(is_hidden=False).all() %}
+        {% for reply in child_comments %}
+        {{ render_comment(reply, is_reply=true) }}
+        {% endfor %}
+        {% endif %}
+        {% endmacro %}
+
+        <!-- BEST 댓글 -->
+        {% if best_comments %}
+        <div class="aview-cmt-best">
+          <span class="aview-cmt-best__label">BEST</span>
+          {% for cmt in best_comments %}
+          {{ render_comment(cmt) }}
+          {% endfor %}
+        </div>
+        {% endif %}
+
+        <!-- 댓글 목록 -->
+        <div id="comment-list">
+          {% for cmt in comments %}
+          {% if loop.index > 5 %}<div class="comment-hidden">{% endif %}
+            {{ render_comment(cmt) }}
+          {% if loop.index > 5 %}</div>{% endif %}
+          {% endfor %}
+        </div>
+        {% set top_count = comments|length %}
+        {% if top_count > 5 %}
+        <div class="aview-cmt-more-wrap">
+          <button type="button" class="aview-cmt-more" id="btnCommentMore">댓글 더보기 <span>({{ top_count - 5 }})</span></button>
+        </div>
+        {% endif %}
+      </div>
+
+      <form id="deleteCommentForm" method="POST" action="{{ url_for('public.comment_delete') }}" style="display:none">
+        <input type="hidden" name="comment_id" id="deleteCommentId">
+        <input type="hidden" name="password" id="deleteCommentPw">
+        <input type="hidden" name="article_id" value="{{ article.id }}">
+      </form>
+      <form id="editCommentForm" method="POST" action="{{ url_for('public.comment_edit') }}" style="display:none">
+        <input type="hidden" name="comment_id" id="editCommentId">
+        <input type="hidden" name="password" id="editCommentPw">
+        <input type="hidden" name="content" id="editCommentContent">
+        <input type="hidden" name="article_id" value="{{ article.id }}">
+      </form>
+      {% endif %}
+
+      <!-- 사이드바 하단 배너 (모바일: 댓글 아래) -->
+      {% if banners.get('sidebar_bottom') %}
+      <div class="banner-area mob-only" style="margin:1.5rem 0;text-align:center">
+        {% for b in banners['sidebar_bottom'] %}
+        <a href="{{ url_for('public.banner_click', banner_id=b.id) }}" target="_blank" rel="noopener">
+          {{ banner_img(b) }}
+        </a>
+        {% endfor %}
+      </div>
+      {% endif %}
     </div>
 
-    <script>
-        // 글씨 크기 조절
-        $(document).on('click', '.fontsise-btn', function () {
-            var body = $('#article-view-content-div');
-            var size = parseInt(body.css('font-size'));
-            if ($(this).val() === 'up' && size < 24) body.css('font-size', (size + 1) + 'px');
-            if ($(this).val() === 'down' && size > 12) body.css('font-size', (size - 1) + 'px');
-        });
+    <!-- 사이드바 -->
+    <aside>
+      {% if banners.get('sidebar') %}
+      <div class="banner-area desk-only">
+        {% for b in banners['sidebar'] %}
+        <a href="{{ url_for('public.banner_click', banner_id=b.id) }}" target="_blank" rel="noopener">
+          {{ banner_img(b) }}
+        </a>
+        {% endfor %}
+      </div>
+      {% endif %}
 
-        // 댓글 글자수 카운트
-        $('#cmtContent').on('input', function () {
-            var len = $(this).val().length;
-            $('.comment-text-cur').text(len);
-        });
+      <!-- 오피니언 (PC: 사이드바 리스트형) -->
+      {% if sidebar_opinion %}
+      <div class="desk-only">
+        <div class="sec-head" style="margin-top:0.5rem">
+          <i class="fa-solid fa-pen-nib"></i>
+          <span class="sec-head__title">오피니언</span>
+        </div>
+        <div class="sidebar-opinion">
+          {% for art in sidebar_opinion %}
+          <a href="/news/articleView.html?idxno={{ art.id }}" class="sidebar-opinion__item">
+            <div class="sidebar-opinion__avatar" style="{% if art.thumb_url %}background-image:url({{ art.thumb_url }}){% endif %}">
+              {% if not art.thumb_url %}{{ art.author_name[:1] if art.author_name else '필' }}{% endif %}
+            </div>
+            <div class="sidebar-opinion__body">
+              <div class="sidebar-opinion__title line-clamp-2">{{ art.title }}</div>
+              {% if art.author_title %}
+              <div class="sidebar-opinion__author">{{ art.author_title }}</div>
+              {% elif art.author_name and art.author_name != '웰다잉뉴스' %}
+              <div class="sidebar-opinion__author">{{ art.author_name }}</div>
+              {% endif %}
+            </div>
+          </a>
+          {% endfor %}
+        </div>
+      </div>
+      <!-- 오피니언 (모바일: 메인화면 카드형) -->
+      <div class="mob-only">
+        <div class="sec-head" style="margin-top:0.5rem">
+          <i class="fa-solid fa-pen-nib"></i>
+          <span class="sec-head__title">오피니언</span>
+        </div>
+        <div class="opinion-grid">
+          {% for art in sidebar_opinion %}
+          <a href="/news/articleView.html?idxno={{ art.id }}" class="opinion-card">
+            <div class="opinion-avatar">
+              {% if art.thumb_url %}
+              <img src="{{ art.thumb_url }}" alt="" style="object-position:{{ art.author_photo_pos or 'center center' }}">
+              {% else %}
+              {{ art.author_name[:1] if art.author_name else '필' }}
+              {% endif %}
+            </div>
+            {% if art.author_title %}
+            <div class="opinion-name">{{ art.author_title }}</div>
+            {% elif art.author_name and art.author_name != '웰다잉뉴스' %}
+            <div class="opinion-name">{{ art.author_name }}</div>
+            {% endif %}
+            <div class="opinion-title line-clamp-2">{{ art.title }}</div>
+          </a>
+          {% endfor %}
+        </div>
+      </div>
+      {% endif %}
 
-        // 댓글 삭제 (비회원: 비밀번호 확인)
-        $(document).on('click', '.btn-delete-comment:not(.btn-member-delete)', function (e) {
-            e.preventDefault();
-            var id = $(this).data('id');
-            var pw = prompt('댓글 삭제를 위해 비밀번호를 입력하세요.');
-            if (pw !== null && pw !== '') {
-                $('#deleteCommentId').val(id);
-                $('#deleteCommentPw').val(pw);
-                $('#deleteCommentForm').submit();
-            }
-        });
-        // 댓글 삭제 (회원: 비밀번호 불필요)
-        $(document).on('click', '.btn-member-delete', function (e) {
-            e.preventDefault();
-            if (!confirm('댓글을 삭제하시겠습니까?')) return;
-            var id = $(this).data('id');
-            $('#deleteCommentId').val(id);
-            $('#deleteCommentPw').val('');
-            $('#deleteCommentForm').submit();
-        });
-        // 댓글 더보기
-        $('#btnCommentMore').on('click', function () {
-            var hidden = $('.comment-hidden');
-            var next = hidden.slice(0, 5);
-            next.removeClass('comment-hidden').css('display', '');
-            var remaining = hidden.length - 5;
-            if (remaining <= 0) {
-                $(this).parent().hide();
-            } else {
-                $(this).find('.more-count').text('(' + remaining + ')');
-            }
-        });
+      <!-- 주요 일정 -->
+      {% if schedules %}
+      <div class="sidebar-schedule-wrap" style="margin-top:1.5rem">
+        <div class="sec-head">
+          <i class="fa-regular fa-calendar"></i>
+          <span class="sec-head__title">주요 일정</span>
+        </div>
+        <div class="sidebar-timeline">
+          {% for s in schedules[:4] %}
+          <a href="{% if s.link_url %}{{ s.link_url }}{% else %}/schedule/list.html{% endif %}" class="stl-item"{% if s.link_url %} target="_blank" rel="noopener"{% endif %}>
+            <span class="stl-dot"></span>
+            <span class="stl-content">
+              <span class="stl-period">{{ s.event_date.strftime('%m.%d') }}{% if s.end_date %} ~ {{ s.end_date.strftime('%m.%d') }}{% endif %}</span>
+              <span class="stl-title line-clamp-2">{{ s.title }}</span>
+            </span>
+          </a>
+          {% endfor %}
+        </div>
+      </div>
+      {% endif %}
 
-        // 댓글 추천/비추천
-        $(document).on('click', '.vote-btn', function () {
-            var $btn = $(this), id = $btn.data('id'), type = $btn.data('type');
-            $.post('{{ url_for("public.comment_vote") }}', { comment_id: id, vote_type: type }, function (res) {
-                var $votes = $btn.closest('.comment-vote');
-                $votes.find('[data-type="like"] .cnt').text(res.like);
-                $votes.find('[data-type="dislike"] .cnt').text(res.dislike);
-                if (res.error === 'already_voted') alert('이미 투표하셨습니다.');
-            }).fail(function () { alert('투표 처리에 실패했습니다.'); });
-        });
+      <!-- 하단(footer) 배너 (모바일: 주요일정 아래) -->
+      {% if banners.get('footer') %}
+      <div class="banner-area mob-only" style="margin:1.5rem 0;text-align:center">
+        {% for b in banners['footer'] %}
+        <a href="{{ url_for('public.banner_click', banner_id=b.id) }}" target="_blank" rel="noopener">
+          {{ banner_img(b) }}
+        </a>
+        {% endfor %}
+      </div>
+      {% endif %}
 
-        // 답글 토글
-        $(document).on('click', '.btn-reply-toggle', function () {
-            var id = $(this).data('id');
-            $('#reply-box-' + id).slideToggle(200);
-        });
-        $(document).on('click', '.btn-reply-cancel', function () {
-            var id = $(this).data('id');
-            $('#reply-box-' + id).slideUp(200);
-        });
+      <!-- 자료실 -->
+      {% if library_articles %}
+      <div class="sec-head" style="margin-top:1.5rem">
+        <i class="fa-regular fa-file-lines"></i>
+        <span class="sec-head__title">자료실</span>
+      </div>
+      <div class="sidebar-res">
+        {% for art in library_articles[:4] %}
+        <a href="/news/articleView.html?idxno={{ art.id }}" class="res-item">
+          <h4 class="res-title line-clamp-1">{{ art.title }}</h4>
+        </a>
+        {% endfor %}
+      </div>
+      {% endif %}
 
-        // 댓글 수정 (비회원: 비밀번호)
-        $(document).on('click', '.btn-edit-comment:not(.btn-member-edit)', function (e) {
-            e.preventDefault();
-            var id = $(this).data('id');
-            var pw = prompt('댓글 수정을 위해 비밀번호를 입력하세요.');
-            if (pw === null || pw === '') return;
-            var $view = $('#cmt-text-' + id);
-            var oldText = $view.text();
-            $view.hide().after(
-                '<div class="comment-edit-form" id="edit-form-' + id + '">' +
-                '<textarea>' + $('<div/>').text(oldText).html() + '</textarea>' +
-                '<div class="edit-footer">' +
-                '<button type="button" class="btn-edit-cancel" data-id="' + id + '">취소</button>' +
-                '<button type="button" class="btn-edit-save" data-id="' + id + '" data-pw="' + $('<div/>').text(pw).html() + '">저장</button>' +
-                '</div></div>'
-            );
-        });
-        // 댓글 수정 (회원: 비밀번호 불필요)
-        $(document).on('click', '.btn-member-edit', function (e) {
-            e.preventDefault();
-            var id = $(this).data('id');
-            var $view = $('#cmt-text-' + id);
-            var oldText = $view.text();
-            $view.hide().after(
-                '<div class="comment-edit-form" id="edit-form-' + id + '">' +
-                '<textarea>' + $('<div/>').text(oldText).html() + '</textarea>' +
-                '<div class="edit-footer">' +
-                '<button type="button" class="btn-edit-cancel" data-id="' + id + '">취소</button>' +
-                '<button type="button" class="btn-edit-save" data-id="' + id + '" data-pw="">저장</button>' +
-                '</div></div>'
-            );
-        });
-        // 수정 취소
-        $(document).on('click', '.btn-edit-cancel', function () {
-            var id = $(this).data('id');
-            $('#edit-form-' + id).remove();
-            $('#cmt-text-' + id).show();
-        });
-        // 수정 저장
-        $(document).on('click', '.btn-edit-save', function () {
-            var id = $(this).data('id'), pw = $(this).data('pw');
-            var content = $('#edit-form-' + id).find('textarea').val().trim();
-            if (!content) { alert('댓글 내용을 입력하세요.'); return; }
-            $('#editCommentId').val(id);
-            $('#editCommentPw').val(pw);
-            $('#editCommentContent').val(content);
-            $('#editCommentForm').submit();
-        });
+      <!-- 많이 본 뉴스 -->
+      {% if popular_today or popular_week %}
+      <div class="sec-head" style="margin-top:1.5rem">
+        <i class="fa-solid fa-arrow-trend-up"></i>
+        <span class="sec-head__title">많이 본 뉴스</span>
+      </div>
+      <div class="pop-tabs">
+        <button class="pop-tab pop-tab--active" onclick="switchPop(this,'popWeekView')">주간</button>
+        <button class="pop-tab" onclick="switchPop(this,'popTodayView')">오늘</button>
+      </div>
+      <div class="pop-list" id="popWeekView">
+        {% for art in popular_week %}
+        <a href="/news/articleView.html?idxno={{ art.id }}" class="pop-item">
+          <span class="pop-num {{ 'pop-num--top' if loop.index <= 3 else 'pop-num--rest' }}">{{ loop.index }}</span>
+          <span class="pop-title line-clamp-2">{{ art.title }}</span>
+        </a>
+        {% endfor %}
+      </div>
+      <div class="pop-list" id="popTodayView" style="display:none">
+        {% for art in popular_today %}
+        <a href="/news/articleView.html?idxno={{ art.id }}" class="pop-item">
+          <span class="pop-num {{ 'pop-num--top' if loop.index <= 3 else 'pop-num--rest' }}">{{ loop.index }}</span>
+          <span class="pop-title line-clamp-2">{{ art.title }}</span>
+        </a>
+        {% endfor %}
+      </div>
+      {% endif %}
 
-        // sticky 스크롤 헤더
-        $(window).scroll(function () {
-            var scrollTop = $(this).scrollTop();
-            var headerTrigger = $('.article-view-header').length ? $('.article-view-header').offset().top + $('.article-view-header').outerHeight() : 300;
-            if (scrollTop > headerTrigger) {
-                $('#sticky-header').addClass('scroll');
-            } else {
-                $('#sticky-header').removeClass('scroll');
-            }
-            // 진행률 바
-            var docHeight = $(document).height() - $(window).height();
-            var percent = docHeight > 0 ? (scrollTop / docHeight) * 100 : 0;
-            $('.aht-bar').css('width', Math.min(percent, 100) + '%');
-        });
-    </script>
-    {% endblock %}
+      {% if banners.get('sidebar_bottom') %}
+      <div class="banner-area desk-only" style="margin-top:1.25rem">
+        {% for b in banners['sidebar_bottom'] %}
+        <a href="{{ url_for('public.banner_click', banner_id=b.id) }}" target="_blank" rel="noopener">
+          {{ banner_img(b) }}
+        </a>
+        {% endfor %}
+      </div>
+      {% endif %}
+    </aside>
+  </div>
+</div>
+
+<!-- =========== Books (기사 하단) =========== -->
+{% if book_articles %}
+<div class="container" style="padding-top:1rem">
+  <div class="books-inline">
+    <div class="books-header">
+      <span class="books-header__title">Books</span>
+      <a href="/news/articleList.html?sc_sub_section_code=S2N17" class="books-header__more">더보기 <i class="fa-solid fa-chevron-right" style="font-size:0.625rem"></i></a>
+    </div>
+    <div class="books-stage">
+      {% for art in book_articles %}
+      <a href="/news/articleView.html?idxno={{ art.id }}" class="books-featured{% if loop.first %} books-featured--active{% endif %}" id="aviewBookSlide{{ loop.index0 }}">
+        <div class="books-featured__cover">
+          {% if art.thumb_url %}
+          <img src="{{ art.thumb_url }}" alt="{{ art.title }}">
+          {% else %}
+          <div class="books-featured__placeholder">{{ art.title }}</div>
+          {% endif %}
+        </div>
+        <div class="books-featured__info">
+          <h3 class="books-featured__quote line-clamp-3">{{ art.title }}</h3>
+          {% if art.summary_text and art.summary_text.strip() %}
+          <p class="books-featured__desc line-clamp-3">{{ art.summary_text }}</p>
+          {% elif art.subtitle_text %}
+          <p class="books-featured__desc line-clamp-3">{{ art.subtitle_text }}</p>
+          {% endif %}
+          {% if art.author_name and art.author_name != '웰다잉뉴스' %}
+          <span class="books-featured__author">{{ art.author_name }}</span>
+          {% endif %}
+        </div>
+      </a>
+      {% endfor %}
+      <button class="books-nav-arrow books-nav-arrow--prev" onclick="aviewBookNav(-1)" aria-label="이전 도서"><i class="fa-solid fa-chevron-left"></i></button>
+      <button class="books-nav-arrow books-nav-arrow--next" onclick="aviewBookNav(1)" aria-label="다음 도서"><i class="fa-solid fa-chevron-right"></i></button>
+    </div>
+    <div class="books-thumbs">
+      {% for art in book_articles %}
+      <a href="javascript:void(0)" class="books-thumb-card" onclick="aviewBookGo({{ loop.index0 }})">
+        {% if art.thumb_url %}
+        <img src="{{ art.thumb_url }}" alt="{{ art.title }}" loading="lazy">
+        {% else %}
+        <div style="width:100%;aspect-ratio:3/4;background:#d5d3cf;border-radius:0.25rem;"></div>
+        {% endif %}
+      </a>
+      {% endfor %}
+    </div>
+  </div>
+</div>
+{% endif %}
+
+<!-- =========== 웰다잉TV (기사 하단) =========== -->
+{% if tv_articles %}
+<!-- PC 전용: v2 레이아웃 -->
+<div class="vid-section-v2 desk-only">
+  <div class="container">
+    <div class="vid-v2-top">
+      <div class="vid-v2-intro">
+        <h3 class="vid-v2-intro__title"><i class="fa-solid fa-play" style="color:#e53935;margin-right:6px;font-size:1.25rem;"></i>웰다잉TV</h3>
+        <p class="vid-v2-intro__desc">웰다잉과 관련된 영상 콘텐츠를 만나보세요.</p>
+        <a href="/news/articleList.html?sc_section_code=S1N3&view_type=sm" class="vid-v2-intro__link">전체보기 <i class="fa-solid fa-chevron-right"></i></a>
+      </div>
+      <a href="/news/articleView.html?idxno={{ tv_articles[0].id }}" class="vid-v2-hero">
+        <div class="vid-v2-hero__thumb">
+          {% if tv_articles[0].thumb_url %}<img src="{{ tv_articles[0].thumb_url }}" alt="" loading="lazy">{% endif %}
+          <div class="vid-play vid-play--lg"><i class="fa-solid fa-play"></i></div>
+        </div>
+        <div class="vid-v2-hero__info">
+          <h4 class="vid-v2-hero__title line-clamp-2">{{ tv_articles[0].title }}</h4>
+          <time class="vid-v2-hero__date">{{ tv_articles[0].created_at.strftime('%Y.%m.%d') if tv_articles[0].created_at else '' }}</time>
+        </div>
+      </a>
+    </div>
+    {% if tv_articles|length > 1 %}
+    <div class="vid-v2-bottom">
+      {% for art in tv_articles[1:4] %}
+      <a href="/news/articleView.html?idxno={{ art.id }}" class="vid-v2-card">
+        <div class="vid-v2-card__thumb">
+          {% if art.thumb_url %}<img src="{{ art.thumb_url }}" alt="" loading="lazy">{% endif %}
+          <div class="vid-play"><i class="fa-solid fa-play"></i></div>
+        </div>
+        <div class="vid-v2-card__body">
+          <h4 class="vid-v2-card__title line-clamp-2">{{ art.title }}</h4>
+          <time class="vid-v2-card__date">{{ art.created_at.strftime('%Y.%m.%d') if art.created_at else '' }}</time>
+        </div>
+      </a>
+      {% endfor %}
+    </div>
+    {% endif %}
+  </div>
+</div>
+<!-- 모바일 전용: 기존 레이아웃 -->
+<div class="vid-section-dark mob-only">
+  <div class="container">
+    <div class="sec-head">
+      <i class="fa-solid fa-play"></i>
+      <span class="sec-head__title">웰다잉TV</span>
+      <span class="sec-head__line"></span>
+    </div>
+    <div class="vid-grid-hero">
+      <a href="/news/articleView.html?idxno={{ tv_articles[0].id }}" class="vid-card vid-card--hero">
+        <div class="vid-thumb">
+          {% if tv_articles[0].thumb_url %}
+          <img src="{{ tv_articles[0].thumb_url }}" alt="" loading="lazy">
+          {% endif %}
+          <div class="vid-play vid-play--lg"><i class="fa-solid fa-play"></i></div>
+        </div>
+        <div class="vid-card__body">
+          <h4 class="vid-card__title vid-card__title--hero line-clamp-2">{{ tv_articles[0].title }}</h4>
+        </div>
+      </a>
+      <div class="vid-side">
+        {% for art in tv_articles[1:4] %}
+        <a href="/news/articleView.html?idxno={{ art.id }}" class="vid-card vid-card--sm">
+          <div class="vid-thumb">
+            {% if art.thumb_url %}
+            <img src="{{ art.thumb_url }}" alt="" loading="lazy">
+            {% endif %}
+            <div class="vid-play"><i class="fa-solid fa-play"></i></div>
+          </div>
+          <div class="vid-card__body">
+            <h4 class="vid-card__title line-clamp-2">{{ art.title }}</h4>
+          </div>
+        </a>
+        {% endfor %}
+      </div>
+    </div>
+  </div>
+</div>
+{% endif %}
+
+<!-- =========== 섹션별 기사 (기사 하단) =========== -->
+{% if bottom_section_articles %}
+<div class="container" style="padding:1rem 0">
+  <div class="bottom-sections">
+    {% for sub, arts in bottom_section_articles.items() %}
+    <div class="bottom-sec-col">
+      <div class="bottom-sec-title">{{ sub.name }} <a href="/news/articleList.html?sc_sub_section_code={{ sub.code }}">&gt;</a></div>
+      {% if arts %}
+      <a href="/news/articleView.html?idxno={{ arts[0].id }}" class="bottom-sec-featured">
+        {% if arts[0].thumb_url %}
+        <div class="bottom-sec-featured__img"><img src="{{ arts[0].thumb_url }}" alt="" loading="lazy"></div>
+        {% endif %}
+        <h4 class="bottom-sec-featured__title line-clamp-2">{{ arts[0].title }}</h4>
+      </a>
+      <div class="bottom-sec-list">
+        {% for art in arts[1:5] %}
+        <a href="/news/articleView.html?idxno={{ art.id }}" class="bottom-sec-list-item">{{ art.title }}</a>
+        {% endfor %}
+      </div>
+      {% endif %}
+    </div>
+    {% endfor %}
+  </div>
+</div>
+{% endif %}
+
+{% endblock %}
+
+{% block extra_js %}
+<script>
+function switchPop(btn, panelId) {
+  document.querySelectorAll('.pop-tab').forEach(function(t){ t.classList.remove('pop-tab--active'); });
+  btn.classList.add('pop-tab--active');
+  document.querySelectorAll('.pop-list').forEach(function(p){ p.style.display = 'none'; });
+  document.getElementById(panelId).style.display = '';
+}
+
+/* Sticky header on scroll */
+(function(){
+  var sh = document.getElementById('stickyHeader');
+  var body = document.getElementById('articleBody');
+  if (!sh || !body) return;
+  var bar = document.getElementById('readBar');
+  var trigger = document.getElementById('articleSub') || body;
+  window.addEventListener('scroll', function(){
+    var triggerRect = trigger.getBoundingClientRect();
+    var show = triggerRect.top <= 0;
+    sh.classList.toggle('aview-sticky--show', show);
+    if (bar) {
+      var bodyRect = body.getBoundingClientRect();
+      var total = body.offsetHeight;
+      var scrolled = Math.min(Math.max(-bodyRect.top, 0), total);
+      bar.style.width = (scrolled / total * 100) + '%';
+    }
+  }, {passive:true});
+})();
+
+/* Font size */
+(function(){
+  var body = document.getElementById('articleBody');
+  if (!body) return;
+  var size = Math.round(parseFloat(getComputedStyle(body).fontSize));
+  document.getElementById('fontDown').addEventListener('click', function(){
+    size = Math.max(12, size - 1);
+    body.style.fontSize = size + 'px';
+  });
+  document.getElementById('fontUp').addEventListener('click', function(){
+    size = Math.min(32, size + 1);
+    body.style.fontSize = size + 'px';
+  });
+})();
+
+/* Comment textarea counter */
+(function(){
+  var ta = document.querySelector('.aview-cmt-write__textarea');
+  var cur = document.querySelector('.aview-cmt-cur');
+  if (ta && cur) {
+    ta.addEventListener('input', function(){ cur.textContent = ta.value.length; });
+  }
+})();
+
+/* Comment more */
+(function(){
+  var btn = document.getElementById('btnCommentMore');
+  if (!btn) return;
+  btn.addEventListener('click', function(){
+    document.querySelectorAll('.comment-hidden').forEach(function(el){ el.style.display = 'block'; });
+    btn.parentElement.style.display = 'none';
+  });
+})();
+
+/* Reply toggle */
+document.querySelectorAll('.btn-reply-toggle').forEach(function(btn){
+  btn.addEventListener('click', function(){
+    var id = this.dataset.id;
+    var box = document.getElementById('reply-box-' + id);
+    if (box) box.style.display = box.style.display === 'none' ? 'block' : 'none';
+  });
+});
+document.querySelectorAll('.btn-reply-cancel').forEach(function(btn){
+  btn.addEventListener('click', function(){
+    var id = this.dataset.id;
+    var box = document.getElementById('reply-box-' + id);
+    if (box) box.style.display = 'none';
+  });
+});
+
+/* Comment delete */
+document.querySelectorAll('.btn-delete-comment').forEach(function(btn){
+  btn.addEventListener('click', function(e){
+    e.preventDefault();
+    var id = this.dataset.id;
+    if (this.classList.contains('btn-member-delete')) {
+      if (confirm('삭제하시겠습니까?')) {
+        document.getElementById('deleteCommentId').value = id;
+        document.getElementById('deleteCommentPw').value = '__member__';
+        document.getElementById('deleteCommentForm').submit();
+      }
+    } else {
+      var pw = prompt('비밀번호를 입력하세요');
+      if (pw) {
+        document.getElementById('deleteCommentId').value = id;
+        document.getElementById('deleteCommentPw').value = pw;
+        document.getElementById('deleteCommentForm').submit();
+      }
+    }
+  });
+});
+
+/* Comment edit */
+document.querySelectorAll('.btn-edit-comment').forEach(function(btn){
+  btn.addEventListener('click', function(e){
+    e.preventDefault();
+    var id = this.dataset.id;
+    var textEl = document.getElementById('cmt-text-' + id);
+    if (!textEl) return;
+    if (this.classList.contains('btn-member-edit')) {
+      var newContent = prompt('댓글을 수정하세요', textEl.textContent.trim());
+      if (newContent !== null) {
+        document.getElementById('editCommentId').value = id;
+        document.getElementById('editCommentPw').value = '__member__';
+        document.getElementById('editCommentContent').value = newContent;
+        document.getElementById('editCommentForm').submit();
+      }
+    } else {
+      var pw = prompt('비밀번호를 입력하세요');
+      if (!pw) return;
+      var newContent = prompt('댓글을 수정하세요', textEl.textContent.trim());
+      if (newContent !== null) {
+        document.getElementById('editCommentId').value = id;
+        document.getElementById('editCommentPw').value = pw;
+        document.getElementById('editCommentContent').value = newContent;
+        document.getElementById('editCommentForm').submit();
+      }
+    }
+  });
+});
+
+/* Vote */
+document.querySelectorAll('.vote-btn').forEach(function(btn){
+  btn.addEventListener('click', function(){
+    var id = this.dataset.id;
+    var type = this.dataset.type;
+    var cntEl = this.querySelector('.cnt');
+    fetch('/comment/vote', {
+      method: 'POST',
+      headers: {'Content-Type': 'application/json'},
+      body: JSON.stringify({comment_id: parseInt(id), vote_type: type})
+    }).then(function(r){ return r.json(); }).then(function(data){
+      if (data.success && cntEl) cntEl.textContent = data[type + '_count'];
+    });
+  });
+});
+
+/* Books slider (article view) */
+var aviewBookIdx = 0;
+var aviewBookTotal = document.querySelectorAll('[id^="aviewBookSlide"]').length;
+var aviewBookTimer = null;
+function aviewBookShow(n) {
+  if (n === aviewBookIdx || n < 0 || n >= aviewBookTotal) return;
+  var o = document.getElementById('aviewBookSlide' + aviewBookIdx);
+  var ne = document.getElementById('aviewBookSlide' + n);
+  if (o) o.classList.remove('books-featured--active');
+  if (ne) ne.classList.add('books-featured--active');
+  aviewBookIdx = n;
+}
+function aviewBookNav(d) {
+  if (aviewBookTotal <= 1) return;
+  aviewBookShow((aviewBookIdx + d + aviewBookTotal) % aviewBookTotal);
+  aviewBookResetAuto();
+}
+function aviewBookGo(i) { aviewBookShow(i); aviewBookResetAuto(); }
+function aviewBookResetAuto() {
+  clearInterval(aviewBookTimer);
+  aviewBookTimer = setInterval(function(){ aviewBookShow((aviewBookIdx + 1) % aviewBookTotal); }, 4000);
+}
+if (aviewBookTotal > 1) aviewBookResetAuto();
+</script>
+{% endblock %}

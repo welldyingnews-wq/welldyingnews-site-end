@@ -4,252 +4,287 @@
 {% block extra_head %}
 <script src="https://cdn.jsdelivr.net/npm/apexcharts"></script>
 <style>
-/* 대시보드 레이아웃 */
-.admin-dashboard { display: flex; gap: 0; }
-.dash-main { flex: 1; min-width: 0; }
-.dash-aside {
-    width: 280px; min-width: 280px; margin-left: 24px;
-    display: flex; flex-direction: column; gap: 20px;
+/* ===== 대시보드 전체 레이아웃 ===== */
+.db { max-width: 1400px; }
+.db-section { margin-bottom: 32px; }
+.db-section-head {
+    display: flex; align-items: center; gap: 10px;
+    margin-bottom: 16px; padding-bottom: 10px; border-bottom: 2px solid #eee;
+}
+.db-section-head h2 {
+    font-size: 16px; font-weight: 700; color: #333; margin: 0;
+}
+.db-section-head .sec-icon {
+    width: 28px; height: 28px; border-radius: 6px; display: flex; align-items: center; justify-content: center;
+    font-size: 14px; color: #fff;
+}
+.db-section-head .sec-badge {
+    font-size: 11px; color: #999; background: #f5f5f5; padding: 2px 10px; border-radius: 10px; margin-left: auto;
 }
 
-/* 통계 패널 */
-.dash-panel {
-    display: grid; grid-template-columns: 1fr 2fr 1.5fr 1fr; gap: 16px;
-    margin-bottom: 24px;
+/* ===== 1. 핵심 지표 카드 ===== */
+.db-stats {
+    display: grid; grid-template-columns: repeat(6, 1fr); gap: 14px; margin-bottom: 32px;
 }
-.dash-panel .item { display: flex; flex-direction: column; gap: 8px; }
-.dash-panel .blocks {
-    display: flex; flex-direction: column; align-items: center; justify-content: center;
-    background: #fff; border-radius: 8px; padding: 16px 10px; text-decoration: none;
-    box-shadow: 0 1px 3px rgba(0,0,0,0.06); transition: box-shadow 0.2s; flex: 1;
+.db-stat-card {
+    background: #fff; border-radius: 10px; padding: 20px 16px;
+    box-shadow: 0 1px 4px rgba(0,0,0,0.06); text-decoration: none;
+    display: flex; flex-direction: column; align-items: center; text-align: center;
+    transition: box-shadow 0.2s, transform 0.2s; position: relative; overflow: hidden;
 }
-.dash-panel .blocks:hover { box-shadow: 0 4px 12px rgba(0,0,0,0.12); }
-.dash-panel .stat { font-size: 24px; font-weight: 700; color: #333; display: block; }
-.dash-panel .subject { font-size: 12px; color: #888; margin-top: 2px; }
-.dash-panel .all-articles { border-left: 4px solid #5e1985; }
-.dash-panel .all-articles .stat { color: #5e1985; }
-.dash-panel .din-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
-.dash-panel .import.rw { border-left: 3px solid #f44336; }
-.dash-panel .import.aw { border-left: 3px solid #ff9800; }
-.dash-panel .blocks.member { border-left: 3px solid #2196F3; }
-.dash-panel .blocks.member.sleep { border-left: 3px solid #9e9e9e; }
+.db-stat-card:hover { box-shadow: 0 6px 20px rgba(0,0,0,0.1); transform: translateY(-2px); }
+.db-stat-card .card-icon {
+    width: 36px; height: 36px; border-radius: 8px; display: flex; align-items: center; justify-content: center;
+    font-size: 16px; color: #fff; margin-bottom: 10px;
+}
+.db-stat-card .card-num { font-size: 28px; font-weight: 800; color: #333; line-height: 1; }
+.db-stat-card .card-label { font-size: 12px; color: #888; margin-top: 6px; }
+.db-stat-card .card-stripe {
+    position: absolute; top: 0; left: 0; right: 0; height: 3px;
+}
 
-/* 차트/테이블 영역 */
-.dash-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; margin-bottom: 24px; }
-.dash-box {
-    background: #fff; border-radius: 8px; box-shadow: 0 1px 3px rgba(0,0,0,0.06);
-    overflow: hidden;
+/* ===== 2. 박스 공통 ===== */
+.db-box {
+    background: #fff; border-radius: 10px; box-shadow: 0 1px 4px rgba(0,0,0,0.06); overflow: hidden;
 }
-.dash-box .header {
-    display: flex; align-items: center; gap: 8px; padding: 14px 16px;
-    border-bottom: 1px solid #eee; font-size: 14px; font-weight: 500; color: #333;
+.db-box-head {
+    display: flex; align-items: center; gap: 8px; padding: 14px 20px;
+    border-bottom: 1px solid #eee; font-size: 14px; font-weight: 600; color: #333;
 }
-.dash-box .header .label {
-    background: #5e1985; color: #fff; font-size: 11px; padding: 2px 8px;
-    border-radius: 3px; font-weight: 400; font-style: normal;
+.db-box-head .badge {
+    background: #5e1985; color: #fff; font-size: 10px; padding: 2px 8px;
+    border-radius: 3px; font-weight: 400;
 }
-.dash-box .content { padding: 16px; }
-.dash-box .content.white { padding: 0; }
+.db-box-head .head-link {
+    margin-left: auto; font-size: 12px; color: #5e1985; text-decoration: none;
+}
+.db-box-body { padding: 20px; }
+.db-box-body.no-pad { padding: 0; }
 
-/* 대시보드 테이블 */
-.dash-table { width: 100%; border-collapse: collapse; font-size: 13px; }
-.dash-table th, .dash-table td { padding: 10px 12px; border-bottom: 1px solid #f0f0f0; text-align: left; }
-.dash-table thead th { background: #fafafa; color: #666; font-weight: 500; font-size: 12px; }
-.dash-table tbody th { font-weight: 400; }
-.dash-table tbody th a { color: #333; text-decoration: none; }
-.dash-table tbody th a:hover { color: #5e1985; }
-.dash-table td { color: #666; text-align: center; }
+/* ===== 그리드 ===== */
+.db-row { display: grid; gap: 20px; margin-bottom: 20px; }
+.db-row.col-2 { grid-template-columns: 1fr 1fr; }
+.db-row.col-3 { grid-template-columns: 1fr 1fr 1fr; }
+.db-row.col-2-1 { grid-template-columns: 2fr 1fr; }
+.db-row.col-1-2 { grid-template-columns: 1fr 2fr; }
+.db-row.col-7-5 { grid-template-columns: 7fr 5fr; }
+.db-row:last-child { margin-bottom: 0; }
 
-/* 탭 */
-.dash-tabs {
-    background: #fff; border-radius: 8px; box-shadow: 0 1px 3px rgba(0,0,0,0.06);
-    overflow: hidden;
+/* ===== 테이블 ===== */
+.db-table { width: 100%; border-collapse: collapse; font-size: 13px; }
+.db-table th, .db-table td { padding: 10px 14px; border-bottom: 1px solid #f0f0f0; }
+.db-table thead th { background: #fafafa; color: #666; font-weight: 500; font-size: 12px; text-align: left; }
+.db-table tbody th { font-weight: 400; text-align: left; }
+.db-table tbody th a { color: #333; text-decoration: none; }
+.db-table tbody th a:hover { color: #5e1985; }
+.db-table td { color: #666; }
+.db-table .text-center { text-align: center; }
+.db-table .text-right { text-align: right; }
+
+/* ===== 탭 ===== */
+.db-tabs .tab-nav {
+    display: flex; list-style: none; margin: 0; padding: 0; border-bottom: 2px solid #eee;
 }
-.dash-tabs .tab-nav {
-    display: flex; list-style: none; margin: 0; padding: 0;
-    border-bottom: 2px solid #eee;
-}
-.dash-tabs .tab-nav li { flex: 1; }
-.dash-tabs .tab-nav li a {
+.db-tabs .tab-nav li { flex: 1; }
+.db-tabs .tab-nav li a {
     display: flex; align-items: center; justify-content: center; gap: 6px;
     padding: 14px 12px; text-decoration: none; color: #888; font-size: 14px;
     font-weight: 500; border-bottom: 2px solid transparent; margin-bottom: -2px;
     transition: all 0.2s;
 }
-.dash-tabs .tab-nav li.active a { color: #333; border-bottom-color: #5e1985; }
-.dash-tabs .tab-nav .badge-num {
+.db-tabs .tab-nav li.active a { color: #333; border-bottom-color: #5e1985; }
+.db-tabs .tab-nav .badge-num {
     background: #e0e0e0; color: #666; font-size: 11px; padding: 1px 7px;
     border-radius: 10px; font-weight: 600;
 }
-.dash-tabs .tab-nav li.active .badge-num { background: #5e1985; color: #fff; }
-.dash-tabs .tab-panel { display: none; }
-.dash-tabs .tab-panel.active { display: block; }
-.dash-tabs .more-link {
+.db-tabs .tab-nav li.active .badge-num { background: #5e1985; color: #fff; }
+.db-tabs .tab-panel { display: none; }
+.db-tabs .tab-panel.active { display: block; }
+.db-tabs .more-link {
     display: block; text-align: center; padding: 12px; color: #5e1985;
     text-decoration: none; font-size: 13px; border-top: 1px solid #f0f0f0;
 }
-.dash-tabs .more-link:hover { background: #faf5ff; }
+.db-tabs .more-link:hover { background: #faf5ff; }
 
-/* 도넛 차트 영역 */
-.dash-flex { display: flex; align-items: center; padding: 16px; gap: 16px; }
-.dash-donut { position: relative; text-align: center; }
-.dash-donut .counts {
+/* ===== 도넛 차트 ===== */
+.db-donut-wrap { display: flex; align-items: center; gap: 20px; padding: 16px 20px; }
+.db-donut { position: relative; text-align: center; flex-shrink: 0; }
+.db-donut .center-label {
     position: absolute; top: 50%; left: 50%; transform: translate(-50%, -60%);
     text-align: center;
 }
-.dash-donut .nums { font-size: 22px; font-weight: 700; color: #333; display: block; }
-.dash-donut .text { font-size: 11px; color: #999; }
-.dash-bar-list { flex: 1; display: flex; flex-direction: column; gap: 12px; }
-.dash-bar-item { display: flex; align-items: center; gap: 10px; }
-.dash-bar-item .dot { width: 10px; height: 10px; border-radius: 50%; flex-shrink: 0; }
-.dash-bar-item .bar-info { flex: 1; }
-.dash-bar-item .bar-label { display: flex; justify-content: space-between; font-size: 12px; margin-bottom: 4px; }
-.dash-bar-item .bar-label .name { color: #666; }
-.dash-bar-item .bar-label .pct { color: #333; font-weight: 600; }
-.dash-bar-item .bar-track { height: 6px; background: #f0f0f0; border-radius: 3px; overflow: hidden; }
-.dash-bar-item .bar-fill { height: 100%; border-radius: 3px; transition: width 0.6s ease; }
+.db-donut .center-num { font-size: 22px; font-weight: 700; color: #333; display: block; }
+.db-donut .center-text { font-size: 11px; color: #999; }
+.db-bar-list { flex: 1; display: flex; flex-direction: column; gap: 10px; }
+.db-bar-item { display: flex; align-items: center; gap: 10px; }
+.db-bar-item .dot { width: 10px; height: 10px; border-radius: 50%; flex-shrink: 0; }
+.db-bar-item .bar-info { flex: 1; }
+.db-bar-item .bar-label { display: flex; justify-content: space-between; font-size: 12px; margin-bottom: 3px; }
+.db-bar-item .bar-label .name { color: #666; }
+.db-bar-item .bar-label .pct { color: #333; font-weight: 600; }
+.db-bar-item .bar-track { height: 5px; background: #f0f0f0; border-radius: 3px; overflow: hidden; }
+.db-bar-item .bar-fill { height: 100%; border-radius: 3px; transition: width 0.6s ease; }
 
-/* 우측 사이드바 */
-.dash-today {
-    background: #1e1e2d; color: #fff; border-radius: 8px; padding: 16px;
-    text-align: center; font-size: 14px;
+/* ===== 편집 현황 카드 ===== */
+.db-edit-cards { display: grid; grid-template-columns: repeat(3, 1fr); gap: 16px; }
+.db-edit-card {
+    background: #fafafa; border-radius: 8px; padding: 16px; border: 1px solid #eee;
 }
-.dash-today strong { font-size: 22px; font-weight: 700; }
+.db-edit-card .edit-head {
+    display: flex; align-items: center; justify-content: space-between; margin-bottom: 12px;
+}
+.db-edit-card .edit-title {
+    font-size: 13px; font-weight: 600; color: #333; display: flex; align-items: center; gap: 6px;
+}
+.db-edit-card .edit-link { font-size: 11px; color: #5e1985; text-decoration: none; }
+.db-edit-card .edit-item {
+    display: flex; align-items: center; gap: 8px; padding: 4px 0;
+}
+.db-edit-card .edit-rank {
+    width: 18px; height: 18px; border-radius: 50%; font-size: 10px;
+    display: flex; align-items: center; justify-content: center; color: #fff; flex-shrink: 0;
+}
+.db-edit-card .edit-item a {
+    font-size: 12px; color: #555; text-decoration: none;
+    overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+}
+.db-edit-card .edit-item a:hover { color: #5e1985; }
+.db-edit-card .edit-empty { color: #999; font-size: 12px; text-align: center; padding: 8px; }
 
-.dash-subscribe {
-    display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 8px;
+/* ===== 커뮤니티 카드 ===== */
+.db-comm-cards { display: grid; grid-template-columns: repeat(3, 1fr); gap: 16px; }
+.db-comm-card {
+    background: #fff; border-radius: 10px; box-shadow: 0 1px 4px rgba(0,0,0,0.06); overflow: hidden;
 }
-.dash-subscribe .sub-item {
-    background: #fff; border-radius: 8px; padding: 12px 8px; text-align: center;
-    text-decoration: none; box-shadow: 0 1px 3px rgba(0,0,0,0.06); transition: box-shadow 0.2s;
-}
-.dash-subscribe .sub-item:hover { box-shadow: 0 4px 12px rgba(0,0,0,0.12); }
-.dash-subscribe .sub-item i { font-size: 18px; display: block; margin-bottom: 4px; }
-.dash-subscribe .sub-item .sub-count { font-size: 18px; font-weight: 700; color: #333; display: block; }
-.dash-subscribe .sub-item .sub-text { font-size: 11px; color: #888; }
-.dash-subscribe .sub-item.kd i { color: #5e1985; }
-.dash-subscribe .sub-item.jb i { color: #ff9800; }
-.dash-subscribe .sub-item.cp i { color: #f44336; }
-
-.dash-side-box {
-    background: #fff; border-radius: 8px; box-shadow: 0 1px 3px rgba(0,0,0,0.06);
-    overflow: hidden;
-}
-.dash-side-box .side-header {
-    display: flex; align-items: center; padding: 12px 14px;
+.db-comm-head {
+    display: flex; align-items: center; padding: 12px 16px;
     border-bottom: 1px solid #eee; text-decoration: none; color: #333;
     font-size: 14px; font-weight: 500;
 }
-.dash-side-box .side-header:hover { background: #faf5ff; }
-.dash-side-box .side-header .badge-cnt {
-    font-size: 11px; padding: 1px 8px; border-radius: 10px; margin-left: 6px;
-    font-style: normal;
+.db-comm-head:hover { background: #faf5ff; }
+.db-comm-head .comm-badge {
+    font-size: 11px; padding: 1px 8px; border-radius: 10px; margin-left: 8px;
 }
-.dash-side-box .side-header .badge-cnt.warning { background: #fff3e0; color: #e65100; }
-.dash-side-box .side-header .badge-cnt.pink { background: #fce4ec; color: #c62828; }
-.dash-side-box .side-header i.bi-plus { margin-left: auto; color: #999; }
-.dash-side-box .side-content { padding: 12px 14px; background: #fafafa; min-height: 40px; }
-.dash-side-box .side-content .latest-item {
+.db-comm-head .comm-badge.orange { background: #fff3e0; color: #e65100; }
+.db-comm-head .comm-badge.pink { background: #fce4ec; color: #c62828; }
+.db-comm-head i.bi-chevron-right { margin-left: auto; color: #999; font-size: 12px; }
+.db-comm-body { padding: 12px 16px; background: #fafafa; min-height: 60px; }
+.db-comm-item {
     padding: 6px 0; border-bottom: 1px solid #eee; font-size: 12px;
 }
-.dash-side-box .side-content .latest-item:last-child { border-bottom: none; }
-.dash-side-box .side-content .latest-item a { color: #333; text-decoration: none; }
-.dash-side-box .side-content .latest-item a:hover { color: #5e1985; }
-.dash-side-box .side-content .empty { color: #999; font-size: 12px; text-align: center; padding: 8px; }
+.db-comm-item:last-child { border-bottom: none; }
+.db-comm-item a { color: #333; text-decoration: none; }
+.db-comm-item a:hover { color: #5e1985; }
+.db-comm-empty { color: #999; font-size: 12px; text-align: center; padding: 12px; }
+
+/* ===== 빠른 신청 카드 ===== */
+.db-request-cards { display: grid; grid-template-columns: repeat(3, 1fr); gap: 14px; margin-bottom: 20px; }
+.db-request-card {
+    background: #fff; border-radius: 10px; padding: 16px; text-align: center;
+    text-decoration: none; box-shadow: 0 1px 4px rgba(0,0,0,0.06); transition: box-shadow 0.2s;
+}
+.db-request-card:hover { box-shadow: 0 4px 14px rgba(0,0,0,0.1); }
+.db-request-card i { font-size: 20px; display: block; margin-bottom: 6px; }
+.db-request-card .req-num { font-size: 22px; font-weight: 700; color: #333; display: block; }
+.db-request-card .req-text { font-size: 12px; color: #888; }
+
+/* ===== 최종편집 배지 ===== */
+.db-last-edit {
+    display: inline-flex; align-items: center; gap: 8px;
+    background: #1e1e2d; color: #fff; border-radius: 8px; padding: 8px 18px;
+    font-size: 14px; margin-bottom: 32px;
+}
+.db-last-edit strong { font-size: 18px; font-weight: 700; }
 </style>
 {% endblock %}
 
 {% block content %}
-<div class="admin-dashboard">
-    <div class="dash-main">
+<div class="db">
 
-        <!-- 통계 패널 -->
-        <div class="dash-panel">
-            <div class="item">
-                <a href="{{ url_for('admin.article_list') }}" class="blocks all-articles">
-                    <em class="stat">{{ "{:,}".format(total_articles) }}</em>
-                    <span class="subject">전체기사</span>
-                </a>
-            </div>
-            <div class="item din-2">
-                <a href="{{ url_for('admin.approval') }}" class="blocks import rw">
-                    <em class="stat">{{ unapproved }}</em>
-                    <span class="subject">미승인기사</span>
-                </a>
-                <a href="{{ url_for('admin.article_list') }}" class="blocks import aw">
-                    <em class="stat">{{ embargo_count }}</em>
-                    <span class="subject">예약기사</span>
-                </a>
-                <a href="{{ url_for('admin.article_list', deleted='1') }}" class="blocks">
-                    <em class="stat">{{ deleted_count }}</em>
-                    <span class="subject">최근삭제기사</span>
-                </a>
-                <a href="{{ url_for('admin.article_list') }}" class="blocks">
-                    <em class="stat">{{ restored_count }}</em>
-                    <span class="subject">최근복원기사</span>
-                </a>
-            </div>
-            <div class="item">
-                <a href="{{ url_for('admin.article_comments') }}" class="blocks">
-                    <em class="stat">{{ comment_count }}</em>
-                    <span class="subject">기사댓글</span>
-                </a>
-                <a href="{{ url_for('admin.bbs_post_list') }}" class="blocks">
-                    <em class="stat">{{ post_count }}</em>
-                    <span class="subject">게시물</span>
-                </a>
-                <a href="{{ url_for('admin.bbs_reply_list') }}" class="blocks">
-                    <em class="stat">{{ post_reply_count }}</em>
-                    <span class="subject">게시물댓글</span>
-                </a>
-            </div>
-            <div class="item">
-                <a href="{{ url_for('admin.member_list') }}" class="blocks member">
-                    <em class="stat">{{ member_count }}</em>
-                    <span class="subject">전체회원</span>
-                </a>
-                <a href="{{ url_for('admin.dormant_list') }}" class="blocks member sleep">
-                    <em class="stat">{{ dormant_count }}</em>
-                    <span class="subject">휴면회원</span>
-                </a>
-            </div>
+    <!-- ===== 최종편집 시간 ===== -->
+    <div class="db-last-edit">
+        <i class="bi bi-clock-history"></i>
+        <span>최종편집</span>
+        {% if recent_articles %}
+        <strong>{{ '%02d'|format(recent_articles[0].updated_at.month) }}.{{ '%02d'|format(recent_articles[0].updated_at.day) }}.</strong>
+        {{ '%02d:%02d'|format(recent_articles[0].updated_at.hour, recent_articles[0].updated_at.minute) }}
+        {% else %}
+        <strong>--. --.</strong> --:--
+        {% endif %}
+    </div>
+
+    <!-- ===== 1. 핵심 지표 ===== -->
+    <div class="db-stats">
+        <a href="{{ url_for('admin.article_list') }}" class="db-stat-card">
+            <div class="card-stripe" style="background:#5e1985"></div>
+            <div class="card-icon" style="background:#5e1985"><i class="bi bi-newspaper"></i></div>
+            <span class="card-num">{{ "{:,}".format(total_articles) }}</span>
+            <span class="card-label">전체기사</span>
+        </a>
+        <a href="{{ url_for('admin.approval') }}" class="db-stat-card">
+            <div class="card-stripe" style="background:#f44336"></div>
+            <div class="card-icon" style="background:#f44336"><i class="bi bi-exclamation-circle"></i></div>
+            <span class="card-num">{{ unapproved }}</span>
+            <span class="card-label">미승인기사</span>
+        </a>
+        <a href="{{ url_for('admin.article_list') }}" class="db-stat-card">
+            <div class="card-stripe" style="background:#ff9800"></div>
+            <div class="card-icon" style="background:#ff9800"><i class="bi bi-clock"></i></div>
+            <span class="card-num">{{ embargo_count }}</span>
+            <span class="card-label">예약기사</span>
+        </a>
+        <a href="{{ url_for('admin.member_list') }}" class="db-stat-card">
+            <div class="card-stripe" style="background:#2196F3"></div>
+            <div class="card-icon" style="background:#2196F3"><i class="bi bi-people"></i></div>
+            <span class="card-num">{{ member_count }}</span>
+            <span class="card-label">전체회원</span>
+        </a>
+        <a href="{{ url_for('admin.article_comments') }}" class="db-stat-card">
+            <div class="card-stripe" style="background:#4CAF50"></div>
+            <div class="card-icon" style="background:#4CAF50"><i class="bi bi-chat-dots"></i></div>
+            <span class="card-num">{{ comment_count }}</span>
+            <span class="card-label">기사댓글</span>
+        </a>
+        <a href="{{ url_for('admin.bbs_post_list') }}" class="db-stat-card">
+            <div class="card-stripe" style="background:#9C27B0"></div>
+            <div class="card-icon" style="background:#9C27B0"><i class="bi bi-clipboard-data"></i></div>
+            <span class="card-num">{{ post_count }}</span>
+            <span class="card-label">게시물</span>
+        </a>
+    </div>
+
+    <!-- ===== 2. 트래픽 분석 ===== -->
+    <div class="db-section">
+        <div class="db-section-head">
+            <div class="sec-icon" style="background:#3f5be8"><i class="bi bi-graph-up"></i></div>
+            <h2>트래픽 분석</h2>
+            <span class="sec-badge">최근 7일</span>
         </div>
 
-        <!-- 일자별 PV / 페이지별 PV -->
-        <div class="dash-grid">
-            <div class="dash-box">
-                <div class="header">
-                    <span class="text">일자별 PV</span>
+        <!-- PV 차트 + 페이지별 PV -->
+        <div class="db-row col-7-5">
+            <div class="db-box">
+                <div class="db-box-head">
+                    <span>일자별 페이지뷰</span>
                 </div>
-                <div class="content">
+                <div class="db-box-body">
                     <div id="days-pv"></div>
                 </div>
             </div>
-            <div class="dash-box">
-                <div class="header">
-                    <em class="label">최근 7일</em>
-                    <span class="text">페이지별 PV</span>
+            <div class="db-box">
+                <div class="db-box-head">
+                    <span>인기 페이지 TOP</span>
                 </div>
-                <div class="content white">
-                    <table class="dash-table">
-                        <colgroup>
-                            <col width="*" />
-                            <col width="110" />
-                            <col width="80" />
-                        </colgroup>
-                        <thead>
-                            <tr>
-                                <th>페이지</th>
-                                <th class="text-center">평균노출</th>
-                                <th class="text-center">페이지뷰</th>
-                            </tr>
-                        </thead>
+                <div class="db-box-body no-pad">
+                    <table class="db-table">
+                        <colgroup><col width="*" /><col width="90" /><col width="70" /></colgroup>
+                        <thead><tr><th>페이지</th><th class="text-center">평균노출</th><th class="text-center">PV</th></tr></thead>
                         <tbody>
                             {% for item in top_pv_articles %}
                             <tr>
-                                <th><a href="{{ url_for('admin.article_edit', article_id=item.article.id) }}">{{ item.article.title[:40] }}{% if item.article.title|length > 40 %}...{% endif %}</a></th>
-                                <td>{{ item.avg }}s</td>
-                                <td>{{ item.pv }}</td>
+                                <th><a href="{{ url_for('admin.article_edit', article_id=item.article.id) }}">{{ item.article.title[:35] }}{% if item.article.title|length > 35 %}...{% endif %}</a></th>
+                                <td class="text-center">{{ item.avg }}s</td>
+                                <td class="text-center">{{ item.pv }}</td>
                             </tr>
                             {% else %}
                             <tr><td colspan="3" class="text-center" style="color:#999;padding:20px">데이터가 없습니다.</td></tr>
@@ -260,143 +295,31 @@
             </div>
         </div>
 
-        <!-- 기사 탭 / 신규재방문 + 디바이스 -->
-        <div class="dash-grid">
-            <div>
-                <div class="dash-tabs">
-                    <ul class="tab-nav">
-                        <li class="active" data-tab="panel-unapproved">
-                            <a href="javascript:void(0)"><span>미승인기사</span> <span class="badge-num">{{ unapproved }}</span></a>
-                        </li>
-                        <li data-tab="panel-embargo">
-                            <a href="javascript:void(0)"><span>예약기사</span> <span class="badge-num">{{ embargo_count }}</span></a>
-                        </li>
-                        <li data-tab="panel-recent">
-                            <a href="javascript:void(0)"><span>최근등록기사</span> <span class="badge-num">{{ recent_articles|length }}</span></a>
-                        </li>
-                    </ul>
-                    <div id="panel-unapproved" class="tab-panel active">
-                        <table class="dash-table">
-                            <colgroup><col width="*" /><col width="120" /><col width="120" /></colgroup>
-                            <thead><tr><th>제목</th><th class="text-center">기자명</th><th class="text-center">승인일</th></tr></thead>
-                            <tbody>
-                                {% for a in unapproved_articles %}
-                                <tr>
-                                    <th><a href="{{ url_for('admin.article_edit', article_id=a.id) }}">{{ a.title }}</a></th>
-                                    <td>{{ a.author_name }}</td>
-                                    <td>{{ a.created_at.strftime('%Y-%m-%d %H:%M') }}</td>
-                                </tr>
-                                {% else %}
-                                <tr><td colspan="3" class="text-center" style="color:#999;padding:16px">미승인 기사가 없습니다.</td></tr>
-                                {% endfor %}
-                            </tbody>
-                        </table>
+        <!-- 신규/재방문자 (전체 너비) -->
+        <div class="db-row" style="grid-template-columns:1fr">
+            <div class="db-box">
+                <div class="db-box-head"><span>신규/재방문자</span></div>
+                <div class="db-donut-wrap">
+                    <div class="db-donut">
+                        <span class="center-label">
+                            <strong class="center-num" id="visitor-total">0</strong>
+                            <em class="center-text">방문자수</em>
+                        </span>
+                        <div id="pageViews"></div>
                     </div>
-                    <div id="panel-embargo" class="tab-panel">
-                        <table class="dash-table">
-                            <colgroup><col width="*" /><col width="120" /><col width="120" /></colgroup>
-                            <thead><tr><th>제목</th><th class="text-center">기자명</th><th class="text-center">예약일</th></tr></thead>
-                            <tbody>
-                                {% for a in embargo_articles %}
-                                <tr>
-                                    <th><a href="{{ url_for('admin.article_edit', article_id=a.id) }}">{{ a.title }}</a></th>
-                                    <td>{{ a.author_name }}</td>
-                                    <td>{{ a.embargo_date.strftime('%Y-%m-%d %H:%M') if a.embargo_date else '-' }}</td>
-                                </tr>
-                                {% else %}
-                                <tr><td colspan="3" class="text-center" style="color:#999;padding:16px">예약 기사가 없습니다.</td></tr>
-                                {% endfor %}
-                            </tbody>
-                        </table>
-                    </div>
-                    <div id="panel-recent" class="tab-panel">
-                        <table class="dash-table">
-                            <colgroup><col width="*" /><col width="120" /><col width="120" /></colgroup>
-                            <thead><tr><th>제목</th><th class="text-center">기자명</th><th class="text-center">등록일</th></tr></thead>
-                            <tbody>
-                                {% for a in recent_articles %}
-                                <tr>
-                                    <th><a href="{{ url_for('admin.article_edit', article_id=a.id) }}">{{ a.title }}</a></th>
-                                    <td>{{ a.author_name }}</td>
-                                    <td>{{ a.created_at.strftime('%Y-%m-%d %H:%M') }}</td>
-                                </tr>
-                                {% else %}
-                                <tr><td colspan="3" class="text-center" style="color:#999;padding:16px">등록된 기사가 없습니다.</td></tr>
-                                {% endfor %}
-                            </tbody>
-                        </table>
-                    </div>
-                    <a href="{{ url_for('admin.article_list') }}" class="more-link"><i class="bi bi-plus-circle"></i> 더보기</a>
-                </div>
-            </div>
-            <div>
-                <!-- 신규/재방문자 -->
-                <div class="dash-box" style="margin-bottom:20px">
-                    <div class="header">
-                        <em class="label">최근 7일</em>
-                        <span class="text">신규/재방문자</span>
-                    </div>
-                    <div class="dash-flex">
-                        <div class="dash-donut">
-                            <span class="counts">
-                                <strong class="nums" id="visitor-total">0</strong>
-                                <em class="text">방문자수</em>
-                            </span>
-                            <div id="pageViews"></div>
-                        </div>
-                        <div class="dash-bar-list">
-                            <div class="dash-bar-item">
-                                <span class="dot" style="background:#ffca00"></span>
-                                <div class="bar-info">
-                                    <div class="bar-label"><span class="name">신규방문</span><span class="pct" id="new-pct">0%</span></div>
-                                    <div class="bar-track"><div class="bar-fill" id="new-bar" style="width:0;background:#ffca00"></div></div>
-                                </div>
-                            </div>
-                            <div class="dash-bar-item">
-                                <span class="dot" style="background:#ffe687"></span>
-                                <div class="bar-info">
-                                    <div class="bar-label"><span class="name">재방문</span><span class="pct" id="return-pct">0%</span></div>
-                                    <div class="bar-track"><div class="bar-fill" id="return-bar" style="width:0;background:#ffe687"></div></div>
-                                </div>
+                    <div class="db-bar-list">
+                        <div class="db-bar-item">
+                            <span class="dot" style="background:#ffca00"></span>
+                            <div class="bar-info">
+                                <div class="bar-label"><span class="name">신규방문</span><span class="pct" id="new-pct">0%</span></div>
+                                <div class="bar-track"><div class="bar-fill" id="new-bar" style="width:0;background:#ffca00"></div></div>
                             </div>
                         </div>
-                    </div>
-                </div>
-                <!-- 접속디바이스 -->
-                <div class="dash-box">
-                    <div class="header">
-                        <em class="label">최근 7일</em>
-                        <span class="text">접속디바이스</span>
-                    </div>
-                    <div class="dash-flex">
-                        <div class="dash-donut">
-                            <span class="counts">
-                                <strong class="nums" id="device-total">0</strong>
-                                <em class="text">디바이스</em>
-                            </span>
-                            <div id="cnDevices"></div>
-                        </div>
-                        <div class="dash-bar-list">
-                            <div class="dash-bar-item">
-                                <span class="dot" style="background:#3f5be8"></span>
-                                <div class="bar-info">
-                                    <div class="bar-label"><span class="name">Desktop</span><span class="pct" id="pc-pct">0%</span></div>
-                                    <div class="bar-track"><div class="bar-fill" id="pc-bar" style="width:0;background:#3f5be8"></div></div>
-                                </div>
-                            </div>
-                            <div class="dash-bar-item">
-                                <span class="dot" style="background:#738bff"></span>
-                                <div class="bar-info">
-                                    <div class="bar-label"><span class="name">Mobile</span><span class="pct" id="mb-pct">0%</span></div>
-                                    <div class="bar-track"><div class="bar-fill" id="mb-bar" style="width:0;background:#738bff"></div></div>
-                                </div>
-                            </div>
-                            <div class="dash-bar-item">
-                                <span class="dot" style="background:#b9c5ff"></span>
-                                <div class="bar-info">
-                                    <div class="bar-label"><span class="name">Tablet</span><span class="pct" id="tb-pct">0%</span></div>
-                                    <div class="bar-track"><div class="bar-fill" id="tb-bar" style="width:0;background:#b9c5ff"></div></div>
-                                </div>
+                        <div class="db-bar-item">
+                            <span class="dot" style="background:#ffe687"></span>
+                            <div class="bar-info">
+                                <div class="bar-label"><span class="name">재방문</span><span class="pct" id="return-pct">0%</span></div>
+                                <div class="bar-track"><div class="bar-fill" id="return-bar" style="width:0;background:#ffe687"></div></div>
                             </div>
                         </div>
                     </div>
@@ -404,93 +327,430 @@
             </div>
         </div>
 
-    </div>
-
-    <!-- 우측 사이드바 -->
-    <div class="dash-aside">
-        <!-- 최종편집 -->
-        <div class="dash-today">
-            {% if recent_articles %}
-            <strong>{{ '%02d'|format(recent_articles[0].updated_at.month) }}. {{ '%02d'|format(recent_articles[0].updated_at.day) }}.</strong>
-            {{ '%02d:%02d'|format(recent_articles[0].updated_at.hour, recent_articles[0].updated_at.minute) }}
-            {% else %}
-            <strong>--. --.</strong> --:--
-            {% endif %}
-        </div>
-
-        <!-- 구독/제보/저작권 -->
-        <div class="dash-subscribe">
-            <a href="{{ url_for('admin.event_request_list', event_code='event5') }}" class="sub-item kd">
-                <i class="bi bi-plus-lg"></i>
-                <span class="sub-count">{{ subscribe_count }}</span>
-                <span class="sub-text">구독신청</span>
-            </a>
-            <a href="{{ url_for('admin.event_request_list', event_code='event4') }}" class="sub-item jb">
-                <i class="bi bi-pencil"></i>
-                <span class="sub-count">{{ report_count }}</span>
-                <span class="sub-text">기사제보</span>
-            </a>
-            <a href="{{ url_for('admin.event_request_list', event_code='event3') }}" class="sub-item cp">
-                <i class="bi bi-flag"></i>
-                <span class="sub-count">{{ copyright_count }}</span>
-                <span class="sub-text">저작권문의</span>
-            </a>
-        </div>
-
-        <!-- 기사댓글 -->
-        <div class="dash-side-box">
-            <a href="{{ url_for('admin.article_comments') }}" class="side-header">
-                <span>기사댓글</span>
-                <em class="badge-cnt warning">{{ comment_count }}</em>
-                <i class="bi bi-plus"></i>
-            </a>
-            <div class="side-content">
-                {% for c in recent_comments %}
-                <div class="latest-item">
-                    <a href="{{ url_for('admin.article_comments') }}">{{ c.content[:30] }}{% if c.content|length > 30 %}...{% endif %}</a>
+        <!-- 접속디바이스 (전체 너비) -->
+        <div class="db-row" style="grid-template-columns:1fr">
+            <div class="db-box">
+                <div class="db-box-head"><span>접속 디바이스</span></div>
+                <div class="db-donut-wrap">
+                    <div class="db-donut">
+                        <span class="center-label">
+                            <strong class="center-num" id="device-total">0</strong>
+                            <em class="center-text">디바이스</em>
+                        </span>
+                        <div id="cnDevices"></div>
+                    </div>
+                    <div class="db-bar-list">
+                        <div class="db-bar-item">
+                            <span class="dot" style="background:#3f5be8"></span>
+                            <div class="bar-info">
+                                <div class="bar-label"><span class="name">Desktop</span><span class="pct" id="pc-pct">0%</span></div>
+                                <div class="bar-track"><div class="bar-fill" id="pc-bar" style="width:0;background:#3f5be8"></div></div>
+                            </div>
+                        </div>
+                        <div class="db-bar-item">
+                            <span class="dot" style="background:#738bff"></span>
+                            <div class="bar-info">
+                                <div class="bar-label"><span class="name">Mobile</span><span class="pct" id="mb-pct">0%</span></div>
+                                <div class="bar-track"><div class="bar-fill" id="mb-bar" style="width:0;background:#738bff"></div></div>
+                            </div>
+                        </div>
+                        <div class="db-bar-item">
+                            <span class="dot" style="background:#b9c5ff"></span>
+                            <div class="bar-info">
+                                <div class="bar-label"><span class="name">Tablet</span><span class="pct" id="tb-pct">0%</span></div>
+                                <div class="bar-track"><div class="bar-fill" id="tb-bar" style="width:0;background:#b9c5ff"></div></div>
+                            </div>
+                        </div>
+                    </div>
                 </div>
-                {% else %}
-                <div class="empty">댓글이 없습니다.</div>
-                {% endfor %}
             </div>
         </div>
 
-        <!-- 게시판댓글 -->
-        <div class="dash-side-box">
-            <a href="{{ url_for('admin.bbs_reply_list') }}" class="side-header">
-                <span>게시판댓글</span>
-                <em class="badge-cnt warning">{{ post_reply_count }}</em>
-                <i class="bi bi-plus"></i>
-            </a>
-            <div class="side-content">
-                {% for r in recent_replies %}
-                <div class="latest-item">
-                    <a href="{{ url_for('admin.bbs_reply_list') }}">{{ r.content[:30] }}{% if r.content|length > 30 %}...{% endif %}</a>
+        <!-- 유입경로 (전체 너비, 가로 배치) -->
+        <div class="db-row" style="grid-template-columns:1fr">
+            <div class="db-box">
+                <div class="db-box-head"><span>유입경로</span></div>
+                <div class="db-donut-wrap">
+                    <div class="db-donut">
+                        <span class="center-label">
+                            <strong class="center-num" id="referrer-total">0</strong>
+                            <em class="center-text">유입경로</em>
+                        </span>
+                        <div id="cnReferrer"></div>
+                    </div>
+                    <div class="db-bar-list" style="display:grid;grid-template-columns:1fr 1fr;gap:8px 24px">
+                        <div class="db-bar-item">
+                            <span class="dot" style="background:#2DB400"></span>
+                            <div class="bar-info">
+                                <div class="bar-label"><span class="name">네이버</span><span class="pct" id="naver-pct">0%</span></div>
+                                <div class="bar-track"><div class="bar-fill" id="naver-bar" style="width:0;background:#2DB400"></div></div>
+                            </div>
+                        </div>
+                        <div class="db-bar-item">
+                            <span class="dot" style="background:#4285F4"></span>
+                            <div class="bar-info">
+                                <div class="bar-label"><span class="name">구글</span><span class="pct" id="google-pct">0%</span></div>
+                                <div class="bar-track"><div class="bar-fill" id="google-bar" style="width:0;background:#4285F4"></div></div>
+                            </div>
+                        </div>
+                        <div class="db-bar-item">
+                            <span class="dot" style="background:#1D6CE1"></span>
+                            <div class="bar-info">
+                                <div class="bar-label"><span class="name">다음</span><span class="pct" id="daum-pct">0%</span></div>
+                                <div class="bar-track"><div class="bar-fill" id="daum-bar" style="width:0;background:#1D6CE1"></div></div>
+                            </div>
+                        </div>
+                        <div class="db-bar-item">
+                            <span class="dot" style="background:#1877F2"></span>
+                            <div class="bar-info">
+                                <div class="bar-label"><span class="name">페이스북</span><span class="pct" id="facebook-pct">0%</span></div>
+                                <div class="bar-track"><div class="bar-fill" id="facebook-bar" style="width:0;background:#1877F2"></div></div>
+                            </div>
+                        </div>
+                        <div class="db-bar-item">
+                            <span class="dot" style="background:#FEE500"></span>
+                            <div class="bar-info">
+                                <div class="bar-label"><span class="name">카카오</span><span class="pct" id="kakao-pct">0%</span></div>
+                                <div class="bar-track"><div class="bar-fill" id="kakao-bar" style="width:0;background:#FEE500"></div></div>
+                            </div>
+                        </div>
+                        <div class="db-bar-item">
+                            <span class="dot" style="background:#999"></span>
+                            <div class="bar-info">
+                                <div class="bar-label"><span class="name">직접접속</span><span class="pct" id="direct-pct">0%</span></div>
+                                <div class="bar-track"><div class="bar-fill" id="direct-bar" style="width:0;background:#999"></div></div>
+                            </div>
+                        </div>
+                        <div class="db-bar-item">
+                            <span class="dot" style="background:#ccc"></span>
+                            <div class="bar-info">
+                                <div class="bar-label"><span class="name">기타</span><span class="pct" id="other-pct">0%</span></div>
+                                <div class="bar-track"><div class="bar-fill" id="other-bar" style="width:0;background:#ccc"></div></div>
+                            </div>
+                        </div>
+                    </div>
                 </div>
-                {% else %}
-                <div class="empty">댓글이 없습니다.</div>
-                {% endfor %}
             </div>
         </div>
 
-        <!-- 신청내역 -->
-        <div class="dash-side-box">
-            <a href="{{ url_for('admin.event_request_list') }}" class="side-header">
-                <span>신청내역</span>
-                <em class="badge-cnt pink">{{ subscribe_count + report_count + copyright_count }}</em>
-                <i class="bi bi-plus"></i>
-            </a>
-            <div class="side-content">
-                {% for req in recent_requests %}
-                <div class="latest-item">
-                    <a href="{{ url_for('admin.event_request_list') }}">{{ req.name }} - {{ req.content[:20] }}{% if req.content|length > 20 %}...{% endif %}</a>
+        <!-- 유입경로 x 디바이스 교차분석 -->
+        <div class="db-row" style="grid-template-columns:1fr">
+            <div class="db-box">
+                <div class="db-box-head">
+                    <span class="badge">교차분석</span>
+                    <span>유입경로 × 디바이스</span>
                 </div>
-                {% else %}
-                <div class="empty">신청 내역이 없습니다.</div>
-                {% endfor %}
+                <div class="db-box-body no-pad">
+                    <table class="db-table">
+                        <thead>
+                            <tr>
+                                <th>유입경로</th>
+                                <th class="text-center">PC</th>
+                                <th class="text-center">모바일</th>
+                                <th class="text-center">태블릿</th>
+                                <th class="text-center">합계</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% set ref_labels = {'naver': '네이버', 'google': '구글', 'daum': '다음', 'facebook': '페이스북', 'kakao': '카카오', 'direct': '직접접속', 'other': '기타'} %}
+                            {% set ref_order = ['naver', 'google', 'daum', 'facebook', 'kakao', 'direct', 'other'] %}
+                            {% set ns = namespace(grand_pc=0, grand_mb=0, grand_tb=0) %}
+                            {% for ref_key in ref_order %}
+                            {% set row = cross_map.get(ref_key, {}) %}
+                            {% set pc = row.get('pc', 0) %}
+                            {% set mb = row.get('mobile', 0) %}
+                            {% set tb = row.get('tablet', 0) %}
+                            {% set row_total = pc + mb + tb %}
+                            {% if row_total > 0 %}
+                            <tr>
+                                <td style="font-weight:600">{{ ref_labels[ref_key] }}</td>
+                                <td class="text-center">{{ pc }}</td>
+                                <td class="text-center">{{ mb }}</td>
+                                <td class="text-center">{{ tb }}</td>
+                                <td class="text-center" style="font-weight:700">{{ row_total }}</td>
+                            </tr>
+                            {% set ns.grand_pc = ns.grand_pc + pc %}
+                            {% set ns.grand_mb = ns.grand_mb + mb %}
+                            {% set ns.grand_tb = ns.grand_tb + tb %}
+                            {% endif %}
+                            {% endfor %}
+                            <tr style="background:#f8f8fa;font-weight:700;border-top:2px solid #ddd">
+                                <td>합계</td>
+                                <td class="text-center">{{ ns.grand_pc }}</td>
+                                <td class="text-center">{{ ns.grand_mb }}</td>
+                                <td class="text-center">{{ ns.grand_tb }}</td>
+                                <td class="text-center" style="color:#5e1985">{{ ns.grand_pc + ns.grand_mb + ns.grand_tb }}</td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
             </div>
         </div>
     </div>
+
+    <!-- ===== 3. 콘텐츠 관리 ===== -->
+    <div class="db-section">
+        <div class="db-section-head">
+            <div class="sec-icon" style="background:#ff9800"><i class="bi bi-pencil-square"></i></div>
+            <h2>콘텐츠 관리</h2>
+        </div>
+
+        <!-- 기사 탭 (전체 너비) -->
+        <div class="db-row" style="grid-template-columns:1fr">
+            <div class="db-box db-tabs">
+                <ul class="tab-nav">
+                    <li class="active" data-tab="panel-unapproved">
+                        <a href="javascript:void(0)"><span>미승인기사</span> <span class="badge-num">{{ unapproved }}</span></a>
+                    </li>
+                    <li data-tab="panel-embargo">
+                        <a href="javascript:void(0)"><span>예약기사</span> <span class="badge-num">{{ embargo_count }}</span></a>
+                    </li>
+                    <li data-tab="panel-recent">
+                        <a href="javascript:void(0)"><span>최근등록기사</span> <span class="badge-num">{{ recent_articles|length }}</span></a>
+                    </li>
+                </ul>
+                <div id="panel-unapproved" class="tab-panel active">
+                    <table class="db-table">
+                        <colgroup><col width="*" /><col width="120" /><col width="140" /></colgroup>
+                        <thead><tr><th>제목</th><th class="text-center">기자명</th><th class="text-center">등록일</th></tr></thead>
+                        <tbody>
+                            {% for a in unapproved_articles %}
+                            <tr>
+                                <th><a href="{{ url_for('admin.article_edit', article_id=a.id) }}">{{ a.title }}</a></th>
+                                <td class="text-center">{{ a.author_name }}</td>
+                                <td class="text-center">{{ a.created_at.strftime('%Y-%m-%d %H:%M') }}</td>
+                            </tr>
+                            {% else %}
+                            <tr><td colspan="3" class="text-center" style="color:#999;padding:16px">미승인 기사가 없습니다.</td></tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+                <div id="panel-embargo" class="tab-panel">
+                    <table class="db-table">
+                        <colgroup><col width="*" /><col width="120" /><col width="140" /></colgroup>
+                        <thead><tr><th>제목</th><th class="text-center">기자명</th><th class="text-center">예약일</th></tr></thead>
+                        <tbody>
+                            {% for a in embargo_articles %}
+                            <tr>
+                                <th><a href="{{ url_for('admin.article_edit', article_id=a.id) }}">{{ a.title }}</a></th>
+                                <td class="text-center">{{ a.author_name }}</td>
+                                <td class="text-center">{{ a.embargo_date.strftime('%Y-%m-%d %H:%M') if a.embargo_date else '-' }}</td>
+                            </tr>
+                            {% else %}
+                            <tr><td colspan="3" class="text-center" style="color:#999;padding:16px">예약 기사가 없습니다.</td></tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+                <div id="panel-recent" class="tab-panel">
+                    <table class="db-table">
+                        <colgroup><col width="*" /><col width="120" /><col width="140" /></colgroup>
+                        <thead><tr><th>제목</th><th class="text-center">기자명</th><th class="text-center">등록일</th></tr></thead>
+                        <tbody>
+                            {% for a in recent_articles %}
+                            <tr>
+                                <th><a href="{{ url_for('admin.article_edit', article_id=a.id) }}">{{ a.title }}</a></th>
+                                <td class="text-center">{{ a.author_name }}</td>
+                                <td class="text-center">{{ a.created_at.strftime('%Y-%m-%d %H:%M') }}</td>
+                            </tr>
+                            {% else %}
+                            <tr><td colspan="3" class="text-center" style="color:#999;padding:16px">등록된 기사가 없습니다.</td></tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+                <a href="{{ url_for('admin.article_list') }}" class="more-link"><i class="bi bi-plus-circle"></i> 더보기</a>
+            </div>
+        </div>
+
+        <!-- 편집 현황 -->
+        <div class="db-row" style="grid-template-columns:1fr">
+            <div class="db-box">
+                <div class="db-box-head">
+                    <span class="badge">공개사이트</span>
+                    <span>편집 현황</span>
+                    <a href="{{ url_for('public.index') }}" target="_blank" class="head-link"><i class="bi bi-box-arrow-up-right"></i> 미리보기</a>
+                </div>
+                <div class="db-box-body">
+                    <div class="db-edit-cards">
+                        <!-- 1면 헤드 -->
+                        <div class="db-edit-card">
+                            <div class="edit-head">
+                                <span class="edit-title"><i class="bi bi-star-fill" style="color:#5e1985"></i> 1면 헤드</span>
+                                <a href="{{ url_for('admin.hero_config') }}" class="edit-link">편집 <i class="bi bi-chevron-right"></i></a>
+                            </div>
+                            {% if hero_preview %}
+                            {% for art in hero_preview[:3] %}
+                            <div class="edit-item">
+                                <span class="edit-rank" style="background:{% if loop.index == 1 %}#5e1985{% else %}#ddd{% endif %}">{{ loop.index }}</span>
+                                <a href="{{ url_for('admin.article_edit', article_id=art.id) }}">{{ art.title }}</a>
+                            </div>
+                            {% endfor %}
+                            {% else %}
+                            <div class="edit-empty">설정된 기사 없음 (자동 선택)</div>
+                            {% endif %}
+                        </div>
+                        <!-- 주요 기사 -->
+                        <div class="db-edit-card">
+                            <div class="edit-head">
+                                <span class="edit-title"><i class="bi bi-bookmark-fill" style="color:#ff9800"></i> 주요 기사</span>
+                                <a href="{{ url_for('admin.featured_config') }}" class="edit-link">편집 <i class="bi bi-chevron-right"></i></a>
+                            </div>
+                            {% if featured_preview %}
+                            {% for art in featured_preview %}
+                            <div class="edit-item">
+                                <span class="edit-rank" style="background:{% if loop.index <= 2 %}#ff9800{% else %}#ddd{% endif %}">{{ loop.index }}</span>
+                                <a href="{{ url_for('admin.article_edit', article_id=art.id) }}">{{ art.title }}</a>
+                            </div>
+                            {% endfor %}
+                            {% else %}
+                            <div class="edit-empty">설정된 기사 없음 (최신 기사)</div>
+                            {% endif %}
+                        </div>
+                        <!-- 인기 기사 -->
+                        <div class="db-edit-card">
+                            <div class="edit-head">
+                                <span class="edit-title"><i class="bi bi-fire" style="color:#f44336"></i> 인기 기사</span>
+                                <a href="{{ url_for('admin.popular_config') }}" class="edit-link">편집 <i class="bi bi-chevron-right"></i></a>
+                            </div>
+                            {% if popular_preview %}
+                            {% for art in popular_preview %}
+                            <div class="edit-item">
+                                <span class="edit-rank" style="background:{% if loop.index == 1 %}#f44336{% else %}#ddd{% endif %}">{{ loop.index }}</span>
+                                <a href="{{ url_for('admin.article_edit', article_id=art.id) }}">{{ art.title }}</a>
+                            </div>
+                            {% endfor %}
+                            {% else %}
+                            <div class="edit-empty">설정된 기사 없음 (자동 집계)</div>
+                            {% endif %}
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- 최근 기사 목록 (번호 참조용) -->
+        <div class="db-row" style="grid-template-columns:1fr">
+            <div class="db-box">
+                <div class="db-box-head">
+                    <span class="badge">참조</span>
+                    <span>최근 기사 목록</span>
+                    <span style="font-size:11px;color:#999;margin-left:8px">기사 번호를 확인하고 위 편집에 활용하세요</span>
+                </div>
+                <div class="db-box-body no-pad">
+                    <table class="db-table">
+                        <colgroup><col width="70" /><col width="*" /><col width="100" /><col width="80" /><col width="140" /></colgroup>
+                        <thead>
+                            <tr>
+                                <th class="text-center">번호</th>
+                                <th>제목</th>
+                                <th class="text-center">섹션</th>
+                                <th class="text-center">기자명</th>
+                                <th class="text-center">등록일</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for a in recent_articles %}
+                            <tr>
+                                <td class="text-center" style="font-weight:700;color:#5e1985;font-size:14px;cursor:pointer" title="클릭하여 복사" onclick="navigator.clipboard.writeText('{{ a.id }}');this.style.color='#4CAF50';var t=this;setTimeout(function(){t.style.color='#5e1985'},800)">{{ a.id }}</td>
+                                <th><a href="{{ url_for('admin.article_edit', article_id=a.id) }}">{{ a.title }}</a></th>
+                                <td class="text-center" style="font-size:11px;color:#888">{{ a.section.name if a.section else '-' }}</td>
+                                <td class="text-center">{{ a.author_name }}</td>
+                                <td class="text-center" style="font-size:12px">{{ a.created_at.strftime('%Y-%m-%d %H:%M') }}</td>
+                            </tr>
+                            {% else %}
+                            <tr><td colspan="5" class="text-center" style="color:#999;padding:20px">등록된 기사가 없습니다.</td></tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- ===== 4. 커뮤니티 & 신청 ===== -->
+    <div class="db-section">
+        <div class="db-section-head">
+            <div class="sec-icon" style="background:#4CAF50"><i class="bi bi-people"></i></div>
+            <h2>커뮤니티 & 신청</h2>
+        </div>
+
+        <!-- 신청 카드 -->
+        <div class="db-request-cards">
+            <a href="{{ url_for('admin.event_request_list', event_code='event5') }}" class="db-request-card">
+                <i class="bi bi-plus-lg" style="color:#5e1985"></i>
+                <span class="req-num">{{ subscribe_count }}</span>
+                <span class="req-text">구독신청</span>
+            </a>
+            <a href="{{ url_for('admin.event_request_list', event_code='event4') }}" class="db-request-card">
+                <i class="bi bi-pencil" style="color:#ff9800"></i>
+                <span class="req-num">{{ report_count }}</span>
+                <span class="req-text">기사제보</span>
+            </a>
+            <a href="{{ url_for('admin.event_request_list', event_code='event3') }}" class="db-request-card">
+                <i class="bi bi-flag" style="color:#f44336"></i>
+                <span class="req-num">{{ copyright_count }}</span>
+                <span class="req-text">저작권문의</span>
+            </a>
+        </div>
+
+        <!-- 댓글/게시판/신청 내역 -->
+        <div class="db-comm-cards">
+            <!-- 기사댓글 -->
+            <div class="db-comm-card">
+                <a href="{{ url_for('admin.article_comments') }}" class="db-comm-head">
+                    <span>기사댓글</span>
+                    <span class="comm-badge orange">{{ comment_count }}</span>
+                    <i class="bi bi-chevron-right"></i>
+                </a>
+                <div class="db-comm-body">
+                    {% for c in recent_comments %}
+                    <div class="db-comm-item">
+                        <a href="{{ url_for('admin.article_comments') }}">{{ c.content[:40] }}{% if c.content|length > 40 %}...{% endif %}</a>
+                    </div>
+                    {% else %}
+                    <div class="db-comm-empty">댓글이 없습니다.</div>
+                    {% endfor %}
+                </div>
+            </div>
+            <!-- 게시판댓글 -->
+            <div class="db-comm-card">
+                <a href="{{ url_for('admin.bbs_reply_list') }}" class="db-comm-head">
+                    <span>게시판댓글</span>
+                    <span class="comm-badge orange">{{ post_reply_count }}</span>
+                    <i class="bi bi-chevron-right"></i>
+                </a>
+                <div class="db-comm-body">
+                    {% for r in recent_replies %}
+                    <div class="db-comm-item">
+                        <a href="{{ url_for('admin.bbs_reply_list') }}">{{ r.content[:40] }}{% if r.content|length > 40 %}...{% endif %}</a>
+                    </div>
+                    {% else %}
+                    <div class="db-comm-empty">댓글이 없습니다.</div>
+                    {% endfor %}
+                </div>
+            </div>
+            <!-- 신청내역 -->
+            <div class="db-comm-card">
+                <a href="{{ url_for('admin.event_request_list') }}" class="db-comm-head">
+                    <span>신청내역</span>
+                    <span class="comm-badge pink">{{ subscribe_count + report_count + copyright_count }}</span>
+                    <i class="bi bi-chevron-right"></i>
+                </a>
+                <div class="db-comm-body">
+                    {% for req in recent_requests %}
+                    <div class="db-comm-item">
+                        <a href="{{ url_for('admin.event_request_list') }}">{{ req.name }} - {{ req.content[:25] }}{% if req.content|length > 25 %}...{% endif %}</a>
+                    </div>
+                    {% else %}
+                    <div class="db-comm-empty">신청 내역이 없습니다.</div>
+                    {% endfor %}
+                </div>
+            </div>
+        </div>
+    </div>
+
 </div>
 {% endblock %}
 
@@ -499,7 +759,7 @@
 // 탭 전환
 document.querySelectorAll('.tab-nav li').forEach(function(li) {
     li.addEventListener('click', function() {
-        var tabs = this.closest('.dash-tabs');
+        var tabs = this.closest('.db-tabs');
         tabs.querySelectorAll('.tab-nav li').forEach(function(t) { t.classList.remove('active'); });
         tabs.querySelectorAll('.tab-panel').forEach(function(p) { p.classList.remove('active'); });
         this.classList.add('active');
@@ -508,79 +768,89 @@ document.querySelectorAll('.tab-nav li').forEach(function(li) {
 });
 
 // 일자별 PV 차트
-var pvOptions = {
-    chart: { height: 300, type: "line", fontFamily: "inherit" },
+new ApexCharts(document.querySelector("#days-pv"), {
+    chart: { height: 300, type: "line", fontFamily: "inherit", toolbar: { show: false } },
     dataLabels: { enabled: false },
     series: [
         { name: '페이지뷰', type: 'column', data: {{ pv_data | tojson }} },
         { name: '방문자수', type: 'area', data: {{ visitor_data | tojson }} }
     ],
     xaxis: { categories: {{ pv_labels | tojson }} },
-    grid: { borderColor: '#d5d5d5', strokeDashArray: 4 },
+    grid: { borderColor: '#e8e8e8', strokeDashArray: 4 },
     legend: { position: 'top' },
     stroke: { width: 0, curve: 'smooth' },
     fill: { opacity: 1 },
-    plotOptions: { bar: { columnWidth: '30%' } },
-    colors: ['#5684ff', '#bdcfff'],
-    responsive: [{
-        breakpoint: 639,
-        options: {
-            chart: { height: '200px' },
-            yaxis: { show: false },
-            legend: { position: 'bottom' }
-        }
-    }]
-};
-new ApexCharts(document.querySelector("#days-pv"), pvOptions).render();
+    plotOptions: { bar: { columnWidth: '30%', borderRadius: 3 } },
+    colors: ['#5e1985', '#d4b8e8']
+}).render();
 
-// 신규/재방문자 도넛 (실제 데이터)
-var newVisitors = {{ new_visitors_7d }};
-var returnVisitors = {{ return_visitors_7d }};
-var totalVisitors = newVisitors + returnVisitors;
-
-document.getElementById('visitor-total').textContent = totalVisitors;
-var newPct = totalVisitors > 0 ? (newVisitors / totalVisitors * 100).toFixed(1) : 0;
-var retPct = totalVisitors > 0 ? (returnVisitors / totalVisitors * 100).toFixed(1) : 0;
-document.getElementById('new-pct').textContent = newPct + '%';
-document.getElementById('return-pct').textContent = retPct + '%';
-document.getElementById('new-bar').style.width = newPct + '%';
-document.getElementById('return-bar').style.width = retPct + '%';
+// 신규/재방문자
+var newV = {{ new_visitors_7d }}, retV = {{ return_visitors_7d }}, totV = newV + retV;
+document.getElementById('visitor-total').textContent = totV;
+var nP = totV > 0 ? (newV/totV*100).toFixed(1) : 0;
+var rP = totV > 0 ? (retV/totV*100).toFixed(1) : 0;
+document.getElementById('new-pct').textContent = nP+'%';
+document.getElementById('return-pct').textContent = rP+'%';
+document.getElementById('new-bar').style.width = nP+'%';
+document.getElementById('return-bar').style.width = rP+'%';
 
 new ApexCharts(document.querySelector("#pageViews"), {
-    chart: { type: 'donut', height: 187 },
+    chart: { type: 'donut', height: 180 },
     dataLabels: { enabled: false },
     labels: ['신규', '재방문'],
-    series: [newVisitors || 1, returnVisitors || 0],
+    series: [newV || 1, retV || 0],
     legend: { show: true, position: 'bottom', fontSize: '12px', fontFamily: 'inherit' },
-    plotOptions: { pie: { donut: { size: '82%' } } },
+    plotOptions: { pie: { donut: { size: '80%' } } },
     colors: ['#ffca00', '#ffe687']
 }).render();
 
-// 접속디바이스 도넛 (실제 데이터)
-var pcCnt = {{ device_map.get('pc', 0) }};
-var mbCnt = {{ device_map.get('mobile', 0) }};
-var tbCnt = {{ device_map.get('tablet', 0) }};
-var deviceTotal = pcCnt + mbCnt + tbCnt;
-document.getElementById('device-total').textContent = deviceTotal;
-
-var pcP = deviceTotal > 0 ? (pcCnt / deviceTotal * 100).toFixed(1) : 0;
-var mbP = deviceTotal > 0 ? (mbCnt / deviceTotal * 100).toFixed(1) : 0;
-var tbP = deviceTotal > 0 ? (tbCnt / deviceTotal * 100).toFixed(1) : 0;
-document.getElementById('pc-pct').textContent = pcP + '%';
-document.getElementById('mb-pct').textContent = mbP + '%';
-document.getElementById('tb-pct').textContent = tbP + '%';
-document.getElementById('pc-bar').style.width = pcP + '%';
-document.getElementById('mb-bar').style.width = mbP + '%';
-document.getElementById('tb-bar').style.width = tbP + '%';
+// 접속디바이스
+var pcC = {{ device_map.get('pc', 0) }}, mbC = {{ device_map.get('mobile', 0) }}, tbC = {{ device_map.get('tablet', 0) }};
+var devT = pcC+mbC+tbC;
+document.getElementById('device-total').textContent = devT;
+var pcP = devT>0?(pcC/devT*100).toFixed(1):0;
+var mbP = devT>0?(mbC/devT*100).toFixed(1):0;
+var tbP = devT>0?(tbC/devT*100).toFixed(1):0;
+document.getElementById('pc-pct').textContent = pcP+'%';
+document.getElementById('mb-pct').textContent = mbP+'%';
+document.getElementById('tb-pct').textContent = tbP+'%';
+document.getElementById('pc-bar').style.width = pcP+'%';
+document.getElementById('mb-bar').style.width = mbP+'%';
+document.getElementById('tb-bar').style.width = tbP+'%';
 
 new ApexCharts(document.querySelector("#cnDevices"), {
-    chart: { type: 'donut', height: 187 },
+    chart: { type: 'donut', height: 180 },
     dataLabels: { enabled: false },
     labels: ['PC', 'Mobile', 'Tablet'],
-    series: [pcCnt || 1, mbCnt || 0, tbCnt || 0],
+    series: [pcC||1, mbC||0, tbC||0],
     legend: { show: true, position: 'bottom', fontSize: '12px', fontFamily: 'inherit' },
-    plotOptions: { pie: { donut: { size: '82%' } } },
+    plotOptions: { pie: { donut: { size: '80%' } } },
     colors: ['#3f5be8', '#738bff', '#b9c5ff']
+}).render();
+
+// 유입경로
+var naverC={{ referrer_map.get('naver',0) }}, googleC={{ referrer_map.get('google',0) }};
+var daumC={{ referrer_map.get('daum',0) }}, fbC={{ referrer_map.get('facebook',0) }};
+var kakaoC={{ referrer_map.get('kakao',0) }}, directC={{ referrer_map.get('direct',0) }};
+var otherC={{ referrer_map.get('other',0) }};
+var refT = naverC+googleC+daumC+fbC+kakaoC+directC+otherC;
+document.getElementById('referrer-total').textContent = refT;
+
+[{k:'naver',v:naverC},{k:'google',v:googleC},{k:'daum',v:daumC},{k:'facebook',v:fbC},
+ {k:'kakao',v:kakaoC},{k:'direct',v:directC},{k:'other',v:otherC}].forEach(function(i){
+    var p = refT>0?(i.v/refT*100).toFixed(1):0;
+    var pe=document.getElementById(i.k+'-pct'), be=document.getElementById(i.k+'-bar');
+    if(pe) pe.textContent=p+'%'; if(be) be.style.width=p+'%';
+});
+
+new ApexCharts(document.querySelector("#cnReferrer"), {
+    chart: { type: 'donut', height: 200 },
+    dataLabels: { enabled: false },
+    labels: ['네이버','구글','다음','페이스북','카카오','직접접속','기타'],
+    series: [naverC||0, googleC||0, daumC||0, fbC||0, kakaoC||0, directC||1, otherC||0],
+    legend: { show: true, position: 'bottom', fontSize: '11px', fontFamily: 'inherit' },
+    plotOptions: { pie: { donut: { size: '80%' } } },
+    colors: ['#2DB400','#4285F4','#1D6CE1','#1877F2','#FEE500','#999','#ccc']
 }).render();
 </script>
 {% endblock %}

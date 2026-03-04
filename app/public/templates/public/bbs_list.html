@@ -1,159 +1,194 @@
-{% extends "public/base.html" %}
-{% block title %}{{ board.name }} < 게시판 - 웰다잉뉴스{% endblock %}
-
-{% block extra_head %}
-<style type="text/css">
-.bbs-user-page {margin-bottom:15px}
-.bbs-user-page .titles {font-size:1.5rem;font-weight:700;letter-spacing:-.025em}
-.bbs-skin {margin:0 auto;max-width:{% if is_mobile %}728{% else %}1240{% endif %}px}
-.bbs-skin .search-grouping {display:flex;justify-content:flex-end;align-items:center;margin-bottom:15px;gap:8px{% if is_mobile %};flex-wrap:wrap{% endif %}}
-.bbs-skin .search-grouping select {width:{% if is_mobile %}80px{% else %}120px{% endif %};margin:0;height:38px;font-size:{% if is_mobile %}12px{% else %}14px{% endif %}}
-.bbs-skin .search-grouping .input-group {margin:0;width:{% if is_mobile %}200px{% else %}300px{% endif %}}
-.bbs-skin .search-grouping .input-group input {height:38px;font-size:{% if is_mobile %}12px{% else %}14px{% endif %};margin:0}
-.bbs-skin .search-grouping .input-group .button {height:38px;margin:0;padding:0 15px}
-{% if is_mobile %}
-#bbs_table th, #bbs_table td {font-size:12px;padding:8px 4px}
-{% endif %}
-.show-static-small-only {display:none}
-@media screen and (max-width:39.9375em) {.show-static-small-only {display:inline}}
-#bbs_table {width:100%;border-collapse:collapse}
-#bbs_table thead tr {border-top:2px solid #333;border-bottom:1px solid #ddd}
-#bbs_table th {padding:10px 8px;font-size:14px;font-weight:500;color:#333}
-#bbs_table td {padding:10px 8px;font-size:14px;border-bottom:1px solid #eee}
-#bbs_table tbody tr:hover {background-color:#fafafa}
-.bbs-skin-width-small {width:60px}
-.bbs-skin-width-large {}
-.bbs-skin-width-medium {width:120px}
-.bbs-list-title a {color:#333;font-weight:400}
-.bbs-list-title a:hover {color:#5e1985}
-.bbs-list-title .label {margin-left:5px;font-size:10px;vertical-align:middle}
-.bbs-list-title .reply-count {margin-left:5px;font-size:12px;color:#5e1985;font-weight:700}
-.pagin-group {display:flex;justify-content:space-between;align-items:center;margin-top:30px}
-.pagin-group .items {flex:1}
-.pagin-group .items:last-child {text-align:right}
-.create-btn {display:inline-block;padding:8px 20px;font-size:14px;color:#fff;border-radius:3px;text-decoration:none}
-.create-btn:hover {color:#fff}
-.bbs-empty {padding:60px 0;text-align:center;color:#999;font-size:15px}
-</style>
-{% endblock %}
+{% extends "public/base_v0.html" %}
+{% from "public/_banner_macros.html" import banner_img %}
+{% block title %}{{ board.name }} — 게시판 — 웰다잉뉴스{% endblock %}
 
 {% block content %}
-<div style="max-width:{% if is_mobile %}728{% else %}1240{% endif %}px;margin:0 auto;padding:20px 0">
+<div class="container section-gap">
+  <!-- 헤더 -->
+  <div class="bbs-page__header">
+    <h1 class="bbs-page__title"><i class="fa-regular fa-clipboard"></i> {{ board.name }}</h1>
+    {% if board.description %}
+    <p class="bbs-page__desc">{{ board.description }}</p>
+    {% endif %}
+  </div>
 
-<header class="bbs-user-page">
-    <h3 class="titles">{{ board.name }}</h3>
-</header>
-
-<div class="bbs-skin default">
-    <!-- 검색 -->
-    <div class="search-grouping">
-        <form action="{{ url_for('public.bbs_list') }}" method="get" style="display:flex;gap:8px;align-items:center">
-            <input type="hidden" name="table" value="{{ board.code }}" />
-            <select name="sc_area" title="검색항목">
-                <option value="T" {% if sc_area == 'T' %}selected{% endif %}>제목</option>
-                <option value="C" {% if sc_area == 'C' %}selected{% endif %}>내용</option>
-                <option value="A" {% if sc_area == 'A' %}selected{% endif %}>제목+내용</option>
-                <option value="N" {% if sc_area == 'N' %}selected{% endif %}>이름</option>
-            </select>
-            <div class="input-group">
-                <input type="text" name="sc_word" class="input-group-field" placeholder="검색어를 입력해주세요" value="{{ sc_word }}" />
-                <div class="input-group-button">
-                    <button class="button secondary"><i class="icon-search-thin"></i></button>
-                </div>
-            </div>
+  <div class="main-grid">
+    <!-- 메인 콘텐츠 -->
+    <div class="bbs-page">
+      <!-- 검색 -->
+      <div class="bbs-toolbar">
+        <span class="bbs-toolbar__count">총 <strong>{{ total }}</strong>건</span>
+        <form action="{{ url_for('public.bbs_list') }}" method="get" class="bbs-toolbar__search">
+          <input type="hidden" name="table" value="{{ board.code }}">
+          <select name="sc_area" class="bbs-toolbar__select">
+            <option value="T" {% if sc_area == 'T' %}selected{% endif %}>제목</option>
+            <option value="C" {% if sc_area == 'C' %}selected{% endif %}>내용</option>
+            <option value="A" {% if sc_area == 'A' %}selected{% endif %}>제목+내용</option>
+            <option value="N" {% if sc_area == 'N' %}selected{% endif %}>이름</option>
+          </select>
+          <input type="text" name="sc_word" value="{{ sc_word }}" class="bbs-toolbar__input" placeholder="검색어">
+          <button type="submit" class="bbs-toolbar__btn"><i class="fa-solid fa-magnifying-glass"></i></button>
         </form>
-    </div>
+      </div>
 
-    <!-- 목록 -->
-    <table class="hover unstriped" id="bbs_table" summary="제목,닉네임,날짜등을 포함한 게시물 목록입니다.">
-        <caption class="show-for-sr">{{ board.name }}</caption>
-        <thead>
+      <!-- 목록 테이블 -->
+      <div class="bbs-table-wrap">
+        <table class="bbs-table">
+          <thead>
             <tr>
-                <th class="text-center bbs-skin-width-small" scope="col">
-                    <span class="show-static-small-only">#</span>
-                    <span class="show-for-medium">번호</span>
-                </th>
-                <th class="text-center bbs-skin-width-large" scope="col">제목</th>
-                <th class="text-center bbs-skin-width-medium" scope="col">닉네임</th>
-                <th class="text-center show-for-medium" scope="col" style="width:100px">날짜</th>
-                <th class="text-center show-for-large" scope="col" style="width:60px">조회</th>
+              <th class="bbs-table__num">번호</th>
+              <th class="bbs-table__title">제목</th>
+              <th class="bbs-table__author">작성자</th>
+              <th class="bbs-table__date">날짜</th>
+              <th class="bbs-table__views">조회</th>
             </tr>
-        </thead>
-        <tbody>
+          </thead>
+          <tbody>
             {% for post in posts %}
             {% set row_num = total - ((pagination.page - 1) * pagination.per_page) - loop.index0 %}
             <tr>
-                <td class="text-center bbs-skin-width-small">{{ row_num }}</td>
-                <td class="bbs-list-title bbs-skin-width-large">
-                    <a href="{{ url_for('public.bbs_view', idxno=post.id) }}">{% if post.parent_post_id %}<span style="color:#5e1985;font-size:11px;margin-right:3px">[Re]</span>{% endif %}{% if post.is_secret %}<i class="icon-lock" style="color:#5e1985;font-size:12px"></i> {% endif %}{{ post.title }}</a>
-                    {% if post.view_count >= 100 %}<span class="label alert tiny">HOT</span>{% endif %}
-                    {% set reply_count = post.replies.filter_by(is_hidden=False).count() %}
-                    {% if reply_count > 0 %}<span class="reply-count">[{{ reply_count }}]</span>{% endif %}
-                </td>
-                <td class="text-center bbs-skin-width-medium">{{ post.author_name }}</td>
-                <td class="text-center show-for-medium">{{ post.created_at.strftime('%Y-%m-%d') }}</td>
-                <td class="text-center show-for-large">{{ post.view_count }}</td>
+              <td class="bbs-table__num">{{ row_num }}</td>
+              <td class="bbs-table__title">
+                <a href="{{ url_for('public.bbs_view', idxno=post.id) }}">
+                  {% if post.parent_post_id %}<span class="bbs-badge bbs-badge--re">Re</span>{% endif %}
+                  {% if post.is_secret %}<i class="fa-solid fa-lock bbs-icon-lock"></i> {% endif %}
+                  {{ post.title }}
+                </a>
+                {% if post.view_count >= 100 %}<span class="bbs-badge bbs-badge--hot">HOT</span>{% endif %}
+                {% set reply_count = post.replies.filter_by(is_hidden=False).count() %}
+                {% if reply_count > 0 %}<span class="bbs-reply-count">[{{ reply_count }}]</span>{% endif %}
+              </td>
+              <td class="bbs-table__author">{{ post.author_name }}</td>
+              <td class="bbs-table__date">{{ post.created_at.strftime('%Y-%m-%d') }}</td>
+              <td class="bbs-table__views">{{ post.view_count }}</td>
             </tr>
             {% else %}
             <tr>
-                <td colspan="5" class="bbs-empty">등록된 게시물이 없습니다.</td>
+              <td colspan="5" class="bbs-table__empty">등록된 게시물이 없습니다.</td>
             </tr>
             {% endfor %}
-        </tbody>
-    </table>
+          </tbody>
+        </table>
+      </div>
 
-    <!-- 하단: 페이지네이션 + 글쓰기 버튼 -->
-    <footer class="pagin-group">
-        <article class="items">
-            {% if pagination.pages > 1 %}
-            <nav aria-label="Pagination">
-                <ul class="pagination">
-                    <li class="pagination-start">
-                        <a href="{{ url_for('public.bbs_list', page=1, table=board.code, sc_area=sc_area, sc_word=sc_word) }}" title="처음">
-                            <i class="icon-angle-double-left"><span class="show-for-sr">처음</span></i>
-                        </a>
-                    </li>
-                    {% if pagination.has_prev %}
-                    <li>
-                        <a href="{{ url_for('public.bbs_list', page=pagination.prev_num, table=board.code, sc_area=sc_area, sc_word=sc_word) }}" title="이전">
-                            <i class="icon-angle-left-min"><span class="show-for-sr">이전</span></i>
-                        </a>
-                    </li>
-                    {% endif %}
-                    {% for p in pagination.iter_pages(left_edge=1, right_edge=1, left_current=4, right_current=4) %}
-                    {% if p %}
-                    {% if p == pagination.page %}
-                    <li class="current user-bg">{{ p }}</li>
-                    {% else %}
-                    <li><a href="{{ url_for('public.bbs_list', page=p, table=board.code, sc_area=sc_area, sc_word=sc_word) }}">{{ p }}</a></li>
-                    {% endif %}
-                    {% else %}
-                    <li class="ellipsis"></li>
-                    {% endif %}
-                    {% endfor %}
-                    {% if pagination.has_next %}
-                    <li>
-                        <a href="{{ url_for('public.bbs_list', page=pagination.next_num, table=board.code, sc_area=sc_area, sc_word=sc_word) }}" title="다음">
-                            <i class="icon-angle-right-min"><span class="show-for-sr">다음</span></i>
-                        </a>
-                    </li>
-                    {% endif %}
-                    <li class="pagination-end">
-                        <a href="{{ url_for('public.bbs_list', page=pagination.pages, table=board.code, sc_area=sc_area, sc_word=sc_word) }}" title="끝">
-                            <i class="icon-angle-double-right"><span class="show-for-sr">끝</span></i>
-                        </a>
-                    </li>
-                </ul>
-            </nav>
+      <!-- 하단: 페이지네이션 + 글 작성 -->
+      <div class="bbs-bottom">
+        {% if pagination.pages > 1 %}
+        <nav class="alist-pager">
+          <a href="{{ url_for('public.bbs_list', page=1, table=board.code, sc_area=sc_area, sc_word=sc_word) }}"
+             class="alist-pager__btn" title="처음"><i class="fa-solid fa-angles-left"></i></a>
+          {% if pagination.has_prev %}
+          <a href="{{ url_for('public.bbs_list', page=pagination.prev_num, table=board.code, sc_area=sc_area, sc_word=sc_word) }}"
+             class="alist-pager__btn" title="이전"><i class="fa-solid fa-angle-left"></i></a>
+          {% endif %}
+          {% for p in pagination.iter_pages(left_edge=1, right_edge=1, left_current=4, right_current=4) %}
+            {% if p %}
+              {% if p == pagination.page %}
+              <span class="alist-pager__num alist-pager__num--active">{{ p }}</span>
+              {% else %}
+              <a href="{{ url_for('public.bbs_list', page=p, table=board.code, sc_area=sc_area, sc_word=sc_word) }}"
+                 class="alist-pager__num">{{ p }}</a>
+              {% endif %}
+            {% else %}
+            <span class="alist-pager__dots">…</span>
             {% endif %}
-        </article>
-        <article class="items">
-            <a href="{{ url_for('public.bbs_write_form', table=board.code) }}" class="create-btn button user-bg">
-                <i class="icon-pen"></i>&nbsp;<strong>글쓰기</strong>
-            </a>
-        </article>
-    </footer>
-</div>
+          {% endfor %}
+          {% if pagination.has_next %}
+          <a href="{{ url_for('public.bbs_list', page=pagination.next_num, table=board.code, sc_area=sc_area, sc_word=sc_word) }}"
+             class="alist-pager__btn" title="다음"><i class="fa-solid fa-angle-right"></i></a>
+          {% endif %}
+          <a href="{{ url_for('public.bbs_list', page=pagination.pages, table=board.code, sc_area=sc_area, sc_word=sc_word) }}"
+             class="alist-pager__btn" title="끝"><i class="fa-solid fa-angles-right"></i></a>
+        </nav>
+        {% endif %}
+        <a href="{{ url_for('public.bbs_write_form', table=board.code) }}" class="bbs-write-btn">
+          <i class="fa-solid fa-pen"></i> 글 작성
+        </a>
+      </div>
+    </div>
 
+    <!-- 사이드바 -->
+    <aside>
+      {% if banners.get('sidebar') %}
+      <div class="banner-area desk-only">
+        {% for b in banners['sidebar'] %}
+        <a href="{{ url_for('public.banner_click', banner_id=b.id) }}" target="_blank" rel="noopener">
+          {{ banner_img(b) }}
+        </a>
+        {% endfor %}
+      </div>
+      {% endif %}
+
+      {% if sidebar_opinion %}
+      <div class="desk-only">
+        <div class="sec-head" style="margin-top:0.5rem">
+          <i class="fa-solid fa-pen-nib"></i>
+          <span class="sec-head__title">오피니언</span>
+        </div>
+        <div class="sidebar-opinion">
+          {% for art in sidebar_opinion %}
+          <a href="/news/articleView.html?idxno={{ art.id }}" class="sidebar-opinion__item">
+            <div class="sidebar-opinion__avatar" style="{% if art.thumb_url %}background-image:url({{ art.thumb_url }}){% endif %}">
+              {% if not art.thumb_url %}{{ art.author_name[:1] if art.author_name else '필' }}{% endif %}
+            </div>
+            <div class="sidebar-opinion__body">
+              <div class="sidebar-opinion__title line-clamp-2">{{ art.title }}</div>
+              {% if art.author_title %}<div class="sidebar-opinion__author">{{ art.author_title }}</div>{% elif art.author_name and art.author_name != '웰다잉뉴스' %}<div class="sidebar-opinion__author">{{ art.author_name }}</div>{% endif %}
+            </div>
+          </a>
+          {% endfor %}
+        </div>
+      </div>
+      {% endif %}
+
+      {% if popular_today or popular_week %}
+      <div class="sec-head" style="margin-top:1.5rem">
+        <i class="fa-solid fa-arrow-trend-up"></i>
+        <span class="sec-head__title">많이 본 뉴스</span>
+      </div>
+      <div class="pop-tabs">
+        <button class="pop-tab pop-tab--active" onclick="switchPop(this,'popWeekBbs')">주간</button>
+        <button class="pop-tab" onclick="switchPop(this,'popTodayBbs')">오늘</button>
+      </div>
+      <div class="pop-list" id="popWeekBbs">
+        {% for art in popular_week %}
+        <a href="/news/articleView.html?idxno={{ art.id }}" class="pop-item">
+          <span class="pop-num {{ 'pop-num--top' if loop.index <= 3 else 'pop-num--rest' }}">{{ loop.index }}</span>
+          <span class="pop-title line-clamp-2">{{ art.title }}</span>
+        </a>
+        {% endfor %}
+      </div>
+      <div class="pop-list" id="popTodayBbs" style="display:none">
+        {% for art in popular_today %}
+        <a href="/news/articleView.html?idxno={{ art.id }}" class="pop-item">
+          <span class="pop-num {{ 'pop-num--top' if loop.index <= 3 else 'pop-num--rest' }}">{{ loop.index }}</span>
+          <span class="pop-title line-clamp-2">{{ art.title }}</span>
+        </a>
+        {% endfor %}
+      </div>
+      {% endif %}
+
+      {% if banners.get('sidebar_bottom') %}
+      <div class="banner-area desk-only" style="margin-top:1.25rem">
+        {% for b in banners['sidebar_bottom'] %}
+        <a href="{{ url_for('public.banner_click', banner_id=b.id) }}" target="_blank" rel="noopener">
+          {{ banner_img(b) }}
+        </a>
+        {% endfor %}
+      </div>
+      {% endif %}
+    </aside>
+  </div>
 </div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+function switchPop(btn, panelId) {
+  document.querySelectorAll('.pop-tab').forEach(function(t){ t.classList.remove('pop-tab--active'); });
+  btn.classList.add('pop-tab--active');
+  document.querySelectorAll('.pop-list').forEach(function(p){ p.style.display = 'none'; });
+  document.getElementById(panelId).style.display = '';
+}
+</script>
 {% endblock %}

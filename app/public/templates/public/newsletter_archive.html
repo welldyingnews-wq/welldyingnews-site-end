@@ -1,0 +1,166 @@
+{% extends "public/base_v0.html" %}
+{% from "public/_banner_macros.html" import banner_img %}
+
+{% block title %}뉴스레터 아카이브 — 웰다잉뉴스{% endblock %}
+
+{% block content %}
+<div class="nl-archive-wrap">
+    <div class="nl-archive-header">
+        <h2 class="nl-archive-heading">주간 뉴스레터</h2>
+        <p class="nl-archive-desc">매주 발행되는 웰다잉뉴스의 주간 뉴스레터를 웹에서 열람하실 수 있습니다.</p>
+    </div>
+
+    <div class="main-grid">
+      <div>
+        {% if newsletters %}
+        <div class="nl-archive-grid">
+            {% for nl in newsletters %}
+            <a href="/newsletter/{{ nl.slug }}" class="nl-archive-card">
+                <div class="nl-archive-cover">
+                    {% if nl.briefing_image %}
+                    <img src="{{ nl.briefing_image }}" alt="{{ nl.title }}" class="nl-archive-cover-img">
+                    {% else %}
+                    <div class="nl-archive-cover-placeholder">
+                        <span class="nl-archive-cover-icon">&#9993;</span>
+                    </div>
+                    {% endif %}
+                    <div class="nl-archive-cover-top">
+                        <h3 class="nl-archive-title">{{ nl.title }}</h3>
+                        {% if nl.publish_date %}
+                        <time class="nl-archive-date">{{ nl.publish_date.strftime('%Y.%m.%d') }}</time>
+                        {% endif %}
+                    </div>
+                    <div class="nl-archive-cover-bottom">
+                        <span class="nl-archive-vol">Vol.{{ nl.volume_number }}</span>
+                    </div>
+                </div>
+            </a>
+            {% endfor %}
+        </div>
+
+        {% if pagination.pages > 1 %}
+        <div class="nl-archive-pagination">
+            {% for p in pagination.iter_pages() %}
+                {% if p %}
+                    {% if p == pagination.page %}
+                    <span class="nl-archive-page active">{{ p }}</span>
+                    {% else %}
+                    <a href="?page={{ p }}" class="nl-archive-page">{{ p }}</a>
+                    {% endif %}
+                {% else %}
+                <span class="nl-archive-page dots">&hellip;</span>
+                {% endif %}
+            {% endfor %}
+        </div>
+        {% endif %}
+
+        {% else %}
+        <div class="nl-archive-empty">
+            <p>발행된 뉴스레터가 없습니다.</p>
+        </div>
+        {% endif %}
+      </div>
+
+      <!-- 사이드바 -->
+      <aside>
+        {% if banners.get('sidebar') %}
+        <div class="banner-area desk-only">
+          {% for b in banners['sidebar'] %}
+          <a href="{{ url_for('public.banner_click', banner_id=b.id) }}" target="_blank" rel="noopener">
+            {{ banner_img(b) }}
+          </a>
+          {% endfor %}
+        </div>
+        {% endif %}
+
+        {% if sidebar_opinion %}
+        <!-- 오피니언 (PC: 리스트형) -->
+        <div class="desk-only">
+          <div class="sec-head" style="margin-top:0.5rem">
+            <i class="fa-solid fa-pen-nib"></i>
+            <span class="sec-head__title">오피니언</span>
+          </div>
+          <div class="sidebar-opinion">
+            {% for art in sidebar_opinion %}
+            <a href="/news/articleView.html?idxno={{ art.id }}" class="sidebar-opinion__item">
+              <div class="sidebar-opinion__avatar" style="{% if art.thumb_url %}background-image:url({{ art.thumb_url }}){% endif %}">
+                {% if not art.thumb_url %}{{ art.author_name[:1] if art.author_name else '필' }}{% endif %}
+              </div>
+              <div class="sidebar-opinion__body">
+                <div class="sidebar-opinion__title line-clamp-2">{{ art.title }}</div>
+                {% if art.author_title %}<div class="sidebar-opinion__author">{{ art.author_title }}</div>{% elif art.author_name and art.author_name != '웰다잉뉴스' %}<div class="sidebar-opinion__author">{{ art.author_name }}</div>{% endif %}
+              </div>
+            </a>
+            {% endfor %}
+          </div>
+        </div>
+        <!-- 오피니언 (모바일: 카드형) -->
+        <div class="mob-only">
+          <div class="sec-head" style="margin-top:0.5rem">
+            <i class="fa-solid fa-pen-nib"></i>
+            <span class="sec-head__title">오피니언</span>
+          </div>
+          <div class="opinion-grid">
+            {% for art in sidebar_opinion %}
+            <a href="/news/articleView.html?idxno={{ art.id }}" class="opinion-card">
+              <div class="opinion-avatar">
+                {% if art.thumb_url %}
+                <img src="{{ art.thumb_url }}" alt="" style="object-position:{{ art.author_photo_pos or 'center center' }}">
+                {% else %}
+                {{ art.author_name[:1] if art.author_name else '필' }}
+                {% endif %}
+              </div>
+              {% if art.author_name and art.author_name != '웰다잉뉴스' %}
+              {% if art.author_title %}
+              <div class="opinion-name">{{ art.author_title }}</div>
+              {% elif art.author_name and art.author_name != '웰다잉뉴스' %}
+              <div class="opinion-name">{{ art.author_name }}</div>
+              {% endif %}
+              {% endif %}
+              <div class="opinion-title line-clamp-2">{{ art.title }}</div>
+            </a>
+            {% endfor %}
+          </div>
+        </div>
+        {% endif %}
+
+        {% if popular_today or popular_week %}
+        <div class="sec-head" style="margin-top:1.5rem">
+          <i class="fa-solid fa-arrow-trend-up"></i>
+          <span class="sec-head__title">많이 본 뉴스</span>
+        </div>
+        <div class="pop-tabs">
+          <button class="pop-tab pop-tab--active" onclick="switchPop(this,'popWeekSide')">주간</button>
+          <button class="pop-tab" onclick="switchPop(this,'popTodaySide')">오늘</button>
+        </div>
+        <div class="pop-list" id="popWeekSide">
+          {% for art in popular_week %}
+          <a href="/news/articleView.html?idxno={{ art.id }}" class="pop-item">
+            <span class="pop-num {{ 'pop-num--top' if loop.index <= 3 else 'pop-num--rest' }}">{{ loop.index }}</span>
+            <span class="pop-title line-clamp-2">{{ art.title }}</span>
+          </a>
+          {% endfor %}
+        </div>
+        <div class="pop-list" id="popTodaySide" style="display:none">
+          {% for art in popular_today %}
+          <a href="/news/articleView.html?idxno={{ art.id }}" class="pop-item">
+            <span class="pop-num {{ 'pop-num--top' if loop.index <= 3 else 'pop-num--rest' }}">{{ loop.index }}</span>
+            <span class="pop-title line-clamp-2">{{ art.title }}</span>
+          </a>
+          {% endfor %}
+        </div>
+        {% endif %}
+
+        {% if banners.get('sidebar_bottom') %}
+        <div class="banner-area desk-only" style="margin-top:1.25rem">
+          {% for b in banners['sidebar_bottom'] %}
+          <a href="{{ url_for('public.banner_click', banner_id=b.id) }}" target="_blank" rel="noopener">
+            {{ banner_img(b) }}
+          </a>
+          {% endfor %}
+        </div>
+        {% endif %}
+      </aside>
+    </div>
+</div>
+{% endblock %}

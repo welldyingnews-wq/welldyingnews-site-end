@@ -27,13 +27,13 @@
                         </tr>
                     </thead>
                     <tbody>
-                        {% for i in range(1, 4) %}
+                        {% for i in range(1, 5) %}
                         {% set key = 'hero_slot_' ~ i %}
                         {% set art = preview.get(key) %}
                         <tr>
                             <td>
                                 <span class="badge rounded-pill" style="background:#5e1985;font-size:14px;width:32px;height:32px;display:inline-flex;align-items:center;justify-content:center">{{ i }}</span>
-                                {% if i == 1 %}<div class="text-muted" style="font-size:11px;margin-top:4px">메인(대)</div>{% else %}<div class="text-muted" style="font-size:11px;margin-top:4px">서브(소)</div>{% endif %}
+                                {% if i == 1 %}<div class="text-muted" style="font-size:11px;margin-top:4px">메인(대)</div>{% elif i == 2 %}<div class="text-muted" style="font-size:11px;margin-top:4px">서브(사진)</div>{% else %}<div class="text-muted" style="font-size:11px;margin-top:4px">서브(목록)</div>{% endif %}
                             </td>
                             <td>
                                 <input type="number" name="{{ key }}" value="{{ settings.get(key, '') }}"
@@ -70,4 +70,52 @@
         </form>
     </div>
 </div>
+
+<!-- 최근 기사 목록 -->
+<div class="card mt-4">
+    <div class="card-header"><strong>최근 기사 목록</strong> <small class="text-muted ms-2">— ID를 클릭하면 복사됩니다</small></div>
+    <div class="card-body p-0">
+        <div class="table-responsive">
+            <table class="table table-hover table-sm mb-0">
+                <thead class="table-light">
+                    <tr>
+                        <th style="width:60px">ID</th>
+                        <th>제목</th>
+                        <th style="width:80px">섹션</th>
+                        <th style="width:70px">기자</th>
+                        <th style="width:90px">날짜</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for art in recent_articles %}
+                    <tr>
+                        <td><button type="button" class="btn btn-sm btn-outline-primary py-0 px-1 copy-id-btn" data-id="{{ art.id }}" title="ID 복사">{{ art.id }}</button></td>
+                        <td>
+                            <div class="d-flex align-items-center gap-2">
+                                {% if art.thumb_url %}<img src="{{ art.thumb_url }}" alt="" style="width:50px;height:32px;object-fit:cover;border-radius:3px;flex-shrink:0">{% endif %}
+                                <span style="font-size:13px" class="text-truncate" title="{{ art.title }}">{{ art.title }}</span>
+                            </div>
+                        </td>
+                        <td><small>{{ art.section.name if art.section else '-' }}</small></td>
+                        <td><small>{{ art.author_name }}</small></td>
+                        <td><small>{{ (art.embargo_date or art.created_at).strftime('%m.%d %H:%M') }}</small></td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+<script>
+document.querySelectorAll('.copy-id-btn').forEach(function(btn){
+    btn.addEventListener('click', function(){
+        var id = this.dataset.id;
+        navigator.clipboard.writeText(id).then(function(){
+            btn.textContent = '복사!';
+            btn.classList.replace('btn-outline-primary','btn-success');
+            setTimeout(function(){ btn.textContent = id; btn.classList.replace('btn-success','btn-outline-primary'); }, 1000);
+        });
+    });
+});
+</script>
 {% endblock %}

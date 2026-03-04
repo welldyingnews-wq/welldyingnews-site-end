@@ -15,7 +15,16 @@ from app.models import (db, AdminUser, Section, SubSection, Article, ArticleRela
                         ArticleDraft, SiteSetting, ArticleComment, Board, BoardPost,
                         BoardReply, EventRequest, Banner, Popup, Poll, PollOption,
                         SerialCode, Department, MemberDivision, EtcLevel, LayoutBlock,
-                        Member, MemberLog, DailyStat, PageView, VisitorLog, Photo)
+                        Member, MemberLog, DailyStat, PageView, VisitorLog, Photo,
+                        Schedule, Newsletter, AiDraft)
+from app.services.ai_draft import (
+    STATUS_PENDING, STATUS_PUBLISHED, STATUS_REJECTED, STALE_STATUSES,
+)
+
+
+ALLOWED_IMAGE_EXT = {'jpg', 'jpeg', 'png', 'gif', 'webp', 'bmp', 'heic', 'heif', 'tiff', 'avif'}
+ALLOWED_VIDEO_EXT = {'mp4', 'webm', 'ogg', 'mov'}
+ALLOWED_EXT = ALLOWED_IMAGE_EXT | ALLOWED_VIDEO_EXT | {'pdf', 'doc', 'docx', 'hwp', 'hwpx', 'zip'}
 
 
 def admin_required(f):
@@ -81,9 +90,9 @@ def dashboard():
         Article.embargo_date > datetime.now()
     ).order_by(Article.created_at.desc()).limit(10).all()
 
-    # 최근 등록 기사
+    # 최근 등록 기사 (노출시간 기준)
     recent_articles = Article.query.filter_by(is_deleted=False).order_by(
-        Article.created_at.desc()
+        db.func.coalesce(Article.embargo_date, Article.created_at).desc()
     ).limit(10).all()
 
     # 일자별 PV/UV 데이터 (최근 31일) - DailyStat 테이블 기반
@@ -112,9 +121,11 @@ def dashboard():
     ).group_by(PageView.article_id).order_by(
         db.func.sum(PageView.view_count).desc()
     ).limit(7).all()
+    pv_article_ids = [row.article_id for row in top_articles_pv]
+    pv_articles_map = {a.id: a for a in Article.query.filter(Article.id.in_(pv_article_ids)).all()} if pv_article_ids else {}
     top_pv_articles = []
     for row in top_articles_pv:
-        art = Article.query.get(row.article_id)
+        art = pv_articles_map.get(row.article_id)
         if art:
             top_pv_articles.append({
                 'article': art,
@@ -149,6 +160,28 @@ def dashboard():
     ).group_by(VisitorLog.user_agent).all()
     device_map = {d: c for d, c in device_stats}
 
+    # 유입경로별 통계 (최근 7일)
+    referrer_stats = db.session.query(
+        VisitorLog.referrer_source, db.func.count(VisitorLog.id)
+    ).filter(
+        VisitorLog.date >= seven_days_ago,
+        VisitorLog.article_id == None  # noqa: E711
+    ).group_by(VisitorLog.referrer_source).all()
+    referrer_map = {r: c for r, c in referrer_stats}
+
+    # 유입경로 x 디바이스 교차분석 (최근 7일)
+    cross_stats = db.session.query(
+        VisitorLog.referrer_source, VisitorLog.user_agent, db.func.count(VisitorLog.id)
+    ).filter(
+        VisitorLog.date >= seven_days_ago,
+        VisitorLog.article_id == None  # noqa: E711
+    ).group_by(VisitorLog.referrer_source, VisitorLog.user_agent).all()
+    cross_map = {}
+    for ref, dev, cnt in cross_stats:
+        if ref not in cross_map:
+            cross_map[ref] = {}
+        cross_map[ref][dev] = cnt
+
     # 구독/제보/저작권 신청 수
     subscribe_count = EventRequest.query.filter_by(event_code='event5', is_processed=False).count()
     report_count = EventRequest.query.filter_by(event_code='event4', is_processed=False).count()
@@ -168,6 +201,35 @@ def dashboard():
     recent_requests = EventRequest.query.filter_by(
         is_processed=False
     ).order_by(EventRequest.created_at.desc()).limit(5).all()
+
+    # 현재 편집 설정 상태 (대시보드 빠른 편집 미리보기)
+    hero_preview = []
+    for i in range(1, 5):
+        setting = SiteSetting.query.filter_by(key=f'hero_slot_{i}').first()
+        if setting and setting.value and setting.value.strip().isdigit():
+            art = db.session.get(Article, int(setting.value))
+            if art:
+                hero_preview.append(art)
+
+    featured_preview = []
+    featured_setting = SiteSetting.query.filter_by(key='featured_article_ids').first()
+    if featured_setting and featured_setting.value:
+        for aid in featured_setting.value.split(',')[:4]:
+            aid = aid.strip()
+            if aid.isdigit():
+                art = db.session.get(Article, int(aid))
+                if art:
+                    featured_preview.append(art)
+
+    popular_preview = []
+    popular_setting = SiteSetting.query.filter_by(key='popular_article_ids').first()
+    if popular_setting and popular_setting.value:
+        for aid in popular_setting.value.split(',')[:3]:
+            aid = aid.strip()
+            if aid.isdigit():
+                art = db.session.get(Article, int(aid))
+                if art:
+                    popular_preview.append(art)
 
     return render_template('admin/dashboard.html',
                            total_articles=total_articles,
@@ -195,7 +257,12 @@ def dashboard():
                            copyright_count=copyright_count,
                            recent_comments=recent_comments,
                            recent_replies=recent_replies,
-                           recent_requests=recent_requests)
+                           recent_requests=recent_requests,
+                           hero_preview=hero_preview,
+                           featured_preview=featured_preview,
+                           popular_preview=popular_preview,
+                           referrer_map=referrer_map,
+                           cross_map=cross_map)
 
 
 @admin_bp.route('/article/new', methods=['GET', 'POST'])
@@ -246,6 +313,8 @@ def _save_article(article):
     article.keyword = request.form.get('keyword', '')
     article.author_name = request.form.get('author_name', '웰다잉뉴스')
     article.author_email = request.form.get('author_email', 'welldyingnews@naver.com')
+    article.author_title = request.form.get('author_title', '')
+    article.author_affiliation = request.form.get('author_affiliation', '')
     article.level = request.form.get('level', 'B')
     article.recognition = request.form.get('recognition', 'E')
     article.article_type = request.form.get('article_type', 'B')
@@ -284,6 +353,23 @@ def _save_article(article):
         else:
             article.thumbnail_path = url
 
+    # 필진 프로필 사진
+    if request.form.get('delete_author_photo') == '1':
+        article.author_photo = ''
+    author_photo = request.files.get('author_photo')
+    if author_photo and author_photo.filename:
+        from app.utils.cloud_storage import upload_file as upload_author
+        ap_filename = f"{uuid.uuid4().hex}_{secure_filename(author_photo.filename)}"
+        ap_filepath = os.path.join(current_app.config['UPLOAD_FOLDER'], ap_filename)
+        author_photo.save(ap_filepath)
+        ap_url = upload_author(ap_filepath, folder='welldying/authors')
+        if ap_url:
+            article.author_photo = ap_url
+    # 프로필 사진 크롭 위치
+    photo_pos = request.form.get('author_photo_pos', '').strip()
+    if photo_pos:
+        article.author_photo_pos = photo_pos
+
     # [Bug 4 fix] 동일 datetime 객체를 사용하여 created_at/updated_at 비교 시 오차 방지
     now = datetime.now()
     article.updated_at = now
@@ -318,7 +404,7 @@ def _save_article(article):
     article.extra_sections.clear()
     for sid in extra_section_ids:
         try:
-            sec = Section.query.get(int(sid))
+            sec = db.session.get(Section, int(sid))
             if sec:
                 article.extra_sections.append(sec)
         except (ValueError, TypeError):
@@ -329,7 +415,7 @@ def _save_article(article):
     article.extra_subsections.clear()
     for sid in extra_subsection_ids:
         try:
-            sub = SubSection.query.get(int(sid))
+            sub = db.session.get(SubSection, int(sid))
             if sub:
                 article.extra_subsections.append(sub)
         except (ValueError, TypeError):
@@ -376,9 +462,17 @@ def article_list():
 
     # 섹션 필터
     if sc_section_code:
-        query = query.filter_by(section_id=int(sc_section_code))
+        try:
+            query = query.filter_by(section_id=int(sc_section_code))
+        except (ValueError, TypeError):
+            sec = Section.query.filter_by(code=sc_section_code).first()
+            if sec:
+                query = query.filter_by(section_id=sec.id)
     elif section_id:
-        query = query.filter_by(section_id=int(section_id))
+        try:
+            query = query.filter_by(section_id=int(section_id))
+        except (ValueError, TypeError):
+            pass
 
     # 등급 필터
     if sc_level:
@@ -578,17 +672,19 @@ def upload_image():
     if not upload or not upload.filename:
         return jsonify({'error': {'message': '파일이 없습니다.'}}), 400
 
-    original_name = upload.filename
+    original_name = secure_filename(upload.filename) or 'upload'
     ext = original_name.rsplit('.', 1)[-1].lower() if '.' in original_name else ''
     content_type = upload.content_type or ''
+
+    if ext and ext not in ALLOWED_EXT:
+        return jsonify({'error': {'message': f'허용되지 않는 파일 형식입니다: .{ext}'}}), 400
+
     filename = f"{uuid.uuid4().hex}.{ext}" if ext else f"{uuid.uuid4().hex}"
     filepath = os.path.join(current_app.config['UPLOAD_FOLDER'], filename)
     upload.save(filepath)
 
-    is_image = ext in ('jpg', 'jpeg', 'png', 'gif', 'webp', 'bmp', 'svg', 'heic', 'heif', 'tiff', 'avif') \
-               or content_type.startswith('image/')
-    is_video = ext in ('mp4', 'webm', 'ogg', 'mov', 'avi', 'mkv', 'wmv') \
-               or content_type.startswith('video/')
+    is_image = ext in ALLOWED_IMAGE_EXT or content_type.startswith('image/')
+    is_video = ext in ALLOWED_VIDEO_EXT or content_type.startswith('video/')
 
     current_app.logger.info(f'[upload] 파일: {original_name}, ext={ext}, content_type={content_type}, is_image={is_image}, is_video={is_video}')
 
@@ -679,7 +775,7 @@ def draft_save():
     article_id = data.get('article_id')
 
     if draft_id:
-        draft = ArticleDraft.query.get(draft_id)
+        draft = ArticleDraft.query.filter_by(id=draft_id, admin_user_id=current_user.id).first()
     else:
         # 같은 기사의 기존 임시저장 찾기
         draft = None
@@ -836,13 +932,21 @@ def batch_approve():
     level = request.form.get('level', '')
     count = 0
     for aid in ids:
-        article = Article.query.get(int(aid))
+        try:
+            article = db.session.get(Article, int(aid))
+        except (ValueError, TypeError):
+            continue
         if article:
             article.recognition = action
             if level and level != 'RE':
                 article.level = level
             count += 1
-    db.session.commit()
+    try:
+        db.session.commit()
+    except Exception:
+        db.session.rollback()
+        flash('처리 중 오류가 발생했습니다.', 'error')
+        return redirect(request.referrer or url_for('admin.approval'))
     flash(f'{count}건의 기사가 처리되었습니다.', 'success')
     return redirect(request.referrer or url_for('admin.approval'))
 
@@ -1176,7 +1280,7 @@ def stats_ranking():
 @admin_required
 def hero_config():
     if request.method == 'POST':
-        for i in range(1, 4):
+        for i in range(1, 5):
             key = f'hero_slot_{i}'
             val = request.form.get(key, '').strip()
             setting = SiteSetting.query.filter_by(key=key).first()
@@ -1190,15 +1294,17 @@ def hero_config():
 
     settings = {}
     preview = {}
-    for i in range(1, 4):
+    for i in range(1, 5):
         key = f'hero_slot_{i}'
         s = SiteSetting.query.filter_by(key=key).first()
         val = s.value if s else ''
         settings[key] = val
         if val and val.strip().isdigit():
-            art = Article.query.get(int(val))
+            art = db.session.get(Article, int(val))
             preview[key] = art  # None이면 못 찾은 것
-    return render_template('admin/hero_config.html', settings=settings, preview=preview)
+    recent_articles = Article.query.filter_by(is_deleted=False, recognition='E').order_by(
+        db.func.coalesce(Article.embargo_date, Article.created_at).desc()).limit(30).all()
+    return render_template('admin/hero_config.html', settings=settings, preview=preview, recent_articles=recent_articles)
 
 
 # ── 많이 본 뉴스 관리 ──
@@ -1234,7 +1340,7 @@ def popular_config():
         for aid in ids_str.split(','):
             aid = aid.strip()
             if aid.isdigit():
-                art = Article.query.get(int(aid))
+                art = db.session.get(Article, int(aid))
                 if art:
                     selected_articles.append(art)
 
@@ -1245,13 +1351,48 @@ def popular_config():
         for aid in weekly_ids_str.split(','):
             aid = aid.strip()
             if aid.isdigit():
-                art = Article.query.get(int(aid))
+                art = db.session.get(Article, int(aid))
                 if art:
                     weekly_selected_articles.append(art)
 
+    recent_articles = Article.query.filter_by(is_deleted=False, recognition='E').order_by(
+        db.func.coalesce(Article.embargo_date, Article.created_at).desc()).limit(30).all()
     return render_template('admin/popular_config.html',
                            ids_str=ids_str, selected_articles=selected_articles,
-                           weekly_ids_str=weekly_ids_str, weekly_selected_articles=weekly_selected_articles)
+                           weekly_ids_str=weekly_ids_str, weekly_selected_articles=weekly_selected_articles,
+                           recent_articles=recent_articles)
+
+
+@admin_bp.route('/featured-config', methods=['GET', 'POST'])
+@admin_required
+def featured_config():
+    """주요 기사 편집"""
+    if request.method == 'POST':
+        ids = request.form.get('featured_ids', '').strip()
+        setting = SiteSetting.query.filter_by(key='featured_article_ids').first()
+        if not setting:
+            setting = SiteSetting(key='featured_article_ids')
+            db.session.add(setting)
+        setting.value = ids
+        db.session.commit()
+        flash('주요 기사 설정이 저장되었습니다.', 'success')
+        return redirect(url_for('admin.featured_config'))
+
+    setting = SiteSetting.query.filter_by(key='featured_article_ids').first()
+    ids_str = setting.value if setting else ''
+    selected_articles = []
+    if ids_str:
+        for aid in ids_str.split(','):
+            aid = aid.strip()
+            if aid.isdigit():
+                art = db.session.get(Article, int(aid))
+                if art:
+                    selected_articles.append(art)
+
+    recent_articles = Article.query.filter_by(is_deleted=False, recognition='E').order_by(
+        db.func.coalesce(Article.embargo_date, Article.created_at).desc()).limit(30).all()
+    return render_template('admin/featured_config.html',
+                           ids_str=ids_str, selected_articles=selected_articles, recent_articles=recent_articles)
 
 
 @admin_bp.route('/settings/quotes', methods=['GET', 'POST'])
@@ -1285,7 +1426,8 @@ def settings_general():
                 'registration_no', 'registration_date', 'publication_date',
                 'zipcode', 'p_person', 'p_tel', 'p_email',
                 'y_person', 'y_tel', 'y_email',
-                'copy_person', 'copy_tel', 'copy_email']
+                'copy_person', 'copy_tel', 'copy_email',
+                'ga4_measurement_id']
         for key in keys:
             setting = SiteSetting.query.filter_by(key=key).first()
             if not setting:
@@ -1398,7 +1540,7 @@ def sections_reorder():
     target = data.get('target', 'section')  # section or subsection
     Model = Section if target == 'section' else SubSection
     for idx, item_id in enumerate(ids):
-        item = Model.query.get(int(item_id))
+        item = db.session.get(Model, int(item_id))
         if item:
             item.sort_order = idx
     db.session.commit()
@@ -1716,7 +1858,7 @@ def edit_layout_save():
     for i, bdata in enumerate(blocks):
         block_id = bdata.get('id')
         if block_id:
-            block = LayoutBlock.query.get(block_id)
+            block = db.session.get(LayoutBlock, block_id)
             if block and block.layout_type == layout_type:
                 block.sort_order = i + 1
                 block.is_active = bdata.get('is_active', True)
@@ -1773,7 +1915,7 @@ def edit_layout_block_delete():
     """블록 삭제 (AJAX)"""
     data = request.get_json()
     block_id = data.get('id')
-    block = LayoutBlock.query.get(block_id)
+    block = db.session.get(LayoutBlock, block_id)
     if block:
         db.session.delete(block)
         db.session.commit()
@@ -1909,6 +2051,24 @@ def board_add():
     return redirect(url_for('admin.board_list'))
 
 
+@admin_bp.route('/board/<int:board_id>/edit', methods=['POST'])
+@admin_required
+def board_edit(board_id):
+    b = Board.query.get_or_404(board_id)
+    name = request.form.get('name', '').strip()
+    description = request.form.get('description', '').strip()
+    is_active = request.form.get('is_active') == '1'
+    sort_order = request.form.get('sort_order', 0, type=int)
+    if name:
+        b.name = name
+        b.description = description
+        b.is_active = is_active
+        b.sort_order = sort_order
+        db.session.commit()
+        flash('게시판이 수정되었습니다.', 'success')
+    return redirect(url_for('admin.board_list'))
+
+
 @admin_bp.route('/board/<int:board_id>/delete', methods=['POST'])
 @admin_required
 def board_delete(board_id):
@@ -2039,6 +2199,17 @@ def _save_banner(banner):
     banner.link_url = request.form.get('link_url', '')
     banner.position = request.form.get('position', '')
     banner.is_active = request.form.get('is_active') == '1'
+
+    # 시작일/종료일
+    start_str = request.form.get('start_date', '').strip()
+    end_str = request.form.get('end_date', '').strip()
+    banner.start_date = datetime.strptime(start_str, '%Y-%m-%dT%H:%M') if start_str else None
+    banner.end_date = datetime.strptime(end_str, '%Y-%m-%dT%H:%M') if end_str else None
+
+    # 정렬순서
+    sort_val = request.form.get('sort_order', '0').strip()
+    banner.sort_order = int(sort_val) if sort_val.isdigit() else 0
+
     image = request.files.get('image')
     if image and image.filename:
         from app.utils.cloud_storage import upload_file
@@ -2050,12 +2221,35 @@ def _save_banner(banner):
             flash('배너 이미지 업로드에 실패했습니다.', 'error')
             return redirect(request.referrer or url_for('admin.banner_list'))
         banner.image_path = url
+
+    # 모바일 이미지 삭제 체크박스
+    if request.form.get('delete_mobile_image') == '1':
+        banner.mobile_image_path = ''
+
+    # 모바일 이미지 업로드
+    mobile_image = request.files.get('mobile_image')
+    if mobile_image and mobile_image.filename:
+        from app.utils.cloud_storage import upload_file as upload_mob
+        mob_filename = f"{uuid.uuid4().hex}_{secure_filename(mobile_image.filename)}"
+        mob_filepath = os.path.join(current_app.config['UPLOAD_FOLDER'], mob_filename)
+        mobile_image.save(mob_filepath)
+        mob_url = upload_mob(mob_filepath, folder='welldying/banners')
+        if mob_url:
+            banner.mobile_image_path = mob_url
+
     if is_new:
-        max_order = db.session.query(db.func.max(Banner.sort_order)).scalar() or 0
-        banner.sort_order = max_order + 1
         db.session.add(banner)
     db.session.commit()
     flash('배너가 저장되었습니다.', 'success')
+    return redirect(url_for('admin.banner_list'))
+
+
+@admin_bp.route('/banner/<int:banner_id>/toggle', methods=['POST'])
+@admin_required
+def banner_toggle(banner_id):
+    banner = Banner.query.get_or_404(banner_id)
+    banner.is_active = not banner.is_active
+    db.session.commit()
     return redirect(url_for('admin.banner_list'))
 
 
@@ -2303,9 +2497,739 @@ def settings_comment():
     return render_template('admin/settings_comment.html', settings=settings)
 
 
+# ── 주요일정 ──
+
+@admin_bp.route('/schedules')
+@admin_required
+def schedule_list():
+    schedules = Schedule.query.order_by(Schedule.event_date.desc()).all()
+    return render_template('admin/schedule_list.html', schedules=schedules)
+
+
+@admin_bp.route('/schedule/new', methods=['GET', 'POST'])
+@admin_required
+def schedule_new():
+    if request.method == 'POST':
+        return _save_schedule(None)
+    return render_template('admin/schedule_form.html', schedule=None)
+
+
+@admin_bp.route('/schedule/<int:schedule_id>/edit', methods=['GET', 'POST'])
+@admin_required
+def schedule_edit(schedule_id):
+    schedule = Schedule.query.get_or_404(schedule_id)
+    if request.method == 'POST':
+        return _save_schedule(schedule)
+    return render_template('admin/schedule_form.html', schedule=schedule)
+
+
+@admin_bp.route('/schedule/<int:schedule_id>/category', methods=['POST'])
+@admin_required
+def schedule_update_category(schedule_id):
+    """인라인 카테고리 수정 API"""
+    schedule = Schedule.query.get_or_404(schedule_id)
+    data = request.get_json(silent=True) or {}
+    schedule.category = (data.get('category') or '').strip()
+    db.session.commit()
+    return jsonify({'ok': True, 'category': schedule.category})
+
+
+@admin_bp.route('/schedule/<int:schedule_id>/date', methods=['POST'])
+@admin_required
+def schedule_update_date(schedule_id):
+    """인라인 일시 수정 API"""
+    schedule = Schedule.query.get_or_404(schedule_id)
+    data = request.get_json(silent=True) or {}
+    event_date_str = (data.get('event_date') or '').strip()
+    end_date_str = (data.get('end_date') or '').strip()
+    if event_date_str:
+        fmt = '%Y-%m-%dT%H:%M' if 'T' in event_date_str else '%Y-%m-%d'
+        schedule.event_date = datetime.strptime(event_date_str, fmt)
+    if end_date_str:
+        fmt = '%Y-%m-%dT%H:%M' if 'T' in end_date_str else '%Y-%m-%d'
+        schedule.end_date = datetime.strptime(end_date_str, fmt)
+    elif 'end_date' in data:
+        schedule.end_date = None
+    db.session.commit()
+    return jsonify({'ok': True})
+
+
+@admin_bp.route('/schedule/<int:schedule_id>/delete', methods=['POST'])
+@admin_required
+def schedule_delete(schedule_id):
+    db.session.delete(Schedule.query.get_or_404(schedule_id))
+    db.session.commit()
+    flash('일정이 삭제되었습니다.', 'success')
+    return redirect(url_for('admin.schedule_list'))
+
+
+def _save_schedule(schedule):
+    is_new = schedule is None
+    if is_new:
+        schedule = Schedule()
+
+    schedule.title = request.form.get('title', '').strip()
+    schedule.description = request.form.get('description', '').strip()
+    schedule.content = request.form.get('content', '').strip()
+    schedule.location = request.form.get('location', '').strip()
+    schedule.category = request.form.get('category', '').strip()
+    schedule.link_url = request.form.get('link_url', '').strip()
+    schedule.image_url = request.form.get('image_url', '').strip()
+    schedule.is_active = request.form.get('is_active') == '1'
+
+    event_date_str = request.form.get('event_date', '').strip()
+    end_date_str = request.form.get('end_date', '').strip()
+    if event_date_str:
+        schedule.event_date = datetime.strptime(event_date_str, '%Y-%m-%dT%H:%M')
+    end_date = None
+    if end_date_str:
+        end_date = datetime.strptime(end_date_str, '%Y-%m-%dT%H:%M')
+    schedule.end_date = end_date
+
+    if is_new:
+        db.session.add(schedule)
+    db.session.commit()
+    flash('일정이 저장되었습니다.', 'success')
+    return redirect(url_for('admin.schedule_list'))
+
+
 # ── 메뉴얼 ──
 
 @admin_bp.route('/manual')
 @admin_required
 def manual():
     return render_template('admin/manual.html')
+
+
+# ── 뉴스레터 ──
+
+@admin_bp.route('/newsletters')
+@admin_required
+def newsletter_list():
+    newsletters = Newsletter.query.order_by(Newsletter.volume_number.desc()).all()
+    return render_template('admin/newsletter_list.html', newsletters=newsletters)
+
+
+@admin_bp.route('/newsletter/new', methods=['GET', 'POST'])
+@admin_required
+def newsletter_new():
+    if request.method == 'POST':
+        return _save_newsletter(None)
+    max_vol = db.session.query(db.func.max(Newsletter.volume_number)).scalar() or 0
+    next_vol = max_vol + 1
+    return render_template('admin/newsletter_form.html', newsletter=None, next_vol=next_vol)
+
+
+@admin_bp.route('/newsletter/<int:newsletter_id>/edit', methods=['GET', 'POST'])
+@admin_required
+def newsletter_edit(newsletter_id):
+    nl = Newsletter.query.get_or_404(newsletter_id)
+    if request.method == 'POST':
+        return _save_newsletter(nl)
+    return render_template('admin/newsletter_form.html', newsletter=nl, next_vol=nl.volume_number)
+
+
+@admin_bp.route('/newsletter/<int:newsletter_id>/delete', methods=['POST'])
+@admin_required
+def newsletter_delete(newsletter_id):
+    db.session.delete(Newsletter.query.get_or_404(newsletter_id))
+    db.session.commit()
+    flash('뉴스레터가 삭제되었습니다.', 'success')
+    return redirect(url_for('admin.newsletter_list'))
+
+
+@admin_bp.route('/newsletter/<int:newsletter_id>/duplicate', methods=['POST'])
+@admin_required
+def newsletter_duplicate(newsletter_id):
+    source = Newsletter.query.get_or_404(newsletter_id)
+    max_vol = db.session.query(db.func.max(Newsletter.volume_number)).scalar() or 0
+    new_vol = max_vol + 1
+    new_nl = Newsletter(
+        volume_number=new_vol,
+        title=f'웰다잉뉴스 Weekly #{new_vol}',
+        slug=f'weekly-{new_vol}',
+        status='draft',
+        briefing_title=source.briefing_title,
+        briefing_image=source.briefing_image,
+        briefing_content=source.briefing_content,
+        briefing_article_id=source.briefing_article_id,
+        briefing_visible=source.briefing_visible,
+        sections_data=source.sections_data,
+    )
+    db.session.add(new_nl)
+    db.session.commit()
+    flash(f'#{source.volume_number} 뉴스레터가 #{new_vol}로 복제되었습니다.', 'success')
+    return redirect(url_for('admin.newsletter_edit', newsletter_id=new_nl.id))
+
+
+@admin_bp.route('/api/newsletter-article/<int:article_id>')
+@admin_required
+def api_newsletter_article(article_id):
+    art = db.session.get(Article, article_id)
+    if not art:
+        return jsonify({'error': 'not found'}), 404
+    return jsonify({
+        'id': art.id,
+        'title': art.title,
+        'summary': art.summary_text,
+        'thumbnail': art.thumb_url,
+        'author_name': art.author_name or '',
+        'section_name': art.section.name if art.section else '',
+        'created_at': (art.embargo_date or art.created_at).strftime('%Y.%m.%d') if (art.embargo_date or art.created_at) else '',
+    })
+
+
+def _parse_nl_section_items(prefix):
+    """뉴스레터 focus/opinion 반복 아이템 파싱"""
+    items = []
+    types = request.form.getlist(f'{prefix}_item_type[]')
+    article_ids = request.form.getlist(f'{prefix}_item_article_id[]')
+    titles = request.form.getlist(f'{prefix}_item_title[]')
+    summaries = request.form.getlist(f'{prefix}_item_summary[]')
+    images = request.form.getlist(f'{prefix}_item_image[]')
+    links = request.form.getlist(f'{prefix}_item_link[]')
+
+    for i in range(len(types)):
+        item_type = types[i].strip() if i < len(types) else 'custom'
+        if item_type == 'article':
+            aid = article_ids[i].strip() if i < len(article_ids) else ''
+            if aid and aid.isdigit():
+                items.append({'type': 'article', 'article_id': int(aid)})
+        else:
+            title = titles[i].strip() if i < len(titles) else ''
+            if title:
+                items.append({
+                    'type': 'custom',
+                    'title': title,
+                    'summary': summaries[i].strip() if i < len(summaries) else '',
+                    'image': images[i].strip() if i < len(images) else '',
+                    'link': links[i].strip() if i < len(links) else '',
+                })
+    return items
+
+
+def _save_newsletter(newsletter):
+    is_new = newsletter is None
+    if is_new:
+        newsletter = Newsletter()
+
+    newsletter.volume_number = int(request.form.get('volume_number', 1))
+    newsletter.title = request.form.get('title', '').strip()
+    newsletter.slug = request.form.get('slug', '').strip() or f"weekly-{newsletter.volume_number}"
+    pub_date_str = request.form.get('publish_date', '').strip()
+    newsletter.publish_date = datetime.strptime(pub_date_str, '%Y-%m-%d').date() if pub_date_str else None
+    newsletter.status = request.form.get('status', 'draft')
+
+    # 브리핑 섹션
+    newsletter.briefing_visible = request.form.get('briefing_visible') == '1'
+    newsletter.briefing_title = request.form.get('briefing_title', '').strip()
+    newsletter.briefing_image = request.form.get('briefing_image', '').strip()
+    newsletter.briefing_content = request.form.get('briefing_content', '').strip()
+    briefing_aid = request.form.get('briefing_article_id', '').strip()
+    newsletter.briefing_article_id = int(briefing_aid) if briefing_aid and briefing_aid.isdigit() else None
+
+    # sections JSON 조립
+    sections = {}
+
+    sections['focus'] = {
+        'visible': request.form.get('focus_visible') == '1',
+        'title': request.form.get('focus_title', '주간 포커스').strip(),
+        'items': _parse_nl_section_items('focus'),
+    }
+
+    sections['opinion'] = {
+        'visible': request.form.get('opinion_visible') == '1',
+        'title': request.form.get('opinion_title', '주간 오피니언').strip(),
+        'items': _parse_nl_section_items('opinion'),
+    }
+
+    sections['book'] = {
+        'visible': request.form.get('book_visible') == '1',
+        'title': request.form.get('book_section_title', '주간 추천 도서').strip(),
+        'book_title': request.form.get('book_title', '').strip(),
+        'author': request.form.get('book_author', '').strip(),
+        'image': request.form.get('book_image', '').strip(),
+        'description': request.form.get('book_description', '').strip(),
+        'link': request.form.get('book_link', '').strip(),
+    }
+
+    video_items = []
+    video_urls = request.form.getlist('video_url[]')
+    video_titles = request.form.getlist('video_title[]')
+    video_descs = request.form.getlist('video_desc[]')
+    for i in range(len(video_urls)):
+        url = video_urls[i].strip() if i < len(video_urls) else ''
+        if url:
+            video_items.append({
+                'youtube_url': url,
+                'title': video_titles[i].strip() if i < len(video_titles) else '',
+                'description': video_descs[i].strip() if i < len(video_descs) else '',
+            })
+    sections['videos'] = {
+        'visible': request.form.get('videos_visible') == '1',
+        'title': request.form.get('videos_title', '주간 화제의 영상').strip(),
+        'items': video_items,
+    }
+
+    sections['quote'] = {
+        'visible': request.form.get('quote_visible') == '1',
+        'title': request.form.get('quote_title', '이 주의 글귀').strip(),
+        'text': request.form.get('quote_text', '').strip(),
+        'author': request.form.get('quote_author', '').strip(),
+    }
+
+    ads = []
+    for i in range(1, 5):
+        ads.append({
+            'position': i,
+            'visible': request.form.get(f'ad_{i}_visible') == '1',
+            'image': request.form.get(f'ad_{i}_image', '').strip(),
+            'link': request.form.get(f'ad_{i}_link', '').strip(),
+        })
+    sections['ads'] = ads
+
+    newsletter.sections = sections
+
+    if is_new:
+        db.session.add(newsletter)
+    newsletter.updated_at = datetime.now()
+    db.session.commit()
+    flash('뉴스레터가 저장되었습니다.', 'success')
+    return redirect(url_for('admin.newsletter_edit', newsletter_id=newsletter.id))
+
+
+# ── 기자(관리자 사용자) 관리 ──────────────────────────────
+
+@admin_bp.route('/reporters')
+@admin_required
+def reporter_list():
+    users = AdminUser.query.order_by(AdminUser.name).all()
+    return render_template('admin/reporter_list.html', users=users)
+
+
+@admin_bp.route('/reporter/new', methods=['GET', 'POST'])
+@admin_required
+def reporter_new():
+    if request.method == 'POST':
+        return _save_reporter(None)
+    return render_template('admin/reporter_form.html', user=None)
+
+
+@admin_bp.route('/reporter/<int:user_id>/edit', methods=['GET', 'POST'])
+@admin_required
+def reporter_edit(user_id):
+    user = AdminUser.query.get_or_404(user_id)
+    if request.method == 'POST':
+        return _save_reporter(user)
+    return render_template('admin/reporter_form.html', user=user)
+
+
+@admin_bp.route('/reporter/<int:user_id>/delete', methods=['POST'])
+@admin_required
+def reporter_delete(user_id):
+    user = AdminUser.query.get_or_404(user_id)
+    if user.id == current_user.id:
+        flash('자기 자신은 삭제할 수 없습니다.', 'error')
+        return redirect(url_for('admin.reporter_list'))
+    db.session.delete(user)
+    db.session.commit()
+    flash(f'{user.name} 기자가 삭제되었습니다.', 'success')
+    return redirect(url_for('admin.reporter_list'))
+
+
+def _save_reporter(user):
+    is_new = user is None
+    if is_new:
+        user = AdminUser()
+
+    login_id = request.form.get('user_id', '').strip()
+    password = request.form.get('password', '').strip()
+    name = request.form.get('name', '').strip()
+
+    if not login_id or not name:
+        flash('아이디와 이름은 필수입니다.', 'error')
+        return redirect(request.referrer or url_for('admin.reporter_list'))
+
+    if is_new:
+        if not password:
+            flash('비밀번호는 필수입니다.', 'error')
+            return redirect(request.referrer or url_for('admin.reporter_list'))
+        existing = AdminUser.query.filter_by(user_id=login_id).first()
+        if existing:
+            flash('이미 사용 중인 아이디입니다.', 'error')
+            return redirect(request.referrer or url_for('admin.reporter_list'))
+        user.user_id = login_id
+
+    if password:
+        user.password_hash = generate_password_hash(password)
+
+    user.name = name
+    user.email = request.form.get('email', '').strip()
+    user.department = request.form.get('department', '').strip()
+    user.level = request.form.get('level', 'reporter')
+    user.is_active = request.form.get('is_active') == '1'
+
+    # 프로필 사진
+    if request.form.get('delete_photo') == '1':
+        user.photo = ''
+    photo_file = request.files.get('photo')
+    if photo_file and photo_file.filename:
+        from app.utils.cloud_storage import upload_file as upload_photo
+        p_filename = f"{uuid.uuid4().hex}_{secure_filename(photo_file.filename)}"
+        p_filepath = os.path.join(current_app.config['UPLOAD_FOLDER'], p_filename)
+        photo_file.save(p_filepath)
+        p_url = upload_photo(p_filepath, folder='welldying/authors')
+        if p_url:
+            user.photo = p_url
+    # 크롭 위치
+    photo_pos = request.form.get('photo_pos', '').strip()
+    if photo_pos:
+        user.photo_pos = photo_pos
+
+    if is_new:
+        db.session.add(user)
+    db.session.commit()
+    flash(f'{user.name} 기자가 {"등록" if is_new else "수정"}되었습니다.', 'success')
+    return redirect(url_for('admin.reporter_list'))
+
+
+# ===== 정보페이지 관리 =====
+
+COM_PAGES_ADMIN = [
+    {'code': 'com-1',       'title': '인사말(매체소개)',    'group': '매체소개',    'template': 'com/company.html'},
+    {'code': 'com-2',       'title': '찾아오시는길',        'group': '매체소개',    'template': 'com/map.html'},
+    {'code': 'service',     'title': '이용약관',            'group': '약관 및 정책', 'template': 'com/service.html'},
+    {'code': 'privacy',     'title': '개인정보처리방침',    'group': '약관 및 정책', 'template': 'com/privacy.html'},
+    {'code': 'youthpolicy', 'title': '청소년보호정책',      'group': '약관 및 정책', 'template': 'com/youthpolicy.html'},
+    {'code': 'copyright',   'title': '저작권보호정책',      'group': '약관 및 정책', 'template': 'com/copyright.html'},
+    {'code': 'emailno',     'title': '이메일무단수집거부',  'group': '약관 및 정책', 'template': 'com/emailno.html'},
+]
+
+
+@admin_bp.route('/com-pages')
+@admin_required
+def com_page_list():
+    """정보페이지 목록"""
+    pages = []
+    for p in COM_PAGES_ADMIN:
+        setting = SiteSetting.query.filter_by(key=f'com_page_{p["code"]}').first()
+        pages.append({
+            'code': p['code'],
+            'title': p['title'],
+            'group': p['group'],
+            'has_db_content': bool(setting and setting.value),
+        })
+    return render_template('admin/com_page_list.html', pages=pages)
+
+
+@admin_bp.route('/com-pages/<page_code>/edit', methods=['GET', 'POST'])
+@admin_required
+def com_page_edit(page_code):
+    """정보페이지 편집"""
+    page_info = next((p for p in COM_PAGES_ADMIN if p['code'] == page_code), None)
+    if not page_info:
+        flash('존재하지 않는 페이지입니다.', 'error')
+        return redirect(url_for('admin.com_page_list'))
+
+    db_key = f'com_page_{page_code}'
+
+    if request.method == 'POST':
+        content = request.form.get('content', '')
+        setting = SiteSetting.query.filter_by(key=db_key).first()
+        if not setting:
+            setting = SiteSetting(key=db_key, description=page_info['title'])
+            db.session.add(setting)
+        setting.value = content
+        db.session.commit()
+        flash(f'"{page_info["title"]}" 페이지가 저장되었습니다.', 'success')
+        return redirect(url_for('admin.com_page_list'))
+
+    # GET: DB 내용 또는 템플릿 파일 내용 로드
+    setting = SiteSetting.query.filter_by(key=db_key).first()
+    if setting and setting.value:
+        content = setting.value
+    else:
+        # 템플릿 파일에서 기본 내용 로드
+        template_path = os.path.join(
+            current_app.root_path, 'public', 'templates', 'public', page_info['template']
+        )
+        try:
+            with open(template_path, 'r', encoding='utf-8') as f:
+                content = f.read()
+        except FileNotFoundError:
+            content = ''
+
+    return render_template('admin/com_page_edit.html',
+                           page_info=page_info, page_code=page_code, content=content)
+
+
+@admin_bp.route('/com-pages/<page_code>/reset', methods=['POST'])
+@admin_required
+def com_page_reset(page_code):
+    """정보페이지 초기화 (DB 내용 삭제, 템플릿 파일로 복원)"""
+    page_info = next((p for p in COM_PAGES_ADMIN if p['code'] == page_code), None)
+    if not page_info:
+        flash('존재하지 않는 페이지입니다.', 'error')
+        return redirect(url_for('admin.com_page_list'))
+
+    setting = SiteSetting.query.filter_by(key=f'com_page_{page_code}').first()
+    if setting:
+        db.session.delete(setting)
+        db.session.commit()
+    flash(f'"{page_info["title"]}" 페이지가 기본값으로 초기화되었습니다.', 'success')
+    return redirect(url_for('admin.com_page_list'))
+
+
+# ── AI 큐레이션 & 초안 ──
+
+@admin_bp.route('/curation')
+@admin_required
+def curation():
+    """AI 큐레이션 페이지"""
+    return render_template('admin/curation.html')
+
+
+@admin_bp.route('/api/curation/articles')
+@admin_required
+def api_curation_articles():
+    """Supabase에서 수집 기사 조회 (AJAX)"""
+    start_date = request.args.get('start_date', '')
+    end_date = request.args.get('end_date', '')
+    country = request.args.get('country', '')
+    source_table = request.args.get('source', 'news')  # news 또는 collect
+
+    if not start_date or not end_date:
+        return jsonify({'error': '날짜를 선택하세요.'}), 400
+
+    try:
+        from app.services.supabase_client import fetch_news_articles, fetch_collected_articles
+        if source_table == 'collect':
+            articles = fetch_collected_articles(start_date, end_date, country or None)
+        else:
+            articles = fetch_news_articles(start_date, end_date, country or None)
+        return jsonify({'articles': articles, 'count': len(articles)})
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
+
+
+@admin_bp.route('/curation/classify', methods=['POST'])
+@admin_required
+def curation_classify():
+    """Step 1: 선택된 기사를 AiDraft로 생성 후 Haiku 분류 트리거"""
+    data = request.get_json()
+    articles = data.get('articles', [])
+    if not articles:
+        return jsonify({'error': '기사를 선택하세요.'}), 400
+
+    draft_ids = []
+    for a in articles:
+        draft = AiDraft(
+            source_news_ids=json.dumps([a.get('id', '')]),
+            source_data=json.dumps(a, ensure_ascii=False),
+            original_url=a.get('link', ''),
+            title=a.get('title_ko') or a.get('title', ''),
+            status=STATUS_PENDING,
+            created_by=current_user.id,
+        )
+        db.session.add(draft)
+        db.session.flush()
+        draft_ids.append(draft.id)
+    db.session.commit()
+
+    from app.services.background_queue import enqueue_task
+    enqueue_task('classify', draft_ids)
+
+    return jsonify({'message': f'{len(draft_ids)}건 분류 시작', 'draft_ids': draft_ids})
+
+
+@admin_bp.route('/curation/generate', methods=['POST'])
+@admin_required
+def curation_generate():
+    """Step 0~4: 선택된 초안의 생성 파이프라인 트리거"""
+    data = request.get_json()
+    draft_ids = data.get('draft_ids', [])
+    if not draft_ids:
+        return jsonify({'error': '초안을 선택하세요.'}), 400
+
+    # 상태 확인 — 분류 완료되고 사용가능한 건만 (단일 쿼리)
+    valid_ids = [r.id for r in db.session.query(AiDraft.id).filter(
+        AiDraft.id.in_(draft_ids),
+        AiDraft.status == STATUS_PENDING,
+        AiDraft.grade != '',
+    ).all()]
+    if not valid_ids:
+        return jsonify({'error': '생성 가능한 초안이 없습니다.'}), 400
+
+    from app.services.background_queue import enqueue_task
+    enqueue_task('generate', valid_ids)
+
+    return jsonify({'message': f'{len(valid_ids)}건 생성 시작', 'draft_ids': valid_ids})
+
+
+@admin_bp.route('/ai-drafts')
+@admin_required
+def ai_draft_list():
+    """AI 초안 목록"""
+    status_filter = request.args.get('status', '')
+    page = request.args.get('page', 1, type=int)
+
+    query = AiDraft.query.order_by(AiDraft.created_at.desc())
+    if status_filter:
+        query = query.filter_by(status=status_filter)
+
+    pagination = query.paginate(page=page, per_page=20, error_out=False)
+    return render_template('admin/ai_draft_list.html',
+                           drafts=pagination.items, pagination=pagination,
+                           status_filter=status_filter)
+
+
+@admin_bp.route('/ai-draft/<int:draft_id>')
+@admin_required
+def ai_draft_edit(draft_id):
+    """AI 초안 편집 페이지"""
+    draft = db.session.get(AiDraft, draft_id)
+    if not draft:
+        flash('초안을 찾을 수 없습니다.', 'error')
+        return redirect(url_for('admin.ai_draft_list'))
+
+    sections = Section.query.order_by(Section.sort_order).all()
+
+    # JSON 데이터 파싱
+    article_result = {}
+    fact_package = {}
+    validation = {}
+    related_urls = []
+    try:
+        if draft.article_result:
+            article_result = json.loads(draft.article_result)
+        if draft.fact_package:
+            fact_package = json.loads(draft.fact_package)
+        if draft.validation_result:
+            validation = json.loads(draft.validation_result)
+        if draft.related_urls:
+            related_urls = json.loads(draft.related_urls)
+    except (json.JSONDecodeError, TypeError):
+        pass
+
+    return render_template('admin/ai_draft_edit.html',
+                           draft=draft, sections=sections,
+                           article_result=article_result,
+                           fact_package=fact_package,
+                           validation=validation,
+                           related_urls=related_urls)
+
+
+@admin_bp.route('/ai-draft/<int:draft_id>/update', methods=['POST'])
+@admin_required
+def ai_draft_update(draft_id):
+    """AI 초안 수정 저장"""
+    draft = db.session.get(AiDraft, draft_id)
+    if not draft:
+        flash('초안을 찾을 수 없습니다.', 'error')
+        return redirect(url_for('admin.ai_draft_list'))
+
+    draft.title = request.form.get('title', '').strip()
+    draft.subtitle = request.form.get('subtitle', '')
+    draft.content = request.form.get('content', '')
+    draft.summary = request.form.get('summary', '')
+    draft.keywords = request.form.get('keywords', '')
+    draft.author_name = request.form.get('author_name', '웰다잉뉴스')
+    draft.source_text = request.form.get('source_text', '')
+    draft.suggested_section_id = request.form.get('section_id', type=int)
+    draft.suggested_subsection_id = request.form.get('subsection_id', type=int)
+    db.session.commit()
+
+    flash('초안이 저장되었습니다.', 'success')
+    return redirect(url_for('admin.ai_draft_edit', draft_id=draft_id))
+
+
+@admin_bp.route('/ai-draft/<int:draft_id>/publish', methods=['POST'])
+@admin_required
+def ai_draft_publish(draft_id):
+    """AI 초안 → 기사로 발행"""
+    draft = db.session.get(AiDraft, draft_id)
+    if not draft:
+        flash('초안을 찾을 수 없습니다.', 'error')
+        return redirect(url_for('admin.ai_draft_list'))
+
+    article = Article(
+        title=draft.title,
+        subtitle=draft.subtitle,
+        content=draft.content,
+        summary=draft.summary,
+        keyword=draft.keywords,
+        author_name=draft.author_name,
+        source=draft.source_text,
+        section_id=draft.suggested_section_id,
+        subsection_id=draft.suggested_subsection_id,
+        recognition='C',  # 미승인 상태로 발행
+        level='B',
+    )
+    db.session.add(article)
+    db.session.flush()
+
+    draft.article_id = article.id
+    draft.status = STATUS_PUBLISHED
+    draft.published_at = datetime.now()
+    db.session.commit()
+
+    flash(f'기사가 발행되었습니다. (기사 ID: {article.id}, 미승인 상태)', 'success')
+    return redirect(url_for('admin.article_edit', article_id=article.id))
+
+
+@admin_bp.route('/ai-draft/<int:draft_id>/reject', methods=['POST'])
+@admin_required
+def ai_draft_reject(draft_id):
+    """AI 초안 반려"""
+    draft = db.session.get(AiDraft, draft_id)
+    if not draft:
+        flash('초안을 찾을 수 없습니다.', 'error')
+        return redirect(url_for('admin.ai_draft_list'))
+
+    draft.status = STATUS_REJECTED
+    db.session.commit()
+    flash('초안이 반려되었습니다.', 'success')
+    return redirect(url_for('admin.ai_draft_list'))
+
+
+@admin_bp.route('/ai-draft/<int:draft_id>/delete', methods=['POST'])
+@admin_required
+def ai_draft_delete(draft_id):
+    """AI 초안 삭제"""
+    draft = db.session.get(AiDraft, draft_id)
+    if not draft:
+        flash('초안을 찾을 수 없습니다.', 'error')
+        return redirect(url_for('admin.ai_draft_list'))
+
+    db.session.delete(draft)
+    db.session.commit()
+    flash('초안이 삭제되었습니다.', 'success')
+    return redirect(url_for('admin.ai_draft_list'))
+
+
+@admin_bp.route('/api/ai-drafts/progress')
+@admin_required
+def api_ai_draft_progress():
+    """큐 진행상황 + 최근 초안 상태 (폴링용)"""
+    from app.services.background_queue import get_queue_status
+    queue_status = get_queue_status()
+
+    # 최근 초안 상태 (가벼운 컬럼만 조회)
+    recent = db.session.query(
+        AiDraft.id, AiDraft.title, AiDraft.status, AiDraft.grade, AiDraft.skip_reason
+    ).filter(
+        AiDraft.status.in_(STALE_STATUSES + [STATUS_PENDING])
+    ).order_by(AiDraft.created_at.desc()).limit(50).all()
+
+    drafts_info = [{
+        'id': d.id,
+        'title': d.title or '',
+        'status': d.status,
+        'grade': d.grade,
+        'skip_reason': d.skip_reason,
+    } for d in recent]
+
+    return jsonify({
+        'queue': queue_status,
+        'drafts': drafts_info,
+    })
