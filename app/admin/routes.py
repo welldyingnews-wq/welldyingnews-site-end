@@ -10,6 +10,7 @@ from flask_login import login_user, logout_user, login_required, current_user
 from werkzeug.security import check_password_hash, generate_password_hash
 from werkzeug.utils import secure_filename
 
+from app import limiter
 from app.admin import admin_bp
 from app.models import (db, AdminUser, Section, SubSection, Article, ArticleRelation,
                         ArticleDraft, SiteSetting, ArticleComment, Board, BoardPost,
@@ -36,6 +37,7 @@ def admin_required(f):
 
 
 @admin_bp.route('/login', methods=['GET', 'POST'])
+@limiter.limit("5 per minute", methods=["POST"])
 def login():
     if current_user.is_authenticated:
         return redirect(url_for('admin.dashboard'))

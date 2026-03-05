@@ -11,6 +11,14 @@
     .hallucination-item { border-left: 3px solid #dc3545; padding-left: 10px; margin-bottom: 8px; }
     .title-suggestion { cursor: pointer; padding: 4px 8px; border-radius: 4px; }
     .title-suggestion:hover { background: #f0e6f6; }
+    /* 본문 미리보기 스타일 */
+    #contentPreview p { margin-bottom: 1em; }
+    #contentPreview h3 { font-size: 1.15rem; font-weight: 700; margin: 1.5em 0 0.5em; padding-bottom: 0.3em; border-bottom: 2px solid #5e1985; }
+    #contentPreview ul { padding-left: 1.2em; }
+    #contentPreview li { margin-bottom: 0.4em; }
+    #contentPreview a { color: #5e1985; }
+    #contentPreview .wdn-insight { background: #f8f4fc; border-left: 4px solid #5e1985; padding: 1em 1.2em; margin: 1.5em 0; border-radius: 4px; }
+    #contentPreview .wdn-insight h3 { border-bottom: none; color: #5e1985; margin-top: 0; }
 </style>
 {% endblock %}
 
@@ -57,11 +65,15 @@
                 <textarea name="subtitle" rows="2" class="form-control">{{ draft.subtitle }}</textarea>
             </div>
             <div class="mb-3">
-                <label class="form-label fw-bold">본문</label>
-                <div id="editorWrap">
-                    <textarea name="content" id="contentEditor" style="display:none;">{{ draft.content }}</textarea>
-                    <div id="editor"></div>
-                </div>
+                <label class="form-label fw-bold d-flex justify-content-between align-items-center">
+                    본문
+                    <div class="btn-group btn-group-sm" id="viewToggle">
+                        <button type="button" class="btn btn-outline-secondary active" onclick="showEditor(this)">편집</button>
+                        <button type="button" class="btn btn-outline-secondary" onclick="showPreview(this)">미리보기</button>
+                    </div>
+                </label>
+                <textarea name="content" id="contentEditor" class="form-control" rows="20" style="font-size:15px;">{{ draft.content|default('', true) }}</textarea>
+                <div id="contentPreview" class="border rounded p-3" style="display:none; min-height:400px; font-size:16px; line-height:1.8; background:#fff;"></div>
             </div>
             <div class="mb-3">
                 <label class="form-label fw-bold">요약</label>
@@ -225,7 +237,74 @@
 {% endblock %}
 
 {% block extra_scripts %}
-<!-- CKEditor 5 -->
+<!-- 1) 토글/유틸 함수 (가장 먼저 정의) -->
+<script>
+function showEditor(btn) {
+    document.getElementById('contentEditor').style.display = '';
+    document.getElementById('contentPreview').style.display = 'none';
+    btn.parentElement.querySelectorAll('.btn').forEach(b => b.classList.remove('active'));
+    btn.classList.add('active');
+}
+function showPreview(btn) {
+    var ta = document.getElementById('contentEditor');
+    var preview = document.getElementById('contentPreview');
+    preview.innerHTML = ta.value;
+    ta.style.display = 'none';
+    preview.style.display = '';
+    btn.parentElement.querySelectorAll('.btn').forEach(b => b.classList.remove('active'));
+    btn.classList.add('active');
+}
+function publishDraft() {
+    if (!confirm('이 초안을 기사로 발행하시겠습니까? (미승인 상태로 등록됩니다)')) return;
+    var form = document.createElement('form');
+    form.method = 'POST';
+    form.action = '{{ url_for("admin.ai_draft_publish", draft_id=draft.id) }}';
+    document.body.appendChild(form);
+    form.submit();
+}
+function rejectDraft() {
+    if (!confirm('이 초안을 반려하시겠습니까?')) return;
+    var form = document.createElement('form');
+    form.method = 'POST';
+    form.action = '{{ url_for("admin.ai_draft_reject", draft_id=draft.id) }}';
+    document.body.appendChild(form);
+    form.submit();
+}
+
+// 2차 섹션 로드
+var subsectionData = {
+    {% for s in sections %}
+    {{ s.id }}: [
+        {% for sub in s.subsections %}
+        {id: {{ sub.id }}, name: '{{ sub.name }}'},
+        {% endfor %}
+    ],
+    {% endfor %}
+};
+function loadSubsections() {
+    var sectionId = document.getElementById('sectionSelect').value;
+    var sel = document.getElementById('subsectionSelect');
+    sel.innerHTML = '<option value="">선택</option>';
+    if (sectionId && subsectionData[sectionId]) {
+        subsectionData[sectionId].forEach(function(sub) {
+            var opt = document.createElement('option');
+            opt.value = sub.id;
+            opt.textContent = sub.name;
+            if (sub.id == {{ draft.suggested_subsection_id or 0 }}) opt.selected = true;
+            sel.appendChild(opt);
+        });
+    }
+}
+loadSubsections();
+
+// 페이지 로드 시 미리보기를 기본으로 표시
+document.addEventListener('DOMContentLoaded', function() {
+    var previewBtn = document.querySelectorAll('#viewToggle .btn')[1];
+    if (previewBtn) showPreview(previewBtn);
+});
+</script>
+
+<!-- 2) CKEditor 5 (로드 성공 시 토글 숨기고 WYSIWYG 표시) -->
 <script type="importmap">
     { "imports": { "ckeditor5": "https://cdn.ckeditor.com/ckeditor5/43.3.1/ckeditor5.js", "ckeditor5/": "https://cdn.ckeditor.com/ckeditor5/43.3.1/" } }
 </script>
@@ -235,70 +314,28 @@ import { ClassicEditor, Essentials, Paragraph, Bold, Italic, Heading, Link,
          Image, ImageCaption, ImageResize, ImageStyle, ImageToolbar
 } from 'ckeditor5';
 
-const editor = await ClassicEditor.create(document.getElementById('editor'), {
-    plugins: [Essentials, Paragraph, Bold, Italic, Heading, Link,
-              List, BlockQuote, Undo, SourceEditing, HtmlSupport,
-              Image, ImageCaption, ImageResize, ImageStyle, ImageToolbar],
-    toolbar: ['heading', '|', 'bold', 'italic', 'link', '|',
-              'bulletedList', 'numberedList', 'blockQuote', '|',
-              'undo', 'redo', '|', 'sourceEditing'],
-    htmlSupport: { allow: [{ name: /.*/, attributes: true, classes: true, styles: true }] },
-    language: 'ko',
-});
-// 초기 데이터 로드
-const initial = document.getElementById('contentEditor').value;
-if (initial) editor.setData(initial);
-// 폼 제출 시 에디터 → textarea
-document.querySelector('form').addEventListener('submit', () => {
-    document.getElementById('contentEditor').value = editor.getData();
-});
-</script>
-
-<script>
-function publishDraft() {
-    if (!confirm('이 초안을 기사로 발행하시겠습니까? (미승인 상태로 등록됩니다)')) return;
-    const form = document.createElement('form');
-    form.method = 'POST';
-    form.action = '{{ url_for("admin.ai_draft_publish", draft_id=draft.id) }}';
-    document.body.appendChild(form);
-    form.submit();
+try {
+    var ta = document.getElementById('contentEditor');
+    // 미리보기 숨기고 textarea 복원 (CKEditor가 대체할 것)
+    document.getElementById('contentPreview').style.display = 'none';
+    ta.style.display = '';
+    var editorInstance = await ClassicEditor.create(ta, {
+        plugins: [Essentials, Paragraph, Bold, Italic, Heading, Link,
+                  List, BlockQuote, Undo, SourceEditing, HtmlSupport,
+                  Image, ImageCaption, ImageResize, ImageStyle, ImageToolbar],
+        toolbar: ['heading', '|', 'bold', 'italic', 'link', '|',
+                  'bulletedList', 'numberedList', 'blockQuote', '|',
+                  'undo', 'redo', '|', 'sourceEditing'],
+        htmlSupport: { allow: [{ name: /.*/, attributes: true, classes: true, styles: true }] },
+        language: 'ko',
+    });
+    window._ckEditor = editorInstance;
+    document.getElementById('viewToggle').style.display = 'none';
+    document.querySelector('form').addEventListener('submit', function() {
+        ta.value = editorInstance.getData();
+    });
+} catch(e) {
+    console.warn('CKEditor 로드 실패, 미리보기 모드 유지:', e);
 }
-
-function rejectDraft() {
-    if (!confirm('이 초안을 반려하시겠습니까?')) return;
-    const form = document.createElement('form');
-    form.method = 'POST';
-    form.action = '{{ url_for("admin.ai_draft_reject", draft_id=draft.id) }}';
-    document.body.appendChild(form);
-    form.submit();
-}
-
-// 2차 섹션 로드 (article_form.html 패턴)
-const subsectionData = {
-    {% for s in sections %}
-    {{ s.id }}: [
-        {% for sub in s.subsections %}
-        {id: {{ sub.id }}, name: '{{ sub.name }}'},
-        {% endfor %}
-    ],
-    {% endfor %}
-};
-
-function loadSubsections() {
-    const sectionId = document.getElementById('sectionSelect').value;
-    const sel = document.getElementById('subsectionSelect');
-    sel.innerHTML = '<option value="">선택</option>';
-    if (sectionId && subsectionData[sectionId]) {
-        subsectionData[sectionId].forEach(sub => {
-            const opt = document.createElement('option');
-            opt.value = sub.id;
-            opt.textContent = sub.name;
-            if (sub.id == {{ draft.suggested_subsection_id or 0 }}) opt.selected = true;
-            sel.appendChild(opt);
-        });
-    }
-}
-// 초기 로드
-loadSubsections();
 </script>
 {% endblock %}

@@ -5,11 +5,16 @@ from logging.handlers import RotatingFileHandler
 
 from flask import Flask, render_template
 from flask_login import LoginManager
+from flask_limiter import Limiter
+from flask_limiter.util import get_remote_address
+from flask_wtf.csrf import CSRFProtect
 
 from app.models import db, AdminUser, AiDraft
 from config import Config
 
 login_manager = LoginManager()
+csrf = CSRFProtect()
+limiter = Limiter(key_func=get_remote_address, default_limits=[], storage_uri="memory://")
 
 
 def create_app():
@@ -28,6 +33,12 @@ def create_app():
     # DB 초기화
     db.init_app(app)
 
+    # CSRF 보호
+    csrf.init_app(app)
+
+    # Rate Limiter (로그인 무차별 대입 방지)
+    limiter.init_app(app)
+
     # 로그인 매니저
     login_manager.init_app(app)
     login_manager.login_view = 'admin.login'
@@ -36,13 +47,13 @@ def create_app():
     def load_user(user_id):
         return db.session.get(AdminUser, int(user_id))
 
-    # ── 보안 헤더 (nginx에서 설정, 로컬 개발용 폴백) ──
+    # ── 보안 헤더 ──
     @app.after_request
     def set_security_headers(response):
-        if app.debug:
-            response.headers.setdefault('X-Content-Type-Options', 'nosniff')
-            response.headers.setdefault('X-Frame-Options', 'SAMEORIGIN')
-            response.headers.setdefault('Referrer-Policy', 'strict-origin-when-cross-origin')
+        response.headers.setdefault('X-Content-Type-Options', 'nosniff')
+        response.headers.setdefault('X-Frame-Options', 'SAMEORIGIN')
+        response.headers.setdefault('Referrer-Policy', 'strict-origin-when-cross-origin')
+        response.headers.setdefault('X-XSS-Protection', '1; mode=block')
         return response
 
     # ── 에러 핸들러 ──

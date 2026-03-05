@@ -13,7 +13,9 @@ from app.models import (db, Section, SubSection, Article, ArticleRelation, Artic
                         DailyStat, PageView, VisitorLog,
                         NewsletterSubscriber, Newsletter, Schedule, Resource,
                         AdminUser)
+from app import limiter
 from app.public import public_bp
+from flask_login import current_user
 
 
 
@@ -1278,10 +1280,14 @@ def bbs_write_form():
 
 @public_bp.route('/bbs/upload', methods=['POST'])
 def bbs_upload():
-    """게시판 이미지/파일 업로드 API"""
+    """게시판 이미지/파일 업로드 API (로그인 필요)"""
     import uuid, os
     from werkzeug.utils import secure_filename
     from app.utils.cloud_storage import upload_file
+
+    # 인증 확인: 관리자 또는 회원 로그인 필요
+    if not current_user.is_authenticated and not session.get('member_id'):
+        return jsonify({'error': '로그인이 필요합니다.'}), 401
 
     f = request.files.get('file')
     if not f or not f.filename:
@@ -1308,9 +1314,17 @@ def bbs_upload():
 
 @public_bp.route('/bbs/write', methods=['POST'])
 def bbs_write():
+    import bleach
+    ALLOWED_TAGS = ['p', 'br', 'b', 'i', 'u', 'strong', 'em', 'a', 'img',
+                    'ul', 'ol', 'li', 'blockquote', 'h2', 'h3', 'h4',
+                    'span', 'div', 'table', 'thead', 'tbody', 'tr', 'td', 'th']
+    ALLOWED_ATTRS = {'a': ['href', 'title', 'target'], 'img': ['src', 'alt', 'width', 'height'],
+                     'span': ['style'], 'td': ['colspan', 'rowspan'], 'th': ['colspan', 'rowspan']}
+
     table = request.form.get('table', '')
     title = request.form.get('title', '').strip()
-    content = request.form.get('content', '').strip()
+    content = bleach.clean(request.form.get('content', '').strip(),
+                           tags=ALLOWED_TAGS, attributes=ALLOWED_ATTRS, strip=True)
     author_name = request.form.get('author_name', '').strip()
     password = request.form.get('password', '').strip()
 
@@ -1679,6 +1693,7 @@ def member_register():
 
 
 @public_bp.route('/member/login.html', methods=['GET', 'POST'])
+@limiter.limit("5 per minute", methods=["POST"])
 def member_login():
     if request.method == 'POST':
         user_id = request.form.get('user_id', '').strip()
@@ -1694,7 +1709,10 @@ def member_login():
 
         session['member_id'] = member.id
         flash(f'{member.name}님, 환영합니다!', 'success')
-        next_url = request.args.get('next', url_for('public.index'))
+        next_url = request.args.get('next', '')
+        # Open Redirect 방지: 상대경로만 허용
+        if not next_url or not next_url.startswith('/') or next_url.startswith('//'):
+            next_url = url_for('public.index')
         return redirect(next_url)
 
     return render_template('public/member_login.html')
@@ -1795,17 +1813,18 @@ def newsletter_subscribe():
     return redirect(request.referrer or url_for('public.index'))
 
 
-@public_bp.route('/newsletter/unsubscribe')
+@public_bp.route('/newsletter/unsubscribe', methods=['GET', 'POST'])
 def newsletter_unsubscribe():
-    email = request.args.get('email', '').strip()
-    if email:
-        sub = NewsletterSubscriber.query.filter_by(email=email).first()
-        if sub:
-            sub.is_active = False
-            db.session.commit()
-            flash('뉴스레터 구독이 해지되었습니다.', 'success')
-        else:
-            flash('등록되지 않은 이메일입니다.', 'error')
+    if request.method == 'POST':
+        email = request.form.get('email', '').strip()
+        if email:
+            sub = NewsletterSubscriber.query.filter_by(email=email).first()
+            if sub:
+                sub.is_active = False
+                db.session.commit()
+                flash('뉴스레터 구독이 해지되었습니다.', 'success')
+            else:
+                flash('등록되지 않은 이메일입니다.', 'error')
     return render_template('public/newsletter_unsubscribe.html')
 
 

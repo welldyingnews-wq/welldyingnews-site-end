@@ -3,6 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="csrf-token" content="{{ csrf_token() }}">
 {% if ga4_id %}
 <!-- Google Analytics 4 -->
 <script async src="https://www.googletagmanager.com/gtag/js?id={{ ga4_id }}"></script>
@@ -319,7 +320,7 @@
       <a href="/com/emailno.html">이메일무단수집거부</a>
     </div>
     <div class="footer__bottom">
-      <p class="footer__copy">Copyright &copy; 2016 웰다잉뉴스. All rights reserved. mail to <a href="mailto:welldyingnews@naver.com" style="color:inherit;text-decoration:underline">welldyingnews@naver.com</a></p>
+      <p class="footer__copy">Copyright &copy; 2016 <a href="/admin/login" style="color:inherit">웰다잉뉴스</a>. All rights reserved. mail to <a href="mailto:welldyingnews@naver.com" style="color:inherit;text-decoration:underline">welldyingnews@naver.com</a></p>
     </div>
   </div>
 </footer>
@@ -458,6 +459,32 @@ function toggleMobSub(btn) {
 
   window.addEventListener('resize', recalc, {passive: true});
   window.addEventListener('load', recalc);
+})();
+</script>
+<script>
+(function(){
+  var m = document.querySelector('meta[name="csrf-token"]');
+  if(!m) return;
+  var token = m.getAttribute('content');
+  document.querySelectorAll('form[method="post"],form[method="POST"]').forEach(function(f){
+    if(!f.querySelector('input[name="csrf_token"]')){
+      var inp=document.createElement('input');inp.type='hidden';inp.name='csrf_token';inp.value=token;
+      f.appendChild(inp);
+    }
+  });
+  var origFetch=window.fetch;
+  window.fetch=function(url,opts){
+    opts=opts||{};
+    if(opts.method&&opts.method.toUpperCase()==='POST'){
+      opts.headers=opts.headers||{};
+      if(opts.headers instanceof Headers){opts.headers.set('X-CSRFToken',token);}
+      else{opts.headers['X-CSRFToken']=token;}
+    }
+    return origFetch.call(this,url,opts);
+  };
+  if(window.jQuery){
+    jQuery.ajaxSetup({beforeSend:function(xhr){xhr.setRequestHeader('X-CSRFToken',token);}});
+  }
 })();
 </script>
 </body>
