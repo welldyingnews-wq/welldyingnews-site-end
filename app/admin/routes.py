@@ -28,6 +28,19 @@ ALLOWED_VIDEO_EXT = {'mp4', 'webm', 'ogg', 'mov'}
 ALLOWED_EXT = ALLOWED_IMAGE_EXT | ALLOWED_VIDEO_EXT | {'pdf', 'doc', 'docx', 'hwp', 'hwpx', 'zip'}
 
 
+def _validate_upload(file_storage, allowed_ext=None):
+    """파일 업로드 검증. (확장자, 파일명) 반환. 실패 시 (None, None)."""
+    if allowed_ext is None:
+        allowed_ext = ALLOWED_IMAGE_EXT
+    name = secure_filename(file_storage.filename) if file_storage.filename else ''
+    if not name or '.' not in name:
+        return None, None
+    ext = name.rsplit('.', 1)[-1].lower()
+    if ext not in allowed_ext:
+        return None, None
+    return f"{uuid.uuid4().hex}.{ext}", ext
+
+
 def admin_required(f):
     @wraps(f)
     @login_required
@@ -346,14 +359,17 @@ def _save_article(article):
     thumbnail = request.files.get('thumbnail')
     if thumbnail and thumbnail.filename:
         from app.utils.cloud_storage import upload_file
-        filename = f"{uuid.uuid4().hex}_{secure_filename(thumbnail.filename)}"
-        filepath = os.path.join(current_app.config['UPLOAD_FOLDER'], filename)
-        thumbnail.save(filepath)
-        url = upload_file(filepath, folder='welldying/thumbnails')
-        if not url:
-            flash('썸네일 업로드에 실패했습니다.', 'error')
+        safe_name, _ = _validate_upload(thumbnail, ALLOWED_IMAGE_EXT)
+        if not safe_name:
+            flash('허용되지 않는 이미지 형식입니다.', 'error')
         else:
-            article.thumbnail_path = url
+            filepath = os.path.join(current_app.config['UPLOAD_FOLDER'], safe_name)
+            thumbnail.save(filepath)
+            url = upload_file(filepath, folder='welldying/thumbnails')
+            if not url:
+                flash('썸네일 업로드에 실패했습니다.', 'error')
+            else:
+                article.thumbnail_path = url
 
     # 필진 프로필 사진
     if request.form.get('delete_author_photo') == '1':
@@ -361,12 +377,13 @@ def _save_article(article):
     author_photo = request.files.get('author_photo')
     if author_photo and author_photo.filename:
         from app.utils.cloud_storage import upload_file as upload_author
-        ap_filename = f"{uuid.uuid4().hex}_{secure_filename(author_photo.filename)}"
-        ap_filepath = os.path.join(current_app.config['UPLOAD_FOLDER'], ap_filename)
-        author_photo.save(ap_filepath)
-        ap_url = upload_author(ap_filepath, folder='welldying/authors')
-        if ap_url:
-            article.author_photo = ap_url
+        ap_name, _ = _validate_upload(author_photo, ALLOWED_IMAGE_EXT)
+        if ap_name:
+            ap_filepath = os.path.join(current_app.config['UPLOAD_FOLDER'], ap_name)
+            author_photo.save(ap_filepath)
+            ap_url = upload_author(ap_filepath, folder='welldying/authors')
+            if ap_url:
+                article.author_photo = ap_url
     # 프로필 사진 크롭 위치
     photo_pos = request.form.get('author_photo_pos', '').strip()
     if photo_pos:
@@ -674,14 +691,12 @@ def upload_image():
     if not upload or not upload.filename:
         return jsonify({'error': {'message': '파일이 없습니다.'}}), 400
 
-    original_name = secure_filename(upload.filename) or 'upload'
-    ext = original_name.rsplit('.', 1)[-1].lower() if '.' in original_name else ''
+    safe_name, ext = _validate_upload(upload, ALLOWED_EXT)
+    if not safe_name:
+        return jsonify({'error': {'message': '허용되지 않는 파일 형식입니다.'}}), 400
     content_type = upload.content_type or ''
 
-    if ext and ext not in ALLOWED_EXT:
-        return jsonify({'error': {'message': f'허용되지 않는 파일 형식입니다: .{ext}'}}), 400
-
-    filename = f"{uuid.uuid4().hex}.{ext}" if ext else f"{uuid.uuid4().hex}"
+    filename = safe_name
     filepath = os.path.join(current_app.config['UPLOAD_FOLDER'], filename)
     upload.save(filepath)
 
@@ -2215,8 +2230,11 @@ def _save_banner(banner):
     image = request.files.get('image')
     if image and image.filename:
         from app.utils.cloud_storage import upload_file
-        filename = f"{uuid.uuid4().hex}_{secure_filename(image.filename)}"
-        filepath = os.path.join(current_app.config['UPLOAD_FOLDER'], filename)
+        safe_name, _ = _validate_upload(image, ALLOWED_IMAGE_EXT)
+        if not safe_name:
+            flash('허용되지 않는 이미지 형식입니다.', 'error')
+            return redirect(request.referrer or url_for('admin.banner_list'))
+        filepath = os.path.join(current_app.config['UPLOAD_FOLDER'], safe_name)
         image.save(filepath)
         url = upload_file(filepath, folder='welldying/banners')
         if not url:
@@ -2232,12 +2250,13 @@ def _save_banner(banner):
     mobile_image = request.files.get('mobile_image')
     if mobile_image and mobile_image.filename:
         from app.utils.cloud_storage import upload_file as upload_mob
-        mob_filename = f"{uuid.uuid4().hex}_{secure_filename(mobile_image.filename)}"
-        mob_filepath = os.path.join(current_app.config['UPLOAD_FOLDER'], mob_filename)
-        mobile_image.save(mob_filepath)
-        mob_url = upload_mob(mob_filepath, folder='welldying/banners')
-        if mob_url:
-            banner.mobile_image_path = mob_url
+        mob_name, _ = _validate_upload(mobile_image, ALLOWED_IMAGE_EXT)
+        if mob_name:
+            mob_filepath = os.path.join(current_app.config['UPLOAD_FOLDER'], mob_name)
+            mobile_image.save(mob_filepath)
+            mob_url = upload_mob(mob_filepath, folder='welldying/banners')
+            if mob_url:
+                banner.mobile_image_path = mob_url
 
     if is_new:
         db.session.add(banner)
@@ -2307,8 +2326,11 @@ def _save_popup(popup):
     image = request.files.get('image')
     if image and image.filename:
         from app.utils.cloud_storage import upload_file
-        filename = f"{uuid.uuid4().hex}_{secure_filename(image.filename)}"
-        filepath = os.path.join(current_app.config['UPLOAD_FOLDER'], filename)
+        safe_name, _ = _validate_upload(image, ALLOWED_IMAGE_EXT)
+        if not safe_name:
+            flash('허용되지 않는 이미지 형식입니다.', 'error')
+            return redirect(request.referrer or url_for('admin.popup_list'))
+        filepath = os.path.join(current_app.config['UPLOAD_FOLDER'], safe_name)
         image.save(filepath)
         url = upload_file(filepath, folder='welldying/popups')
         if not url:
@@ -2877,12 +2899,13 @@ def _save_reporter(user):
     photo_file = request.files.get('photo')
     if photo_file and photo_file.filename:
         from app.utils.cloud_storage import upload_file as upload_photo
-        p_filename = f"{uuid.uuid4().hex}_{secure_filename(photo_file.filename)}"
-        p_filepath = os.path.join(current_app.config['UPLOAD_FOLDER'], p_filename)
-        photo_file.save(p_filepath)
-        p_url = upload_photo(p_filepath, folder='welldying/authors')
-        if p_url:
-            user.photo = p_url
+        p_name, _ = _validate_upload(photo_file, ALLOWED_IMAGE_EXT)
+        if p_name:
+            p_filepath = os.path.join(current_app.config['UPLOAD_FOLDER'], p_name)
+            photo_file.save(p_filepath)
+            p_url = upload_photo(p_filepath, folder='welldying/authors')
+            if p_url:
+                user.photo = p_url
     # 크롭 위치
     photo_pos = request.form.get('photo_pos', '').strip()
     if photo_pos:

@@ -1298,8 +1298,10 @@ def bbs_upload():
     if not f or not f.filename:
         return jsonify({'error': '파일이 없습니다.'}), 400
 
-    original = secure_filename(f.filename) or 'upload'
-    ext = original.rsplit('.', 1)[-1].lower() if '.' in original else ''
+    original = secure_filename(f.filename) or ''
+    if not original or '.' not in original:
+        return jsonify({'error': '허용되지 않는 파일 형식입니다.'}), 400
+    ext = original.rsplit('.', 1)[-1].lower()
     allowed = {'jpg', 'jpeg', 'png', 'gif', 'webp', 'pdf', 'doc', 'docx', 'hwp', 'hwpx', 'zip', 'txt'}
     if ext not in allowed:
         return jsonify({'error': f'허용되지 않는 파일 형식: .{ext}'}), 400
