@@ -24,6 +24,11 @@ def naver_verify():
     return send_from_directory(current_app.static_folder, 'naver545517745dfc7af9299e6ea019861bf4.html')
 
 
+@public_bp.route('/favicon.ico')
+def favicon_ico():
+    return send_from_directory(current_app.static_folder, 'images/favicon.ico', mimetype='image/x-icon')
+
+
 @public_bp.route('/robots.txt')
 def robots_txt():
     content = """User-agent: *
