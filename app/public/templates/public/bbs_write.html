@@ -71,7 +71,7 @@
           <input type="file" id="fileUpload" accept=".pdf,.doc,.docx,.hwp,.hwpx,.zip,.txt" style="display:none" onchange="uploadFile(this,'file')">
           <!-- contenteditable 에디터 -->
           <div id="bbsEditor" class="bbs-write-form__editor" contenteditable="true">{{ (edit_post.content if edit_post else '')|safe }}</div>
-          <textarea name="content" id="bbsContent" style="display:none" required>{{ edit_post.content if edit_post else '' }}</textarea>
+          <textarea name="content" id="bbsContent" style="display:none">{{ edit_post.content if edit_post else '' }}</textarea>
           <div id="fileList" class="bbs-file-list"></div>
         </div>
       </div>
@@ -100,8 +100,14 @@ var editor = document.getElementById('bbsEditor');
 var hidden = document.getElementById('bbsContent');
 
 // 폼 제출 시 에디터 내용을 hidden textarea로 복사
-editor.closest('form').addEventListener('submit', function() {
+editor.closest('form').addEventListener('submit', function(e) {
   hidden.value = editor.innerHTML;
+  var text = editor.innerText.trim();
+  if (!text) {
+    e.preventDefault();
+    alert('내용을 입력해주세요.');
+    editor.focus();
+  }
 });
 
 function editorCmd(cmd) {
