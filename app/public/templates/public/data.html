@@ -18,11 +18,24 @@
 
 {% macro fmt_meta(s) %}
   {% if s.as_of_date and s.as_of_date != '' %}
-    {{ s.as_of_date }} 기준 · {{ s.source_name }}
+    {{ s.as_of_date }} 기준 ·
   {% elif s.year %}
-    {{ s.year }}년 · {{ s.source_name }}
+    {{ s.year }}년 ·
+  {% endif %}
+  {% if s.source_url %}
+    <a href="{{ s.source_url }}" target="_blank" rel="noopener" class="data-card__source-link">{{ s.source_name }} <i class="fa-solid fa-arrow-up-right-from-square" style="font-size:0.65em"></i></a>
   {% else %}
     {{ s.source_name }}
+  {% endif %}
+{% endmacro %}
+
+{% macro fmt_period(s) %}
+  {% if s.category == '조력사망' and s.unit == '건' %}
+    {% if '누적' in s.label %}
+      <span class="data-card__period data-card__period--cumul">누적</span>
+    {% else %}
+      <span class="data-card__period data-card__period--annual">연간</span>
+    {% endif %}
   {% endif %}
 {% endmacro %}
 
@@ -32,6 +45,7 @@
   <div class="data-page-header">
     <h1 class="data-page-title">웰다잉 데이터</h1>
     <p class="data-page-desc">한국과 세계의 죽음 관련 핵심 통계를 한눈에 볼 수 있습니다.</p>
+    <p class="data-page-disclaimer">*이 페이지의 데이터는 통계청, 보건복지부, 국립연명의료관리기관, 중앙호스피스센터, OECD, WHO, UN, 각국 보고서 등의 공식 통계를 기반으로 합니다. 일부 수치는 실시간으로 갱신되지 않으므로, 보도 등 공식 목적이 아닌 참고용으로만 활용해 주시기 바랍니다. 기관·보고서·국가에 따라 동일 지표의 수치가 다를 수 있습니다.</p>
   </div>
 
   {% for cat_name, cat in categories.items() %}
@@ -39,8 +53,90 @@
     <h2 class="data-category-title">
       <i class="fa-solid {{ cat.icon }}"></i> {{ cat_name }}
     </h2>
+
+    {# 조력사망 카테고리: 나라별 건수 총합 (제목 아래) #}
+    {% if cat_name == '조력사망' %}
+    {% set ns = namespace(total=0, count=0) %}
+    {% for s in cat.entries %}
+      {% if s.unit == '건' and s.indicator_key in ad_skip %}
+        {% set ns.total = ns.total + s.value|int %}
+        {% set ns.count = ns.count + 1 %}
+      {% endif %}
+    {% endfor %}
+    {% if ns.count > 0 %}
+    <div class="data-card data-card--total" style="margin-bottom: 0.5rem;">
+      <div class="data-card__body">
+        <div class="data-card__label">아래 {{ ns.count }}개국 합계 (누적 합계)</div>
+        <div class="data-card__number">
+          {{ '{:,}'.format(ns.total) }}<span class="data-card__unit">건</span>
+        </div>
+        <div class="data-card__meta">* 각국 공식 보고와 기관 보고서를 기준으로 합산한 수치입니다. 다만 국가별 발표 연도와 추정 방식이 다르므로, 반드시 참고용으로만 활용해 주시기 바랍니다.</div>
+      </div>
+    </div>
+    {% endif %}
+    {% endif %}
+
     <div class="data-cards">
       {% for s in cat.entries %}
+      {# 조력사망: 합쳐진 누적 항목은 건너뛰기 #}
+      {% if cat_name == '조력사망' and (s.indicator_key in ad_skip or s.indicator_key == 'assisted_dying_total') %}
+        {# skip — 연간 카드에서 함께 표시 / 합계는 상단에 별도 표시 #}
+      {% elif cat_name == '조력사망' and s.indicator_key in ad_combined %}
+      {# 연간+누적 합친 카드 #}
+      {% set cumul = ad_combined[s.indicator_key] %}
+      <div class="data-card">
+        <div class="data-card__body">
+          <div class="data-card__label">{{ ad_clean_labels.get(s.indicator_key, s.label) }}</div>
+          <div class="data-card__combined-row">
+            <div class="data-card__combined-item">
+              <span class="data-card__period data-card__period--annual">연간</span>
+              <span class="data-card__number--inline">{{ '{:,}'.format(s.value|int) }}<span class="data-card__unit">건</span></span>
+            </div>
+            <div class="data-card__combined-item">
+              <span class="data-card__period data-card__period--cumul">누적</span>
+              <span class="data-card__number--inline">{{ '{:,}'.format(cumul.value|int) }}<span class="data-card__unit">건</span></span>
+            </div>
+          </div>
+          <div class="data-card__meta">
+            {{ s.year }}년(연간) · {{ cumul.as_of_date }}(누적) ·
+            {% if s.source_url %}
+              <a href="{{ s.source_url }}" target="_blank" rel="noopener" class="data-card__source-link">{{ s.source_name }} <i class="fa-solid fa-arrow-up-right-from-square" style="font-size:0.65em"></i></a>
+            {% else %}
+              {{ s.source_name }}
+            {% endif %}
+          </div>
+        </div>
+      </div>
+      {% elif cat_name == '조력사망' and s.indicator_key == 'assisted_dying_countries' %}
+      {# 합법화 국가 카드 + 국가명 나열 #}
+      <div class="data-card">
+        <div class="data-card__body">
+          <div class="data-card__label">{{ s.label }}</div>
+          <div class="data-card__number">
+            {{ fmt_value(s) }}
+          </div>
+          <div class="data-card__countries">{{ ad_countries_list }}</div>
+          <div class="data-card__meta">{{ fmt_meta(s) }}</div>
+        </div>
+      </div>
+      {% elif cat_name == '조력사망' %}
+      {# 조력사망 일반 카드 — 라벨에서 '조력사망' 제거 #}
+      <div class="data-card{% if s.delta_pct and s.delta_dir == 'up' %} data-card--alert{% endif %}">
+        <div class="data-card__body">
+          <div class="data-card__label">{{ ad_clean_labels.get(s.indicator_key, s.label) }}</div>
+          <div class="data-card__number">
+            {{ fmt_value(s) }}
+            {% if s.delta_pct %}
+            <span class="data-card__delta data-card__delta--{{ s.delta_dir }}">
+              {{ '▲' if s.delta_dir == 'up' else '▼' }}{{ '{:.1f}'.format(s.delta_pct) }}%
+            </span>
+            {% endif %}
+          </div>
+          <div class="data-card__meta">{{ fmt_period(s) }}{{ fmt_meta(s) }}</div>
+        </div>
+      </div>
+      {% else %}
+      {# 일반 카드 (조력사망 외 카테고리) #}
       <div class="data-card{% if s.delta_pct and s.delta_dir == 'up' %} data-card--alert{% endif %}">
         <div class="data-card__body">
           <div class="data-card__label">{{ s.label }}</div>
@@ -52,11 +148,13 @@
             </span>
             {% endif %}
           </div>
-          <div class="data-card__meta">{{ fmt_meta(s) }}</div>
+          <div class="data-card__meta">{{ fmt_period(s) }}{{ fmt_meta(s) }}</div>
         </div>
       </div>
+      {% endif %}
       {% endfor %}
     </div>
+
   </div>
   {% endfor %}
 
@@ -106,9 +204,67 @@
   {% endif %}
 
   <div class="data-page-footer">
-    <p>이 페이지의 데이터는 통계청, 보건복지부, 국립연명의료관리기관, 중앙호스피스센터, OECD, WHO, UN 등의 공식 통계를 기반으로 합니다.<br>
-    사전연명의료의향서 수치는 매일 자동 갱신되며, 그 외 지표는 해당 기관의 공식 발표에 따라 업데이트됩니다.</p>
   </div>
 
 </div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+(function(){
+  function countUp(el, target, duration){
+    var start = 0, startTime = null;
+    var isFloat = String(target).indexOf('.') !== -1;
+    var dec = isFloat ? (String(target).split('.')[1]||'').length : 0;
+    function step(ts){
+      if(!startTime) startTime = ts;
+      var p = Math.min((ts - startTime) / duration, 1);
+      // easeOutExpo
+      var ease = p === 1 ? 1 : 1 - Math.pow(2, -10 * p);
+      var val = start + (target - start) * ease;
+      if(isFloat){
+        el.textContent = val.toFixed(dec).replace(/\B(?=(\d{3})+(?!\d))/g, ',');
+      } else {
+        el.textContent = Math.floor(val).toLocaleString('en-US');
+      }
+      if(p < 1) requestAnimationFrame(step);
+      else el.textContent = isFloat ? target.toFixed(dec).replace(/\B(?=(\d{3})+(?!\d))/g, ',') : Math.floor(target).toLocaleString('en-US');
+    }
+    requestAnimationFrame(step);
+  }
+
+  function initCountUp(){
+    // data-card__number 안의 텍스트 노드 (숫자 부분)
+    var nums = document.querySelectorAll('.data-card__number, .data-card__number--inline');
+    nums.forEach(function(el){
+      var text = el.childNodes[0];
+      if(!text || text.nodeType !== 3) return;
+      var raw = text.textContent.trim().replace(/,/g, '');
+      var num = parseFloat(raw);
+      if(isNaN(num) || num === 0) return;
+      el.dataset.target = raw;
+      text.textContent = '0';
+    });
+
+    // IntersectionObserver로 뷰포트 진입 시 애니메이션
+    var observer = new IntersectionObserver(function(entries){
+      entries.forEach(function(entry){
+        if(entry.isIntersecting && entry.target.dataset.target){
+          var raw = entry.target.dataset.target;
+          var num = parseFloat(raw);
+          var text = entry.target.childNodes[0];
+          countUp(text, num, 800);
+          delete entry.target.dataset.target;
+          observer.unobserve(entry.target);
+        }
+      });
+    }, {threshold: 0.2});
+
+    nums.forEach(function(el){ if(el.dataset.target) observer.observe(el); });
+  }
+
+  if(document.readyState === 'loading') document.addEventListener('DOMContentLoaded', initCountUp);
+  else initCountUp();
+})();
+</script>
 {% endblock %}

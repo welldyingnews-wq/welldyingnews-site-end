@@ -579,7 +579,46 @@ def data_page():
         if items:
             categories[cat] = {'icon': CATEGORY_ICONS.get(cat, 'fa-chart-bar'), 'entries': items}
 
-    return render_template('public/data.html', stats=stats, categories=categories, timeseries={})
+    # 조력사망 카테고리 전처리: 라벨 정리, 연간+누적 합치기, 합법화 국가 목록
+    import re
+    ad_clean_labels = {}
+    ad_combined = {}  # annual_key → cumul stat object
+    ad_skip = set()   # cumul keys to skip (합쳐서 표시)
+    ad_countries_list = '스위스, 네덜란드, 캐나다, 벨기에, 호주, 오스트리아, 콜롬비아, 쿠바, 룩셈부르크, 뉴질랜드, 스페인, 미국'
+
+    if '조력사망' in categories:
+        ad_entries = categories['조력사망']['entries']
+        ad_lookup = {s.indicator_key: s for s in ad_entries}
+
+        # 라벨에서 나라 이름만 추출
+        for s in ad_entries:
+            m = re.search(r'[（(](.+?)[）)]', s.label)
+            ad_clean_labels[s.indicator_key] = m.group(1) if m else s.label
+        # 미국 라벨 오버라이드
+        ad_clean_labels['assisted_dying_us'] = '미국 (13개 주)'
+
+        # 연간+누적 합치기 대상
+        combine_pairs = {
+            'assisted_dying_nl': 'assisted_dying_nl_cumul',
+            'assisted_dying_ca': 'assisted_dying_ca_cumul',
+            'assisted_dying_be': 'assisted_dying_be_cumul',
+            'assisted_dying_ch': 'assisted_dying_ch_cumul',
+            'assisted_dying_us': 'assisted_dying_us_cumul',
+            'assisted_dying_es': 'assisted_dying_es_cumul',
+            'assisted_dying_nz': 'assisted_dying_nz_cumul',
+            'assisted_dying_co': 'assisted_dying_co_cumul',
+            'assisted_dying_at': 'assisted_dying_at_cumul',
+            'assisted_dying_lu': 'assisted_dying_lu_cumul',
+            'assisted_dying_au_annual': 'assisted_dying_au',
+        }
+        for annual_key, cumul_key in combine_pairs.items():
+            if annual_key in ad_lookup and cumul_key in ad_lookup:
+                ad_combined[annual_key] = ad_lookup[cumul_key]
+                ad_skip.add(cumul_key)
+
+    return render_template('public/data.html', stats=stats, categories=categories, timeseries={},
+                           ad_clean_labels=ad_clean_labels, ad_combined=ad_combined,
+                           ad_skip=ad_skip, ad_countries_list=ad_countries_list)
 
 
 @public_bp.route('/v2/')

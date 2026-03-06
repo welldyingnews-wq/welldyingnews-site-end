@@ -590,5 +590,47 @@ function bookResetAuto() {
   }, 4000);
 }
 if (bookTotal > 1) bookResetAuto();
+
+/* ===== Data Strip Count-Up ===== */
+(function(){
+  function countUp(el, target, duration){
+    var start = 0, startTime = null;
+    var isFloat = String(target).indexOf('.') !== -1;
+    var dec = isFloat ? (String(target).split('.')[1]||'').length : 0;
+    function step(ts){
+      if(!startTime) startTime = ts;
+      var p = Math.min((ts - startTime) / duration, 1);
+      var ease = p === 1 ? 1 : 1 - Math.pow(2, -10 * p);
+      var val = start + (target - start) * ease;
+      if(isFloat){
+        el.textContent = val.toFixed(dec).replace(/\B(?=(\d{3})+(?!\d))/g, ',');
+      } else {
+        el.textContent = Math.floor(val).toLocaleString('en-US');
+      }
+      if(p < 1) requestAnimationFrame(step);
+      else el.textContent = isFloat ? target.toFixed(dec).replace(/\B(?=(\d{3})+(?!\d))/g, ',') : Math.floor(target).toLocaleString('en-US');
+    }
+    requestAnimationFrame(step);
+  }
+  var vals = document.querySelectorAll('.data-strip__value');
+  vals.forEach(function(el){
+    var raw = el.textContent.trim().replace(/,/g, '');
+    var num = parseFloat(raw);
+    if(isNaN(num) || num === 0) return;
+    el.dataset.target = raw;
+    el.textContent = '0';
+  });
+  var obs = new IntersectionObserver(function(entries){
+    entries.forEach(function(entry){
+      if(entry.isIntersecting && entry.target.dataset.target){
+        var num = parseFloat(entry.target.dataset.target);
+        countUp(entry.target, num, 800);
+        delete entry.target.dataset.target;
+        obs.unobserve(entry.target);
+      }
+    });
+  }, {threshold: 0.2});
+  vals.forEach(function(el){ if(el.dataset.target) obs.observe(el); });
+})();
 </script>
 {% endblock %}

@@ -1857,6 +1857,12 @@ aside .sec-head { margin-bottom: 0.5rem; }
   color: var(--muted-fg);
   margin: 0;
 }
+.data-page-disclaimer {
+  font-size: 0.78rem;
+  color: #999;
+  margin-top: 0.5rem;
+  line-height: 1.6;
+}
 
 /* 지표 카드 그리드 */
 .data-cards {
@@ -1923,6 +1929,53 @@ aside .sec-head { margin-bottom: 0.5rem; }
   color: #aaa;
   margin-top: 0.4rem;
 }
+.data-card__source-link {
+  color: #aaa;
+  text-decoration: underline;
+  text-decoration-style: dotted;
+  text-underline-offset: 2px;
+}
+.data-card__source-link:hover { color: #5e1985; }
+.data-card__period {
+  display: inline-block;
+  font-size: 0.65rem;
+  padding: 1px 5px;
+  border-radius: 3px;
+  margin-right: 4px;
+  vertical-align: middle;
+  font-weight: 600;
+}
+.data-card__period--annual { background: #e8f4fd; color: #1a73e8; }
+.data-card__period--cumul { background: #fef3e0; color: #e67e22; }
+.data-card__combined-row {
+  display: flex;
+  gap: 1rem;
+  margin-top: 0.5rem;
+}
+.data-card__combined-item {
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+}
+.data-card__number--inline {
+  font-size: 1.3rem;
+  font-weight: 700;
+  color: #222;
+}
+.data-card__countries {
+  font-size: 0.78rem;
+  color: #666;
+  margin-top: 0.3rem;
+  line-height: 1.5;
+}
+.data-card--total {
+  width: 100%;
+  background: linear-gradient(135deg, #f8f0ff 0%, #ede4f7 100%);
+  border: 2px solid #5e1985;
+  border-left: 4px solid #5e1985;
+}
+.data-card--total .data-card__label { color: #5e1985; font-weight: 600; }
+.data-card--total .data-card__number { color: #5e1985; }
 
 /* 바 차트 */
 .data-charts {
