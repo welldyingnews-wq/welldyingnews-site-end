@@ -5,6 +5,10 @@
 {% if subsection %}{{ subsection.name }} — {% endif %}{% if section %}{{ section.name }} — {% endif %}기사목록 — 웰다잉뉴스
 {% endblock %}
 
+{% block meta_description %}<meta name="description" content="{% if subsection %}{{ subsection.name }}{% elif section %}{{ section.name }}{% else %}전체{% endif %} 기사목록 — 웰다잉뉴스">{% endblock %}
+
+{% if sc_word or (pagination and pagination.page > 1) %}{% block meta_robots %}<meta name="robots" content="noindex, follow">{% endblock %}{% endif %}
+
 {% block jsonld %}
 <script type="application/ld+json">
 {

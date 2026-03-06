@@ -36,6 +36,7 @@ def create_app():
     db.init_app(app)
 
     # CSRF 보호
+    app.config.setdefault('WTF_CSRF_SSL_STRICT', False)  # HTTPS Referer 검증 완화
     csrf.init_app(app)
 
     # Rate Limiter (로그인 무차별 대입 방지)

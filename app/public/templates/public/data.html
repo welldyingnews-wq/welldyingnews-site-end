@@ -1,0 +1,116 @@
+{% extends "public/base_v0.html" %}
+
+{% block title %}웰다잉 데이터 — 웰다잉뉴스{% endblock %}
+{% block meta_description %}<meta name="description" content="고독사, 호스피스, 사전연명의료의향서, 조력사망 등 한국과 세계의 죽음 관련 핵심 통계를 한눈에 볼 수 있는 데이터 대시보드입니다.">{% endblock %}
+
+{# ── 값 포맷 매크로 ── #}
+{% macro fmt_value(s) %}
+  {% if s.display_format == '만명' or s.display_format == '만' %}
+    {{ '{:,}'.format((s.value // 10000)|int) }}만<span class="data-card__unit">{{ '명' if s.display_format == '만명' else s.unit }}</span>
+  {% elif s.display_format == '%' %}
+    {{ '{:.1f}'.format(s.value) }}<span class="data-card__unit">%</span>
+  {% elif s.display_format == '조' %}
+    {{ '{:.1f}'.format(s.value / 10000) }}조<span class="data-card__unit">{{ s.unit }}</span>
+  {% elif s.display_format == '억' %}
+    {{ '{:,}'.format((s.value // 100000000)|int) }}억<span class="data-card__unit">{{ s.unit }}</span>
+  {% else %}
+    {{ '{:,}'.format(s.value|int) }}<span class="data-card__unit">{{ s.unit }}</span>
+  {% endif %}
+{% endmacro %}
+
+{% macro fmt_meta(s) %}
+  {% if s.as_of_date and s.as_of_date != '' %}
+    {{ s.as_of_date }} 기준 · {{ s.source_name }}
+  {% elif s.year %}
+    {{ s.year }}년 · {{ s.source_name }}
+  {% else %}
+    {{ s.source_name }}
+  {% endif %}
+{% endmacro %}
+
+{% block content %}
+<div class="container" style="padding: 2rem 1rem 3rem;">
+
+  <div class="data-page-header">
+    <h1 class="data-page-title">웰다잉 데이터</h1>
+    <p class="data-page-desc">한국과 세계의 죽음 관련 핵심 통계를 한눈에 볼 수 있습니다.</p>
+  </div>
+
+  {% for cat_name, cat in categories.items() %}
+  <div class="data-category-section">
+    <h2 class="data-category-title">
+      <i class="fa-solid {{ cat.icon }}"></i> {{ cat_name }}
+    </h2>
+    <div class="data-cards">
+      {% for s in cat.entries %}
+      <div class="data-card{% if s.delta_pct and s.delta_dir == 'up' %} data-card--alert{% endif %}">
+        <div class="data-card__body">
+          <div class="data-card__label">{{ s.label }}</div>
+          <div class="data-card__number">
+            {{ fmt_value(s) }}
+            {% if s.delta_pct %}
+            <span class="data-card__delta data-card__delta--{{ s.delta_dir }}">
+              {{ '▲' if s.delta_dir == 'up' else '▼' }}{{ '{:.1f}'.format(s.delta_pct) }}%
+            </span>
+            {% endif %}
+          </div>
+          <div class="data-card__meta">{{ fmt_meta(s) }}</div>
+        </div>
+      </div>
+      {% endfor %}
+    </div>
+  </div>
+  {% endfor %}
+
+  <!-- 시계열 차트 영역 -->
+  {% if timeseries %}
+  <div class="data-charts">
+    {% if timeseries.get('lonely_death') %}
+    <div class="data-chart-section">
+      <h2 class="data-chart-title">고독사 사망자 수 추이</h2>
+      <div class="data-chart-bar-group">
+        {% set ld_data = timeseries['lonely_death'] %}
+        {% set ld_max = ld_data|map(attribute='value')|max %}
+        {% for item in ld_data %}
+        <div class="data-chart-bar-item">
+          <div class="data-chart-bar-value">{{ '{:,.0f}'.format(item.value) }}</div>
+          <div class="data-chart-bar-track">
+            <div class="data-chart-bar-fill data-chart-bar-fill--alert" style="height: {{ (item.value / ld_max * 100)|round }}%"></div>
+          </div>
+          <div class="data-chart-bar-label">{{ item.year }}</div>
+        </div>
+        {% endfor %}
+      </div>
+      <p class="data-chart-source">출처: 보건복지부 고독사 실태조사</p>
+    </div>
+    {% endif %}
+
+    {% if timeseries.get('total_deaths') %}
+    <div class="data-chart-section">
+      <h2 class="data-chart-title">연간 사망자 수 추이</h2>
+      <div class="data-chart-bar-group">
+        {% set td_data = timeseries['total_deaths'] %}
+        {% set td_max = td_data|map(attribute='value')|max %}
+        {% for item in td_data %}
+        <div class="data-chart-bar-item">
+          <div class="data-chart-bar-value">{{ '{:,.0f}'.format(item.value / 10000) }}만</div>
+          <div class="data-chart-bar-track">
+            <div class="data-chart-bar-fill" style="height: {{ (item.value / td_max * 100)|round }}%"></div>
+          </div>
+          <div class="data-chart-bar-label">{{ item.year }}</div>
+        </div>
+        {% endfor %}
+      </div>
+      <p class="data-chart-source">출처: 통계청 사망원인통계</p>
+    </div>
+    {% endif %}
+  </div>
+  {% endif %}
+
+  <div class="data-page-footer">
+    <p>이 페이지의 데이터는 통계청, 보건복지부, 국립연명의료관리기관, 중앙호스피스센터, OECD, WHO, UN 등의 공식 통계를 기반으로 합니다.<br>
+    사전연명의료의향서 수치는 매일 자동 갱신되며, 그 외 지표는 해당 기관의 공식 발표에 따라 업데이트됩니다.</p>
+  </div>
+
+</div>
+{% endblock %}

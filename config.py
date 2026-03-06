@@ -18,7 +18,7 @@ class Config:
             '프로덕션에서는 반드시 강력한 SECRET_KEY를 .env에 설정하세요.',
             stacklevel=2
         )
-    SQLALCHEMY_DATABASE_URI = f'sqlite:///{os.path.join(BASE_DIR, "welldying.db")}'
+    SQLALCHEMY_DATABASE_URI = os.environ.get('DATABASE_URL', f'sqlite:///{os.path.join(BASE_DIR, "welldying.db")}')
     SQLALCHEMY_TRACK_MODIFICATIONS = False
     SQLALCHEMY_ENGINE_OPTIONS = {
         'pool_pre_ping': True,

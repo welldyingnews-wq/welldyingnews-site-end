@@ -254,19 +254,25 @@ function showPreview(btn) {
     btn.parentElement.querySelectorAll('.btn').forEach(b => b.classList.remove('active'));
     btn.classList.add('active');
 }
-function publishDraft() {
-    if (!confirm('이 초안을 기사로 발행하시겠습니까? (미승인 상태로 등록됩니다)')) return;
+function csrfForm(action) {
     var form = document.createElement('form');
     form.method = 'POST';
-    form.action = '{{ url_for("admin.ai_draft_publish", draft_id=draft.id) }}';
+    form.action = action;
+    var token = document.createElement('input');
+    token.type = 'hidden';
+    token.name = 'csrf_token';
+    token.value = '{{ csrf_token() }}';
+    form.appendChild(token);
     document.body.appendChild(form);
-    form.submit();
+    return form;
+}
+function publishDraft() {
+    if (!confirm('이 초안을 기사로 발행하시겠습니까? (미승인 상태로 등록됩니다)')) return;
+    csrfForm('{{ url_for("admin.ai_draft_publish", draft_id=draft.id) }}').submit();
 }
 function rejectDraft() {
     if (!confirm('이 초안을 반려하시겠습니까?')) return;
-    var form = document.createElement('form');
-    form.method = 'POST';
-    form.action = '{{ url_for("admin.ai_draft_reject", draft_id=draft.id) }}';
+    var form = csrfForm('{{ url_for("admin.ai_draft_reject", draft_id=draft.id) }}');
     document.body.appendChild(form);
     form.submit();
 }

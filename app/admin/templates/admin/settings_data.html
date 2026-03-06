@@ -1,0 +1,180 @@
+{% extends "admin/base.html" %}
+{% block nav_title %}웰다잉 데이터 관리{% endblock %}
+
+{% block content %}
+<div class="d-flex justify-content-between align-items-center mb-3">
+    <h5 class="mb-0">웰다잉 데이터 지표</h5>
+    <button class="btn btn-primary btn-sm" data-bs-toggle="modal" data-bs-target="#addModal">
+        <i class="bi bi-plus-lg"></i> 지표 추가
+    </button>
+</div>
+
+<div class="card">
+    <div class="card-body p-0">
+        <table class="table table-hover mb-0">
+            <thead class="table-light">
+                <tr>
+                    <th style="width:40px">순서</th>
+                    <th>표시명</th>
+                    <th>키</th>
+                    <th class="text-end">값</th>
+                    <th>단위</th>
+                    <th>연도</th>
+                    <th>증감</th>
+                    <th>출처</th>
+                    <th style="width:60px">스트립</th>
+                    <th style="width:100px">관리</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for s in stats %}
+                <tr>
+                    <td>{{ s.sort_order }}</td>
+                    <td><strong>{{ s.label }}</strong></td>
+                    <td><code>{{ s.indicator_key }}</code></td>
+                    <td class="text-end">{{ '{:,.0f}'.format(s.value) }}</td>
+                    <td>{{ s.unit }}</td>
+                    <td>{{ s.year or '-' }}</td>
+                    <td>
+                        {% if s.delta_pct %}
+                        <span class="text-{{ 'danger' if s.delta_dir == 'up' else 'primary' }}">
+                            {{ '▲' if s.delta_dir == 'up' else '▼' }}{{ '{:.1f}'.format(s.delta_pct) }}%
+                        </span>
+                        {% else %}-{% endif %}
+                    </td>
+                    <td>{{ s.source_name or '-' }}</td>
+                    <td class="text-center">
+                        {% if s.show_on_strip %}<span class="badge bg-success">ON</span>
+                        {% else %}<span class="badge bg-secondary">OFF</span>{% endif %}
+                    </td>
+                    <td>
+                        <button class="btn btn-outline-secondary btn-sm" onclick="openEdit({{ s.id }})" title="수정">
+                            <i class="bi bi-pencil"></i>
+                        </button>
+                        <form method="post" action="{{ url_for('admin.settings_data_delete', stat_id=s.id) }}" class="d-inline" onsubmit="return confirm('삭제하시겠습니까?')">
+                            <button class="btn btn-outline-danger btn-sm" title="삭제"><i class="bi bi-trash"></i></button>
+                        </form>
+                    </td>
+                </tr>
+                {% endfor %}
+                {% if not stats %}
+                <tr><td colspan="10" class="text-center text-muted py-4">등록된 지표가 없습니다.</td></tr>
+                {% endif %}
+            </tbody>
+        </table>
+    </div>
+</div>
+
+<div class="mt-3 text-muted small">
+    <strong>display_format 예시:</strong> <code>만명</code> = 값/10000 + "만명", <code>%</code> = 값 그대로 + "%", 비워두면 값 + 단위 그대로 표시
+</div>
+
+<!-- 추가 모달 -->
+<div class="modal fade" id="addModal" tabindex="-1">
+    <div class="modal-dialog modal-lg">
+        <form method="post" action="{{ url_for('admin.settings_data_add') }}" class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">지표 추가</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <div class="row g-3">
+                    <div class="col-md-4"><label class="form-label fw-bold">표시명 <span class="text-danger">*</span></label><input type="text" name="label" class="form-control" required placeholder="의향서 등록"></div>
+                    <div class="col-md-4"><label class="form-label fw-bold">indicator_key <span class="text-danger">*</span></label><input type="text" name="indicator_key" class="form-control" required placeholder="advance_directive"></div>
+                    <div class="col-md-4"><label class="form-label fw-bold">표시 순서</label><input type="number" name="sort_order" class="form-control" value="0"></div>
+                    <div class="col-md-4"><label class="form-label fw-bold">값 <span class="text-danger">*</span></label><input type="number" step="any" name="value" class="form-control" required placeholder="3262159"></div>
+                    <div class="col-md-2"><label class="form-label fw-bold">단위</label><input type="text" name="unit" class="form-control" value="명"></div>
+                    <div class="col-md-3"><label class="form-label fw-bold">display_format</label><select name="display_format" class="form-select"><option value="">기본</option><option value="만명">만명</option><option value="만">만</option><option value="%">%</option></select></div>
+                    <div class="col-md-3"><label class="form-label fw-bold">연도</label><input type="number" name="year" class="form-control" placeholder="2024"></div>
+                    <div class="col-md-4"><label class="form-label fw-bold">기준일</label><input type="date" name="as_of_date" class="form-control"></div>
+                    <div class="col-md-3"><label class="form-label fw-bold">증감률 (%)</label><input type="number" step="0.1" name="delta_pct" class="form-control" placeholder="7.2"></div>
+                    <div class="col-md-2"><label class="form-label fw-bold">증감방향</label><select name="delta_dir" class="form-select"><option value="">없음</option><option value="up">▲ 상승</option><option value="down">▼ 하락</option></select></div>
+                    <div class="col-md-6"><label class="form-label fw-bold">출처명</label><input type="text" name="source_name" class="form-control" placeholder="국립연명의료관리기관"></div>
+                    <div class="col-md-6"><label class="form-label fw-bold">출처 URL</label><input type="url" name="source_url" class="form-control" placeholder="https://lst.go.kr"></div>
+                    <div class="col-md-3"><div class="form-check mt-4"><input type="checkbox" name="show_on_strip" class="form-check-input" id="strip_new"><label class="form-check-label fw-bold" for="strip_new">메인 스트립 노출</label></div></div>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">취소</button>
+                <button type="submit" class="btn btn-primary">추가</button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<!-- 수정 모달 -->
+<div class="modal fade" id="editModal" tabindex="-1">
+    <div class="modal-dialog modal-lg">
+        <form method="post" id="editForm" class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">지표 수정</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body" id="editBody"></div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">취소</button>
+                <button type="submit" class="btn btn-primary">저장</button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<script>
+var statsData = {
+    {% for s in stats %}
+    {{ s.id }}: {
+        indicator_key: "{{ s.indicator_key }}",
+        label: "{{ s.label }}",
+        value: {{ s.value }},
+        unit: "{{ s.unit }}",
+        year: {{ s.year or 'null' }},
+        as_of_date: "{{ s.as_of_date or '' }}",
+        delta_pct: {{ s.delta_pct if s.delta_pct else 'null' }},
+        delta_dir: "{{ s.delta_dir or '' }}",
+        source_name: "{{ s.source_name or '' }}",
+        source_url: "{{ s.source_url or '' }}",
+        display_format: "{{ s.display_format or '' }}",
+        show_on_strip: {{ 'true' if s.show_on_strip else 'false' }},
+        sort_order: {{ s.sort_order }}
+    },
+    {% endfor %}
+};
+
+function openEdit(id) {
+    var s = statsData[id];
+    if (!s) return;
+    document.getElementById('editForm').action = "{{ url_for('admin.settings_data') }}/" + id + "/edit";
+    var html = `
+    <div class="row g-3">
+        <div class="col-md-4"><label class="form-label fw-bold">표시명 *</label><input type="text" name="label" class="form-control" value="${s.label}" required></div>
+        <div class="col-md-4"><label class="form-label fw-bold">indicator_key *</label><input type="text" name="indicator_key" class="form-control" value="${s.indicator_key}" required></div>
+        <div class="col-md-4"><label class="form-label fw-bold">표시 순서</label><input type="number" name="sort_order" class="form-control" value="${s.sort_order}"></div>
+        <div class="col-md-4"><label class="form-label fw-bold">값 *</label><input type="number" step="any" name="value" class="form-control" value="${s.value}" required></div>
+        <div class="col-md-2"><label class="form-label fw-bold">단위</label><input type="text" name="unit" class="form-control" value="${s.unit}"></div>
+        <div class="col-md-3"><label class="form-label fw-bold">display_format</label>
+            <select name="display_format" class="form-select">
+                <option value="" ${!s.display_format?'selected':''}>기본</option>
+                <option value="만명" ${s.display_format=='만명'?'selected':''}>만명</option>
+                <option value="만" ${s.display_format=='만'?'selected':''}>만</option>
+                <option value="%" ${s.display_format=='%'?'selected':''}>%</option>
+            </select>
+        </div>
+        <div class="col-md-3"><label class="form-label fw-bold">연도</label><input type="number" name="year" class="form-control" value="${s.year||''}"></div>
+        <div class="col-md-4"><label class="form-label fw-bold">기준일</label><input type="date" name="as_of_date" class="form-control" value="${s.as_of_date}"></div>
+        <div class="col-md-3"><label class="form-label fw-bold">증감률 (%)</label><input type="number" step="0.1" name="delta_pct" class="form-control" value="${s.delta_pct||''}"></div>
+        <div class="col-md-2"><label class="form-label fw-bold">증감방향</label>
+            <select name="delta_dir" class="form-select">
+                <option value="" ${!s.delta_dir?'selected':''}>없음</option>
+                <option value="up" ${s.delta_dir=='up'?'selected':''}>▲</option>
+                <option value="down" ${s.delta_dir=='down'?'selected':''}>▼</option>
+            </select>
+        </div>
+        <div class="col-md-6"><label class="form-label fw-bold">출처명</label><input type="text" name="source_name" class="form-control" value="${s.source_name}"></div>
+        <div class="col-md-6"><label class="form-label fw-bold">출처 URL</label><input type="url" name="source_url" class="form-control" value="${s.source_url}"></div>
+        <div class="col-md-3"><div class="form-check mt-4"><input type="checkbox" name="show_on_strip" class="form-check-input" id="strip_edit" ${s.show_on_strip?'checked':''}><label class="form-check-label fw-bold" for="strip_edit">메인 스트립 노출</label></div></div>
+    </div>`;
+    document.getElementById('editBody').innerHTML = html;
+    new bootstrap.Modal(document.getElementById('editModal')).show();
+}
+</script>
+{% endblock %}

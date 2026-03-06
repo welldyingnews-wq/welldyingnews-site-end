@@ -185,6 +185,7 @@
                 <tr>
                     <th width="50">번호</th>
                     <th>제목</th>
+                    <th width="40">링크</th>
                     <th width="80">섹션</th>
                     <th width="60">상태</th>
                     <th width="70">기자</th>
@@ -205,6 +206,11 @@
                         {% if article.comments.count() > 0 %}
                         <span class="badge bg-warning text-dark">{{ article.comments.count() }}</span>
                         {% endif %}
+                    </td>
+                    <td class="text-center">
+                        <button class="btn btn-sm btn-outline-secondary px-1 py-0 copy-link-btn"
+                            data-url="https://www.welldyingnews.com/news/articleView.html?idxno={{ article.id }}"
+                            title="링크 복사"><i class="bi bi-link-45deg"></i></button>
                     </td>
                     <td class="small">
                         {% if article.subsection %}{{ article.subsection.name }}
@@ -281,6 +287,16 @@
                     if (data.level === 'T') row.querySelector('[data-level=T]').classList.add('active');
                     else if (data.level === 'I') row.querySelector('[data-level=I]').classList.add('active');
                 }
+            });
+        });
+    });
+
+    document.querySelectorAll('.copy-link-btn').forEach(function(btn) {
+        btn.addEventListener('click', function() {
+            var url = this.dataset.url;
+            navigator.clipboard.writeText(url).then(function() {
+                btn.innerHTML = '<i class="bi bi-check-lg text-success"></i>';
+                setTimeout(function() { btn.innerHTML = '<i class="bi bi-link-45deg"></i>'; }, 1500);
             });
         });
     });

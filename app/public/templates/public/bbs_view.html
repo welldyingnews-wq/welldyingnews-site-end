@@ -93,6 +93,7 @@
       {% if not is_child %}
       <div class="bbs-reply-child-write" id="cw-{{ r.id }}" style="display:none">
         <form method="POST" action="{{ url_for('public.bbs_reply_write') }}">
+          <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
           <input type="hidden" name="post_id" value="{{ post.id }}">
           <input type="hidden" name="parent_id" value="{{ r.id }}">
           {% if not member %}
@@ -128,6 +129,7 @@
       <!-- 댓글 작성 -->
       <div class="bbs-reply-write">
         <form method="POST" action="{{ url_for('public.bbs_reply_write') }}">
+          <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
           <input type="hidden" name="post_id" value="{{ post.id }}">
           {% if member %}
           <div class="bbs-reply-write__member"><strong>{{ member.name }}</strong>으로 작성</div>
@@ -172,14 +174,17 @@
 
 <!-- 숨겨진 폼들 -->
 <form id="deletePostForm" method="POST" action="{{ url_for('public.bbs_delete') }}" style="display:none">
+  <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
   <input type="hidden" name="post_id" value="{{ post.id }}">
   <input type="hidden" name="password" id="deletePostPw">
 </form>
 <form id="editPostForm" method="POST" action="{{ url_for('public.bbs_edit_verify') }}" style="display:none">
+  <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
   <input type="hidden" name="post_id" value="{{ post.id }}">
   <input type="hidden" name="password" id="editPostPw">
 </form>
 <form id="deleteReplyForm" method="POST" action="{{ url_for('public.bbs_reply_delete') }}" style="display:none">
+  <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
   <input type="hidden" name="reply_id" id="deleteReplyId">
   <input type="hidden" name="password" id="deleteReplyPw">
   <input type="hidden" name="post_id" value="{{ post.id }}">

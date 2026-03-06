@@ -22,6 +22,7 @@
     {% endwith %}
 
     <form method="POST" action="{{ url_for('public.bbs_edit', post_id=edit_post.id) if edit_post else url_for('public.bbs_write') }}" class="bbs-write-form" enctype="multipart/form-data">
+      <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
       {% if not edit_post %}
       <input type="hidden" name="table" value="{{ board.code }}">
       {% if parent_post %}<input type="hidden" name="parent_post_id" value="{{ parent_post.id }}">{% endif %}
@@ -135,6 +136,7 @@ function uploadFile(input, type) {
 
   var btn = type === 'image' ? editor.querySelector('.fa-image') : editor.querySelector('.fa-paperclip');
 
+  formData.append('csrf_token', '{{ csrf_token() }}');
   fetch('/bbs/upload', { method: 'POST', body: formData })
     .then(function(r) { return r.json(); })
     .then(function(data) {

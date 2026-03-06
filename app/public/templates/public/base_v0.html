@@ -10,20 +10,21 @@
 <script>window.dataLayer=window.dataLayer||[];function gtag(){dataLayer.push(arguments);}gtag('js',new Date());gtag('config','{{ ga4_id }}');</script>
 {% endif %}
 <meta name="naver-site-verification" content="f25250377d179a6cf7de446cfcb32cf80e0ce784" />
-<meta name="description" content="웰다잉뉴스는 호스피스, 사전연명의료의향서, 연명의료결정, 조력사망, 장례, 애도, 고독사, 생애말기 돌봄 등 존엄한 마무리를 위한 미디어입니다.">
+{% block meta_description %}<meta name="description" content="웰다잉뉴스는 호스피스, 사전연명의료의향서, 연명의료결정, 조력사망, 장례, 애도, 고독사, 생애말기 돌봄 등 존엄한 마무리를 위한 미디어입니다.">{% endblock %}
+{% block meta_robots %}{% endblock %}
 {% block og_meta %}
 <meta property="og:type" content="website">
 <meta property="og:title" content="웰다잉뉴스">
 <meta property="og:site_name" content="웰다잉뉴스">
 <meta property="og:description" content="삶과 죽음의 존엄성을 전하는 미디어">
-<meta property="og:url" content="{{ site_url }}{{ request.path }}">
+<meta property="og:url" content="{{ canonical_url }}">
 <meta property="og:image" content="{{ site_url }}/static/images/og_default.jpg">
 <meta property="og:image:width" content="1200">
 <meta property="og:image:height" content="630">
 <meta property="og:image:type" content="image/jpeg">
 <meta name="twitter:card" content="summary_large_image">
 {% endblock %}
-{% block canonical %}<link rel="canonical" href="{{ site_url }}{{ request.path }}{% if request.query_string %}?{{ request.query_string.decode('utf-8') }}{% endif %}">{% endblock %}
+{% block canonical %}<link rel="canonical" href="{{ canonical_url }}">{% endblock %}
 <link rel="alternate" type="application/rss+xml" title="웰다잉뉴스 RSS" href="/rss">
 
 <!-- Organization + WebSite JSON-LD -->
@@ -289,7 +290,7 @@
           <a href="/resource/list.html">자료실</a>
           <a href="/schedule/list.html">주요일정</a>
           <a href="/newsletter/archive.html">뉴스레터</a>
-          <a href="/bbs/list.html?board=free">자유게시판</a>
+          {% for board in nav_boards %}<a href="/bbs/list.html?table={{ board.code }}">{{ board.name }}</a>{% endfor %}
           {% if current_member %}
           <a href="/member/mypage.html">마이페이지</a>
           {% else %}
@@ -355,12 +356,16 @@ function toggleMobSub(btn) {
 (function(){
   var gsh = document.getElementById('globalStickyHeader');
   if (!gsh) return;
-  var header = document.querySelector('.header');
-  if (!header) return;
-  var trigger = header.offsetHeight + 60;
+  var catnav = document.querySelector('.catnav');
+  if (!catnav) return;
+  function getTrigger() {
+    return catnav.getBoundingClientRect().bottom + window.scrollY + gsh.offsetHeight;
+  }
+  var trigger = getTrigger();
   window.addEventListener('scroll', function(){
     gsh.classList.toggle('aview-sticky--show', window.scrollY > trigger);
   }, {passive: true});
+  window.addEventListener('resize', function(){ trigger = getTrigger(); }, {passive: true});
 })();
 
 /* Mega dropdown: show on nav item hover */

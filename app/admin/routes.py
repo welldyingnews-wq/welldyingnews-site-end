@@ -10,14 +10,14 @@ from flask_login import login_user, logout_user, login_required, current_user
 from werkzeug.security import check_password_hash, generate_password_hash
 from werkzeug.utils import secure_filename
 
-from app import limiter
+from app import csrf, limiter
 from app.admin import admin_bp
 from app.models import (db, AdminUser, Section, SubSection, Article, ArticleRelation,
                         ArticleDraft, SiteSetting, ArticleComment, Board, BoardPost,
                         BoardReply, EventRequest, Banner, Popup, Poll, PollOption,
                         SerialCode, Department, MemberDivision, EtcLevel, LayoutBlock,
                         Member, MemberLog, DailyStat, PageView, VisitorLog, Photo,
-                        Schedule, Newsletter, AiDraft)
+                        Schedule, Newsletter, AiDraft, WelldyingStat)
 from app.services.ai_draft import (
     STATUS_PENDING, STATUS_PUBLISHED, STATUS_REJECTED, STALE_STATUSES,
 )
@@ -3258,3 +3258,125 @@ def api_ai_draft_progress():
         'queue': queue_status,
         'drafts': drafts_info,
     })
+
+
+@admin_bp.route('/api/ai-draft', methods=['POST'])
+@csrf.exempt
+def api_ai_draft_save():
+    """외부(Cowork)에서 AI 초안을 서버 DB에 저장하는 API
+
+    인증: Authorization: Bearer {AI_DRAFT_API_KEY}
+    """
+    import os
+    api_key = os.environ.get('AI_DRAFT_API_KEY', '')
+    if not api_key:
+        return jsonify({'error': 'API key not configured on server'}), 500
+
+    auth = request.headers.get('Authorization', '')
+    if auth != f'Bearer {api_key}':
+        return jsonify({'error': 'Unauthorized'}), 401
+
+    data = request.get_json(silent=True)
+    if not data:
+        return jsonify({'error': 'JSON body required'}), 400
+
+    # 중복 확인 (original_url 기준)
+    url = data.get('link', '') or data.get('original_url', '')
+    if url:
+        existing = AiDraft.query.filter_by(original_url=url).first()
+        if existing:
+            return jsonify({'error': 'duplicate', 'existing_id': existing.id}), 409
+
+    try:
+        draft = AiDraft(
+            source_news_ids=json.dumps([data.get('collect_id', '')]) if data.get('collect_id') else data.get('source_news_ids'),
+            source_data=json.dumps(data.get('source_data', {}), ensure_ascii=False) if isinstance(data.get('source_data'), dict) else data.get('source_data'),
+            original_url=url,
+            title=data.get('title', ''),
+            subtitle=data.get('subtitle', ''),
+            content=data.get('content', ''),
+            summary=data.get('summary', ''),
+            keywords=data.get('keywords', ''),
+            author_name=data.get('author_name', '웰다잉뉴스'),
+            source_text=data.get('source_text', ''),
+            grade=data.get('grade', 'A2'),
+            article_type=data.get('article_type', '스트레이트'),
+            suggested_section_id=data.get('section_id') or data.get('suggested_section_id'),
+            suggested_subsection_id=data.get('subsection_id') or data.get('suggested_subsection_id'),
+            status='completed',
+            ai_models_used=data.get('ai_models_used', 'claude-cowork'),
+            validation_score=data.get('validation_score', 80),
+        )
+        db.session.add(draft)
+        db.session.commit()
+        return jsonify({'ok': True, 'id': draft.id, 'title': draft.title}), 201
+    except Exception as e:
+        db.session.rollback()
+        return jsonify({'error': str(e)}), 500
+
+
+# ── 웰다잉 데이터 관리 ──
+
+@admin_bp.route('/settings/data')
+@admin_required
+def settings_data():
+    stats = WelldyingStat.query.filter_by(is_active=True).order_by(WelldyingStat.sort_order).all()
+    return render_template('admin/settings_data.html', stats=stats)
+
+
+@admin_bp.route('/settings/data/add', methods=['POST'])
+@admin_required
+def settings_data_add():
+    stat = WelldyingStat(
+        indicator_key=request.form.get('indicator_key', '').strip(),
+        label=request.form.get('label', '').strip(),
+        value=float(request.form.get('value', 0)),
+        unit=request.form.get('unit', '명').strip(),
+        year=int(request.form.get('year', 0)) or None,
+        as_of_date=request.form.get('as_of_date', '').strip(),
+        delta_pct=float(request.form.get('delta_pct', 0)) if request.form.get('delta_pct') else None,
+        delta_dir=request.form.get('delta_dir', '').strip(),
+        source_name=request.form.get('source_name', '').strip(),
+        source_url=request.form.get('source_url', '').strip(),
+        display_format=request.form.get('display_format', '').strip(),
+        show_on_strip=request.form.get('show_on_strip') == 'on',
+        sort_order=int(request.form.get('sort_order', 0)),
+    )
+    db.session.add(stat)
+    db.session.commit()
+    flash(f'"{stat.label}" 지표가 추가되었습니다.', 'success')
+    return redirect(url_for('admin.settings_data'))
+
+
+@admin_bp.route('/settings/data/<int:stat_id>/edit', methods=['POST'])
+@admin_required
+def settings_data_edit(stat_id):
+    stat = WelldyingStat.query.get_or_404(stat_id)
+    stat.indicator_key = request.form.get('indicator_key', '').strip()
+    stat.label = request.form.get('label', '').strip()
+    stat.value = float(request.form.get('value', 0))
+    stat.unit = request.form.get('unit', '명').strip()
+    stat.year = int(request.form.get('year', 0)) or None
+    stat.as_of_date = request.form.get('as_of_date', '').strip()
+    stat.delta_pct = float(request.form.get('delta_pct', 0)) if request.form.get('delta_pct') else None
+    stat.delta_dir = request.form.get('delta_dir', '').strip()
+    stat.source_name = request.form.get('source_name', '').strip()
+    stat.source_url = request.form.get('source_url', '').strip()
+    stat.display_format = request.form.get('display_format', '').strip()
+    stat.show_on_strip = request.form.get('show_on_strip') == 'on'
+    stat.sort_order = int(request.form.get('sort_order', 0))
+    stat.updated_at = datetime.now()
+    db.session.commit()
+    flash(f'"{stat.label}" 지표가 수정되었습니다.', 'success')
+    return redirect(url_for('admin.settings_data'))
+
+
+@admin_bp.route('/settings/data/<int:stat_id>/delete', methods=['POST'])
+@admin_required
+def settings_data_delete(stat_id):
+    stat = WelldyingStat.query.get_or_404(stat_id)
+    label = stat.label
+    db.session.delete(stat)
+    db.session.commit()
+    flash(f'"{label}" 지표가 삭제되었습니다.', 'success')
+    return redirect(url_for('admin.settings_data'))

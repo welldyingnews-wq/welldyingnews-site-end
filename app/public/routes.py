@@ -34,6 +34,9 @@ def robots_txt():
     content = """User-agent: *
 Allow: /
 Disallow: /admin/
+Disallow: /*?*utm_
+Disallow: /*?*fbclid=
+Disallow: /*?*gclid=
 
 Sitemap: https://www.welldyingnews.com/sitemap.xml
 """
@@ -61,12 +64,28 @@ def sitemap_xml():
     xml.append('    <priority>1.0</priority>')
     xml.append('  </url>')
 
+    # 데이터 페이지
+    xml.append('  <url>')
+    xml.append('    <loc>https://www.welldyingnews.com/data</loc>')
+    xml.append('    <changefreq>weekly</changefreq>')
+    xml.append('    <priority>0.7</priority>')
+    xml.append('  </url>')
+
     # 섹션 목록 페이지
     for section in sections:
         xml.append('  <url>')
         xml.append(f'    <loc>https://www.welldyingnews.com/news/articleList.html?sc_section_code={section.code}&amp;view_type=sm</loc>')
         xml.append('    <changefreq>daily</changefreq>')
         xml.append('    <priority>0.8</priority>')
+        xml.append('  </url>')
+
+    # 서브섹션 목록 페이지
+    subsections = SubSection.query.order_by(SubSection.sort_order).all()
+    for sub in subsections:
+        xml.append('  <url>')
+        xml.append(f'    <loc>https://www.welldyingnews.com/news/articleList.html?sc_sub_section_code={sub.code}&amp;view_type=sm</loc>')
+        xml.append('    <changefreq>daily</changefreq>')
+        xml.append('    <priority>0.7</priority>')
         xml.append('  </url>')
 
     # 기사 상세 페이지
@@ -265,11 +284,21 @@ def inject_sections():
 
     site_url = current_app.config.get('SITE_URL', 'https://www.welldyingnews.com')
 
+    # canonical URL 생성 (허용 파라미터만 포함, 트래킹 파라미터 제거)
+    _canonical_params = {'idxno', 'sc_section_code', 'sc_sub_section_code', 'view_type',
+                         'page', 'sc_area', 'sc_word', 'bo_table'}
+    filtered = [(k, v) for k, v in request.args.items() if k in _canonical_params and v]
+    if filtered:
+        from urllib.parse import urlencode
+        canonical_url = f"{site_url}{request.path}?{urlencode(filtered)}"
+    else:
+        canonical_url = f"{site_url}{request.path}"
+
     return {'nav_sections': sections, 'nav_boards': boards, 'updated_time': updated_time,
             'banners': banners_by_pos, 'popups': active_popups, 'is_mobile': is_mobile,
             'current_member': current_member, 'header_quotes': header_quotes,
             'ga4_id': ga4_id, 'footer_subsections': footer_subsections,
-            'site_url': site_url}
+            'site_url': site_url, 'canonical_url': canonical_url}
 
 
 def _detect_device():
@@ -507,17 +536,55 @@ def _build_bottom_section_articles():
     return bottom
 
 
+def _fetch_welldying_stats():
+    """로컬 DB welldying_stat에서 위젯용 지표 조회"""
+    from app.models import WelldyingStat
+    stats = {}
+    for row in WelldyingStat.query.filter_by(is_active=True).order_by(WelldyingStat.sort_order).all():
+        stats[row.indicator_key] = row
+    return stats
+
+
 @public_bp.route('/')
 def index():
     ctx = _build_index_context(hero_slots=4)
     ctx['bottom_section_articles'] = _build_bottom_section_articles()
+    ctx['welldying_stats'] = _fetch_welldying_stats()
     return render_template('public/index.html', **ctx)
+
+
+@public_bp.route('/data/')
+def data_page_trailing():
+    return redirect(url_for('public.data_page'), code=301)
+
+
+@public_bp.route('/data')
+def data_page():
+    """웰다잉 데이터 대시보드 페이지"""
+    stats = _fetch_welldying_stats()
+
+    # 카테고리별 그룹핑 (순서 유지)
+    from collections import OrderedDict
+    CATEGORY_ORDER = ['연명의료', '사회적고립', '사망', '호스피스', '자살', '고령화', '장례', '돌봄', '국제비교', '조력사망']
+    CATEGORY_ICONS = {
+        '연명의료': 'fa-file-signature', '사회적고립': 'fa-house-chimney-crack',
+        '사망': 'fa-chart-line', '호스피스': 'fa-heart-pulse',
+        '자살': 'fa-exclamation-triangle', '고령화': 'fa-person-cane',
+        '장례': 'fa-cross', '돌봄': 'fa-hand-holding-heart',
+        '국제비교': 'fa-globe', '조력사망': 'fa-scale-balanced',
+    }
+    categories = OrderedDict()
+    for cat in CATEGORY_ORDER:
+        items = [s for s in stats.values() if getattr(s, 'category', '') == cat]
+        if items:
+            categories[cat] = {'icon': CATEGORY_ICONS.get(cat, 'fa-chart-bar'), 'entries': items}
+
+    return render_template('public/data.html', stats=stats, categories=categories, timeseries={})
 
 
 @public_bp.route('/v2/')
 def index_v2():
-    ctx = _build_index_context(hero_slots=3)
-    return render_template('public/index_v2.html', **ctx)
+    return redirect(url_for('public.index'), code=301)
 
 
 def _get_sidebar_data():

@@ -20,6 +20,7 @@
 {% if article.keyword %}{% for tag in article.keyword.split(',') %}{% if tag.strip() %}<meta property="article:tag" content="{{ tag.strip() }}">{% endif %}{% endfor %}{% endif %}
 {% endblock %}
 
+{% block meta_description %}<meta name="description" content="{{ article.summary_text|truncate(160)|e }}">{% endblock %}
 {% block canonical %}<link rel="canonical" href="{{ site_url }}/news/articleView.html?idxno={{ article.id }}">{% endblock %}
 
 {% block jsonld %}
@@ -765,10 +766,11 @@ function switchPop(btn, panelId) {
   var body = document.getElementById('articleBody');
   if (!sh || !body) return;
   var bar = document.getElementById('readBar');
-  var trigger = document.getElementById('articleSub') || body;
+  var catnav = document.querySelector('.catnav');
+  var trigger = catnav || document.getElementById('articleSub') || body;
   window.addEventListener('scroll', function(){
     var triggerRect = trigger.getBoundingClientRect();
-    var show = triggerRect.top <= 0;
+    var show = triggerRect.bottom <= 0;
     sh.classList.toggle('aview-sticky--show', show);
     if (bar) {
       var bodyRect = body.getBoundingClientRect();

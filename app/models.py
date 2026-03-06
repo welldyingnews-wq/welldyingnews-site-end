@@ -606,3 +606,26 @@ class AiDraft(db.Model):
 
     article = db.relationship('Article', foreign_keys=[article_id])
     creator = db.relationship('AdminUser', foreign_keys=[created_by])
+
+
+class WelldyingStat(db.Model):
+    """웰다잉 데이터 지표"""
+    __tablename__ = 'welldying_stat'
+    id = db.Column(db.Integer, primary_key=True)
+    indicator_key = db.Column(db.String(50), nullable=False, index=True)  # advance_directive, lonely_death 등
+    label = db.Column(db.String(100), nullable=False, default='')  # 표시 이름 (의향서 등록, 고독사 등)
+    value = db.Column(db.Float, nullable=False, default=0)
+    unit = db.Column(db.String(20), default='명')
+    year = db.Column(db.Integer, nullable=True)
+    as_of_date = db.Column(db.String(20), default='')  # YYYY-MM-DD
+    delta_pct = db.Column(db.Float, nullable=True)  # 전년대비 증감률
+    delta_dir = db.Column(db.String(10), default='')  # up/down
+    source_name = db.Column(db.String(200), default='')
+    source_url = db.Column(db.String(500), default='')
+    display_format = db.Column(db.String(50), default='')  # 만명, %, 건 등 표시 형식
+    show_on_strip = db.Column(db.Boolean, default=False)  # 메인 data-strip에 노출 여부
+    sort_order = db.Column(db.Integer, default=0)
+    category = db.Column(db.String(50), default='')  # 연명의료, 사회적고립, 사망, 호스피스 등
+    is_active = db.Column(db.Boolean, default=True)
+    created_at = db.Column(db.DateTime, default=datetime.now)
+    updated_at = db.Column(db.DateTime, default=datetime.now, onupdate=datetime.now)

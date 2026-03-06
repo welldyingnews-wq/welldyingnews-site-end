@@ -138,11 +138,12 @@
                 </li>
 
                 <!-- 통계 -->
-                <li class="nav-group {% if 'stats' in ep %}open{% endif %}">
+                <li class="nav-group {% if 'stats' in ep or ep == 'admin.settings_data' %}open{% endif %}">
                     <a href="#" class="nav-group-toggle"><i class="bi bi-bar-chart"></i> 통계 <i class="bi bi-chevron-down ms-auto"></i></a>
                     <ul class="nav-sub">
                         <li class="{% if ep == 'admin.stats_authors' %}active{% endif %}"><a href="{{ url_for('admin.stats_authors') }}">기자별통계</a></li>
                         <li class="{% if ep == 'admin.stats_ranking' %}active{% endif %}"><a href="{{ url_for('admin.stats_ranking') }}">기사랭킹</a></li>
+                        <li class="{% if ep == 'admin.settings_data' %}active{% endif %}"><a href="{{ url_for('admin.settings_data') }}">웰다잉 데이터</a></li>
                     </ul>
                 </li>
 
