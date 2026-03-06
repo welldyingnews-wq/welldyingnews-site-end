@@ -3,6 +3,8 @@
 
 {% block title %}{{ article.title }} — {% if article.subsection %}{{ article.subsection.name }} — {% endif %}{% if article.section %}{{ article.section.name }} — {% endif %}웰다잉뉴스{% endblock %}
 
+{% block header_title %}<span class="header__atitle">{{ article.title }}</span>{% endblock %}
+
 {% block og_meta %}
 <meta property="og:type" content="article">
 <meta property="og:title" content="{{ article.title }}">

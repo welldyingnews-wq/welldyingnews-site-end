@@ -154,10 +154,28 @@ ul, ol { list-style: none; }
 }
 @media (min-width: 768px) { .header__logo-img { height: 4rem; } }
 
+/* Article title in header (hidden by default, ready for transition) */
+.header__atitle {
+  display: none; opacity: 0; max-width: 0; overflow: hidden;
+  font-size: 1rem; font-weight: 600; color: var(--fg);
+  white-space: nowrap; text-overflow: ellipsis;
+  transition: opacity 0.4s ease, max-width 0.4s ease;
+}
+@media (min-width: 768px) {
+  .header__atitle { display: block; }
+}
+
 /* Header shrink on scroll */
+.header__main { transition: justify-content 0.3s ease, padding 0.3s ease, gap 0.3s ease; }
 .header--shrink .header__main { padding: 0.25rem 1rem; }
 .header--shrink .header__logo-img { height: 2.25rem; }
 @media (min-width: 768px) { .header--shrink .header__logo-img { height: 2.5rem; } }
+
+/* Article page: on shrink, logo left + title visible (PC only) */
+@media (min-width: 768px) {
+  .header--shrink .header__main:has(.header__atitle) { justify-content: flex-start; gap: 2rem; }
+  .header--shrink .header__atitle { opacity: 1; max-width: 60%; }
+}
 
 /* ============================================================
    CATEGORY NAV + SEARCH — 폰트 크게, 간격 넓게
