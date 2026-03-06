@@ -30,20 +30,14 @@
     {% for s in strip_stats %}
     <a href="/data" class="data-strip__item">
       <span class="data-strip__label">{{ s.label }}</span>
-      {% if s.display_format == '만명' or s.display_format == '만' %}
-      <span class="data-strip__value">{{ '{:,}'.format((s.value // 10000)|int) }}만</span>
-      <span class="data-strip__unit">{{ '명' if s.display_format == '만명' else s.unit }}</span>
-      {% elif s.display_format == '%' %}
+      {% if s.display_format == '%' %}
       <span class="data-strip__value">{{ '{:.1f}'.format(s.value) }}</span>
       <span class="data-strip__unit">%</span>
-      {% elif s.display_format == '조' %}
-      <span class="data-strip__value">{{ '{:.1f}'.format(s.value / 10000) }}조</span>
-      <span class="data-strip__unit">{{ s.unit }}</span>
-      {% elif s.display_format == '억' %}
-      <span class="data-strip__value">{{ '{:,}'.format((s.value // 100000000)|int) }}억</span>
+      {% elif s.value == s.value|int and s.value|int > 0 %}
+      <span class="data-strip__value">{{ '{:,}'.format(s.value|int) }}</span>
       <span class="data-strip__unit">{{ s.unit }}</span>
       {% else %}
-      <span class="data-strip__value">{{ '{:,.0f}'.format(s.value) }}</span>
+      <span class="data-strip__value">{{ '{:,.1f}'.format(s.value) }}</span>
       <span class="data-strip__unit">{{ s.unit }}</span>
       {% endif %}
       {% if s.delta_pct %}

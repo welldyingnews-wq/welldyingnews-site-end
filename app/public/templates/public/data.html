@@ -5,16 +5,14 @@
 
 {# ── 값 포맷 매크로 ── #}
 {% macro fmt_value(s) %}
-  {% if s.display_format == '만명' or s.display_format == '만' %}
-    {{ '{:,}'.format((s.value // 10000)|int) }}만<span class="data-card__unit">{{ '명' if s.display_format == '만명' else s.unit }}</span>
-  {% elif s.display_format == '%' %}
+  {% if s.display_format == '%' %}
     {{ '{:.1f}'.format(s.value) }}<span class="data-card__unit">%</span>
   {% elif s.display_format == '조' %}
-    {{ '{:.1f}'.format(s.value / 10000) }}조<span class="data-card__unit">{{ s.unit }}</span>
-  {% elif s.display_format == '억' %}
-    {{ '{:,}'.format((s.value // 100000000)|int) }}억<span class="data-card__unit">{{ s.unit }}</span>
-  {% else %}
     {{ '{:,}'.format(s.value|int) }}<span class="data-card__unit">{{ s.unit }}</span>
+  {% elif s.value == s.value|int and s.value|int > 0 %}
+    {{ '{:,}'.format(s.value|int) }}<span class="data-card__unit">{{ s.unit }}</span>
+  {% else %}
+    {{ '{:,.1f}'.format(s.value) }}<span class="data-card__unit">{{ s.unit }}</span>
   {% endif %}
 {% endmacro %}
 
