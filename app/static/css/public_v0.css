@@ -1883,10 +1883,10 @@ aside .sec-head { margin-bottom: 0.5rem; }
   display: flex;
   gap: 1rem;
   align-items: flex-start;
-  transition: box-shadow 0.15s;
+  transition: box-shadow 0.2s, transform 0.2s;
   border-left: 3px solid #5e1985;
 }
-.data-card:hover { box-shadow: var(--shadow-md); }
+.data-card:hover { box-shadow: var(--shadow-md); transform: translateY(-4px) scale(1.02); }
 .data-card--alert { border-left: 3px solid #E74C3C; }
 .data-card--positive { border-left: 3px solid #27AE60; }
 .data-card__icon {
