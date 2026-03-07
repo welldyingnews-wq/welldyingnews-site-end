@@ -1074,6 +1074,9 @@ aside .sec-head { margin-bottom: 0.5rem; }
 /* Opinion Columnist Profile */
 .aview-columnist { display: flex; align-items: center; gap: 0.75rem; justify-content: flex-end; margin: 2rem 0 1.5rem; padding: 0 20px; }
 .aview-columnist__photo { width: 80px; height: 80px; border-radius: 50%; object-fit: cover; flex-shrink: 0; }
+@media (min-width: 768px) {
+  .aview-columnist--top .aview-columnist__photo { width: 160px; height: 160px; box-shadow: 0 6px 24px rgba(0,0,0,0.12); }
+}
 .aview-columnist__info { text-align: left; }
 .aview-columnist__name { display: block; font-size: 1rem; font-weight: 700; color: var(--foreground); line-height: 1.4; }
 .aview-columnist__org { display: block; font-size: 0.875rem; color: var(--muted-fg); }
@@ -2092,10 +2095,11 @@ aside .sec-head { margin-bottom: 0.5rem; }
 .op-header { margin-bottom: 0; }
 .op-header__top {
   display: flex; align-items: flex-end; justify-content: space-between;
-  border-bottom: 3px solid var(--foreground); padding-bottom: 1rem; margin-bottom: 0.75rem;
+  border-bottom: 3px solid var(--accent); padding-bottom: 1rem; margin-bottom: 0.75rem;
+  background: var(--accent); padding: 1rem 1.5rem; border-radius: var(--radius-lg) var(--radius-lg) 0 0;
 }
-.op-header__title { font-family: var(--font-serif); font-size: 2.25rem; font-weight: 900; letter-spacing: -1px; line-height: 1; }
-.op-header__sub { font-size: 0.8125rem; color: var(--muted-fg); letter-spacing: 2px; text-transform: uppercase; font-weight: 500; }
+.op-header__title { font-family: var(--font-serif); font-size: 2.25rem; font-weight: 900; letter-spacing: -1px; line-height: 1; color: #fff; }
+.op-header__sub { font-size: 0.8125rem; color: rgba(255,255,255,0.7); letter-spacing: 2px; text-transform: uppercase; font-weight: 500; }
 .op-tabs { display: flex; gap: 0; margin-bottom: 1.5rem; }
 .op-tab {
   padding: 0.625rem 1.25rem; font-size: 0.875rem; font-weight: 600;
