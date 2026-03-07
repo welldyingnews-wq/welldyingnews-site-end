@@ -3380,3 +3380,16 @@ def settings_data_delete(stat_id):
     db.session.commit()
     flash(f'"{label}" 지표가 삭제되었습니다.', 'success')
     return redirect(url_for('admin.settings_data'))
+
+
+@admin_bp.route('/settings/data/fetch-lst', methods=['POST'])
+@admin_required
+def settings_data_fetch_lst():
+    """연명의료 통계 수동 갱신"""
+    from app.utils.lst_fetcher import update_lst_stats
+    ok = update_lst_stats()
+    if ok:
+        flash('연명의료 통계가 최신 데이터로 갱신되었습니다.', 'success')
+    else:
+        flash('연명의료 통계 갱신에 실패했습니다. 로그를 확인하세요.', 'danger')
+    return redirect(url_for('admin.settings_data'))

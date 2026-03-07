@@ -4,9 +4,16 @@
 {% block content %}
 <div class="d-flex justify-content-between align-items-center mb-3">
     <h5 class="mb-0">웰다잉 데이터 지표</h5>
-    <button class="btn btn-primary btn-sm" data-bs-toggle="modal" data-bs-target="#addModal">
-        <i class="bi bi-plus-lg"></i> 지표 추가
-    </button>
+    <div class="d-flex gap-2">
+        <form method="POST" action="{{ url_for('admin.settings_data_fetch_lst') }}" class="d-inline">
+            <button type="submit" class="btn btn-outline-success btn-sm">
+                <i class="bi bi-arrow-repeat"></i> 연명의료 실시간 갱신
+            </button>
+        </form>
+        <button class="btn btn-primary btn-sm" data-bs-toggle="modal" data-bs-target="#addModal">
+            <i class="bi bi-plus-lg"></i> 지표 추가
+        </button>
+    </div>
 </div>
 
 <div class="card">

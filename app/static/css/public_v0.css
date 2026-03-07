@@ -40,9 +40,8 @@ body {
   font-size: 16px;
   -webkit-font-smoothing: antialiased;
   overflow-x: clip;
-  padding-left: 16px;
-  padding-right: 16px;
 }
+@media (min-width: 768px) { body { padding-left: 16px; padding-right: 16px; } }
 a { color: inherit; text-decoration: none; }
 img { max-width: 100%; display: block; }
 button { cursor: pointer; border: none; background: none; font: inherit; color: inherit; }
@@ -1497,12 +1496,16 @@ aside .sec-head { margin-bottom: 0.5rem; }
   .header__utils { gap: 0; }
   .header__util-link { width: 32px; height: 32px; font-size: .875rem; }
   .header--shrink .header__main { padding: .375rem .75rem; }
+  .header__updated { right: .75rem; bottom: .25rem; font-size: .5625rem; }
 
   /* 카테고리 네비게이션 숨기기 (모바일은 햄버거 메뉴) */
   .catnav { display: none; }
   .quote-banner { font-size: .625rem; padding: .25rem .5rem; height: 48px; }
-  .quote-banner__mark { font-size: .75rem; }
-  .quote-banner__text { padding: 0 1.5rem; font-size: .625rem; }
+  .quote-banner__inner { position: relative; }
+  .quote-banner__mark { font-size: .75rem; position: absolute; top: 50%; transform: translateY(-50%); }
+  .quote-banner__mark--left { left: calc(50% - 160px); }
+  .quote-banner__mark--right { right: calc(50% - 160px); }
+  .quote-banner__text { padding: 0 1.5rem; font-size: .625rem; max-width: 300px; margin: 0 auto; }
   .quote-banner__login { display: none; }
 
   /* 모바일 네비게이션 */
@@ -1861,21 +1864,50 @@ aside .sec-head { margin-bottom: 0.5rem; }
 /* ============================================================
    DATA PAGE — /data 대시보드
    ============================================================ */
-.data-page-header { margin-bottom: 2rem; }
+.data-page-header {
+  margin-bottom: 2rem;
+  background: #1a1a2e;
+  background-image:
+    linear-gradient(rgba(255,255,255,0.03) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(255,255,255,0.03) 1px, transparent 1px);
+  background-size: 40px 40px;
+  border-radius: var(--radius);
+  padding: 2rem 2rem 1.75rem;
+  position: relative;
+  overflow: hidden;
+}
+.data-page-header::before {
+  content: '';
+  position: absolute;
+  right: 1rem; top: 50%;
+  transform: translateY(-50%);
+  width: 420px; height: 180px;
+  opacity: 0.07;
+  background: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 420 180' fill='none'%3E%3C!-- area chart --%3E%3Cpath d='M0 160 L30 130 L60 140 L90 100 L120 110 L150 70 L180 80 L210 40 L240 55 L270 30 L300 45 L330 20 L360 35 L390 15 L420 25 L420 180 L0 180Z' fill='white' opacity='0.5'/%3E%3Cpath d='M0 160 L30 130 L60 140 L90 100 L120 110 L150 70 L180 80 L210 40 L240 55 L270 30 L300 45 L330 20 L360 35 L390 15 L420 25' stroke='white' stroke-width='2.5' fill='none'/%3E%3C!-- bar chart --%3E%3Crect x='20' y='110' width='18' height='70' rx='2' fill='white' opacity='0.6'/%3E%3Crect x='48' y='85' width='18' height='95' rx='2' fill='white' opacity='0.6'/%3E%3Crect x='76' y='60' width='18' height='120' rx='2' fill='white' opacity='0.6'/%3E%3Crect x='104' y='95' width='18' height='85' rx='2' fill='white' opacity='0.6'/%3E%3Crect x='132' y='45' width='18' height='135' rx='2' fill='white' opacity='0.6'/%3E%3Crect x='160' y='70' width='18' height='110' rx='2' fill='white' opacity='0.6'/%3E%3C!-- donut chart --%3E%3Ccircle cx='350' cy='95' r='50' stroke='white' stroke-width='14' fill='none' opacity='0.4'/%3E%3Ccircle cx='350' cy='95' r='50' stroke='white' stroke-width='14' fill='none' stroke-dasharray='200 115' stroke-dashoffset='0' opacity='0.8'/%3E%3Ccircle cx='350' cy='95' r='50' stroke='white' stroke-width='14' fill='none' stroke-dasharray='80 235' stroke-dashoffset='-200' opacity='0.6'/%3E%3C/svg%3E") center / contain no-repeat;
+}
+.data-page-header::after {
+  content: '';
+  position: absolute;
+  bottom: 0; left: 0; right: 0;
+  height: 3px;
+  background: linear-gradient(90deg, var(--accent), #8b5cf6, transparent);
+}
 .data-page-title {
   font-size: 1.75rem;
   font-weight: 800;
-  color: var(--foreground);
+  color: #fff;
   margin: 0 0 0.5rem;
+  position: relative;
 }
 .data-page-desc {
-  font-size: 0.95rem;
-  color: var(--muted-fg);
+  font-size: 1.05rem;
+  color: #fff;
   margin: 0;
+  position: relative;
 }
 .data-page-disclaimer {
-  font-size: 0.78rem;
-  color: #999;
+  font-size: 0.875rem;
+  color: #fff;
   margin-top: 0.5rem;
   line-height: 1.6;
 }
@@ -1942,8 +1974,8 @@ aside .sec-head { margin-bottom: 0.5rem; }
 .data-card__delta--up { color: #E74C3C; }
 .data-card__delta--down { color: #27AE60; }
 .data-card__meta {
-  font-size: 0.72rem;
-  color: #aaa;
+  font-size: 0.8rem;
+  color: #666;
   margin-top: 0.4rem;
 }
 .data-card__source-link {

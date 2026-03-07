@@ -137,7 +137,7 @@
     {% block header_title %}{% endblock %}
 
     {% if updated_time %}
-    <span class="header__updated desk-only">{{ updated_time }}</span>
+    <span class="header__updated">{{ updated_time }}</span>
     {% endif %}
   </div>
 
@@ -247,6 +247,7 @@
     <a href="/bbs/list.html?table={{ board.code }}" class="mobnav__link"
        onclick="toggleMob()">{{ board.name }}</a>
     {% endfor %}
+    <a href="/data" class="mobnav__link" onclick="toggleMob()">웰다잉 데이터</a>
     <div class="mobnav__divider"></div>
     {% if current_member %}
     <a href="/member/mypage.html" class="mobnav__link" onclick="toggleMob()"><i class="fa-regular fa-user"></i> {{ current_member.name }}님</a>

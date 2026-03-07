@@ -159,7 +159,33 @@ def create_app():
         from app.services.background_queue import init_background_worker
         init_background_worker(app)
 
+    # 연명의료 통계 자동 갱신 (6시간마다)
+    _start_lst_scheduler(app)
+
     return app
+
+
+def _start_lst_scheduler(app):
+    """연명의료 통계를 6시간마다 자동 갱신하는 타이머 스레드"""
+    import threading
+    import logging
+    logger = logging.getLogger(__name__)
+
+    def run():
+        import time
+        time.sleep(10)  # 서버 시작 후 10초 대기
+        while True:
+            try:
+                with app.app_context():
+                    from app.utils.lst_fetcher import update_lst_stats
+                    update_lst_stats()
+            except Exception as e:
+                logger.error(f'LST 스케줄러 오류: {e}')
+            time.sleep(6 * 3600)  # 6시간
+
+    t = threading.Thread(target=run, daemon=True, name='lst-stats-updater')
+    t.start()
+    logger.info('연명의료 통계 자동 갱신 스케줄러 시작 (6시간 간격)')
 
 
 def _run_migrations():
