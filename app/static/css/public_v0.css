@@ -2096,10 +2096,9 @@ aside .sec-head { margin-bottom: 0.5rem; }
 .op-header__top {
   display: flex; align-items: flex-end; justify-content: space-between;
   border-bottom: 3px solid var(--accent); padding-bottom: 1rem; margin-bottom: 0.75rem;
-  background: var(--accent); padding: 1rem 1.5rem; border-radius: var(--radius-lg) var(--radius-lg) 0 0;
 }
-.op-header__title { font-family: var(--font-serif); font-size: 2.25rem; font-weight: 900; letter-spacing: -1px; line-height: 1; color: #fff; }
-.op-header__sub { font-size: 0.8125rem; color: rgba(255,255,255,0.7); letter-spacing: 2px; text-transform: uppercase; font-weight: 500; }
+.op-header__title { font-family: var(--font-serif); font-size: 2.25rem; font-weight: 900; letter-spacing: -1px; line-height: 1; }
+.op-header__sub { font-size: 0.8125rem; color: var(--muted-fg); letter-spacing: 2px; text-transform: uppercase; font-weight: 500; }
 .op-tabs { display: flex; gap: 0; margin-bottom: 1.5rem; }
 .op-tab {
   padding: 0.625rem 1.25rem; font-size: 0.875rem; font-weight: 600;
