@@ -58,135 +58,209 @@
     </nav>
   </div>
 
-  {# ─── FEATURED (첫 번째 기사) ─── #}
-  {% if featured_article %}
-  <section class="op-featured">
-    <a href="/news/articleView.html?idxno={{ featured_article.id }}" class="op-featured__card">
-      <div class="op-featured__portrait-wrap">
-        {% if featured_article.author_photo %}
-        <img class="op-featured__portrait"
-             src="{{ featured_article.author_photo }}"
-             alt="{{ featured_article.author_name }}"
-             style="object-position:{{ featured_article.author_photo_pos or 'center center' }}">
-        {% else %}
-        <span class="op-featured__portrait-ph">{{ featured_article.author_name[:1] if featured_article.author_name else '필' }}</span>
-        {% endif %}
-        <div class="op-featured__portrait-info">
-          <div class="op-featured__portrait-name">{{ featured_article.author_title or featured_article.author_name }}</div>
-          {% if featured_article.author_affiliation %}
-          <div class="op-featured__portrait-role">{{ featured_article.author_affiliation }}</div>
-          {% endif %}
-        </div>
-      </div>
-      <div class="op-featured__body">
-        {% if featured_article.subsection %}
-        <span class="op-tag op-tag--{{ 'column' if featured_article.subsection.code == 'S2N22' else 'contribute' }}">{{ featured_article.subsection.name }}</span>
-        {% endif %}
-        <h2 class="op-featured__title">{{ featured_article.title }}</h2>
-        {% if featured_article.summary_text %}
-        <p class="op-featured__excerpt">{{ featured_article.summary_text|truncate(200) }}</p>
-        {% endif %}
-        <div class="op-featured__date">{{ (featured_article.embargo_date or featured_article.created_at).strftime('%Y.%m.%d') }}</div>
-      </div>
-    </a>
-  </section>
-  {% endif %}
-
-  {# ─── CARDS GRID ─── #}
-  <section class="op-cards">
-    <div class="op-cards__label">{% if subsection %}{{ subsection.name }}{% else %}최신 오피니언{% endif %}</div>
-
-    {% if articles %}
-    <div class="op-cards__grid">
-      {% for art in articles %}
-      <a href="/news/articleView.html?idxno={{ art.id }}" class="op-card" style="animation-delay:{{ loop.index0 * 0.08 }}s">
-        <div class="op-card__face{% if not art.author_photo %} op-card__face--ph{% endif %}">
-          {% if art.author_photo %}
-          <img class="op-card__face-img"
-               src="{{ art.author_photo }}"
-               alt="{{ art.author_name }}"
-               loading="lazy"
-               style="object-position:{{ art.author_photo_pos or 'center center' }}">
-          {% else %}
-          <span class="op-card__face-icon">{{ art.author_name[:1] if art.author_name else '✎' }}</span>
-          {% endif %}
-          <div class="op-card__face-info">
-            <div class="op-card__face-name">{{ art.author_title or art.author_name }}</div>
-            {% if art.author_affiliation %}
-            <div class="op-card__face-role">{{ art.author_affiliation }}</div>
+  {# ─── 본문 + 사이드바 ─── #}
+  <div class="main-grid">
+    <div>
+      {# ─── CARDS GRID (모두 동일 크기) ─── #}
+      {% if articles %}
+      <div class="op-cards__grid">
+        {% for art in articles %}
+        <a href="/news/articleView.html?idxno={{ art.id }}" class="op-card" style="animation-delay:{{ loop.index0 * 0.06 }}s">
+          <div class="op-card__face">
+            {% if art.author_photo %}
+            <img class="op-card__face-img"
+                 src="{{ art.author_photo }}"
+                 alt="{{ art.author_name }}"
+                 loading="lazy"
+                 style="object-position:{{ art.author_photo_pos or 'center center' }}">
+            {% else %}
+            <span class="op-card__face-icon">{{ art.author_name[:1] if art.author_name else '?' }}</span>
             {% endif %}
+            <div class="op-card__face-info">
+              <div class="op-card__face-name">{{ art.author_title or art.author_name }}</div>
+              {% if art.author_affiliation %}
+              <div class="op-card__face-role">{{ art.author_affiliation }}</div>
+              {% endif %}
+            </div>
           </div>
-        </div>
-        <div class="op-card__body">
-          {% if art.subsection %}
-          <span class="op-tag op-tag--{{ 'column' if art.subsection.code == 'S2N22' else 'contribute' }}">{{ art.subsection.name }}</span>
-          {% endif %}
-          <h3 class="op-card__title">{{ art.title }}</h3>
-          {% if art.summary_text %}
-          <p class="op-card__excerpt">{{ art.summary_text|truncate(120) }}</p>
-          {% endif %}
-          <div class="op-card__date">{{ (art.embargo_date or art.created_at).strftime('%Y.%m.%d') }}</div>
-        </div>
-      </a>
-      {% endfor %}
-    </div>
-    {% else %}
-    <div class="alist-empty">등록된 오피니언이 없습니다.</div>
-    {% endif %}
-
-    {# ─── 페이지네이션 ─── #}
-    {% if pagination.pages > 1 %}
-    <nav class="alist-pager">
-      <a href="{{ url_for('public.article_list', page=1, sc_section_code=sc_section_code, sc_sub_section_code=sc_sub_section_code, view_type=view_type) }}"
-         class="alist-pager__btn" title="처음"><i class="fa-solid fa-angles-left"></i></a>
-      {% if pagination.has_prev %}
-      <a href="{{ url_for('public.article_list', page=pagination.prev_num, sc_section_code=sc_section_code, sc_sub_section_code=sc_sub_section_code, view_type=view_type) }}"
-         class="alist-pager__btn" title="이전"><i class="fa-solid fa-angle-left"></i></a>
+          <div class="op-card__body">
+            {% if art.subsection %}
+            <span class="op-tag op-tag--{{ 'column' if art.subsection.code == 'S2N22' else 'contribute' }}">{{ art.subsection.name }}</span>
+            {% endif %}
+            <h3 class="op-card__title">{{ art.title }}</h3>
+            {% if art.summary_text %}
+            <p class="op-card__excerpt">{{ art.summary_text|truncate(120) }}</p>
+            {% endif %}
+            <div class="op-card__date">{{ (art.embargo_date or art.created_at).strftime('%Y.%m.%d') }}</div>
+          </div>
+        </a>
+        {% endfor %}
+      </div>
+      {% else %}
+      <div class="alist-empty">등록된 오피니언이 없습니다.</div>
       {% endif %}
-      {% for p in pagination.iter_pages(left_edge=1, right_edge=1, left_current=4, right_current=4) %}
-        {% if p %}
-          {% if p == pagination.page %}
-          <span class="alist-pager__num alist-pager__num--active">{{ p }}</span>
+
+      {# ─── 페이지네이션 ─── #}
+      {% if pagination.pages > 1 %}
+      <nav class="alist-pager">
+        <a href="{{ url_for('public.article_list', page=1, sc_section_code=sc_section_code, sc_sub_section_code=sc_sub_section_code, view_type=view_type) }}"
+           class="alist-pager__btn" title="처음"><i class="fa-solid fa-angles-left"></i></a>
+        {% if pagination.has_prev %}
+        <a href="{{ url_for('public.article_list', page=pagination.prev_num, sc_section_code=sc_section_code, sc_sub_section_code=sc_sub_section_code, view_type=view_type) }}"
+           class="alist-pager__btn" title="이전"><i class="fa-solid fa-angle-left"></i></a>
+        {% endif %}
+        {% for p in pagination.iter_pages(left_edge=1, right_edge=1, left_current=4, right_current=4) %}
+          {% if p %}
+            {% if p == pagination.page %}
+            <span class="alist-pager__num alist-pager__num--active">{{ p }}</span>
+            {% else %}
+            <a href="{{ url_for('public.article_list', page=p, sc_section_code=sc_section_code, sc_sub_section_code=sc_sub_section_code, view_type=view_type) }}"
+               class="alist-pager__num">{{ p }}</a>
+            {% endif %}
           {% else %}
-          <a href="{{ url_for('public.article_list', page=p, sc_section_code=sc_section_code, sc_sub_section_code=sc_sub_section_code, view_type=view_type) }}"
-             class="alist-pager__num">{{ p }}</a>
+          <span class="alist-pager__dots">…</span>
           {% endif %}
-        {% else %}
-        <span class="alist-pager__dots">…</span>
+        {% endfor %}
+        {% if pagination.has_next %}
+        <a href="{{ url_for('public.article_list', page=pagination.next_num, sc_section_code=sc_section_code, sc_sub_section_code=sc_sub_section_code, view_type=view_type) }}"
+           class="alist-pager__btn" title="다음"><i class="fa-solid fa-angle-right"></i></a>
         {% endif %}
-      {% endfor %}
-      {% if pagination.has_next %}
-      <a href="{{ url_for('public.article_list', page=pagination.next_num, sc_section_code=sc_section_code, sc_sub_section_code=sc_sub_section_code, view_type=view_type) }}"
-         class="alist-pager__btn" title="다음"><i class="fa-solid fa-angle-right"></i></a>
+        <a href="{{ url_for('public.article_list', page=pagination.pages, sc_section_code=sc_section_code, sc_sub_section_code=sc_sub_section_code, view_type=view_type) }}"
+           class="alist-pager__btn" title="끝"><i class="fa-solid fa-angles-right"></i></a>
+      </nav>
       {% endif %}
-      <a href="{{ url_for('public.article_list', page=pagination.pages, sc_section_code=sc_section_code, sc_sub_section_code=sc_sub_section_code, view_type=view_type) }}"
-         class="alist-pager__btn" title="끝"><i class="fa-solid fa-angles-right"></i></a>
-    </nav>
-    {% endif %}
-  </section>
 
-  {# ─── WRITERS STRIP (필진 소개) ─── #}
-  {% if writers %}
-  <div class="op-divider"></div>
-  <section class="op-writers">
-    <div class="op-cards__label">필진 소개</div>
-    <div class="op-writers__strip">
-      {% for w in writers %}
-      <a href="{{ url_for('public.article_list', sc_section_code='S1N2') }}&sc_area=N&sc_word={{ w.name }}" class="op-writer">
-        {% if w.photo %}
-        <img class="op-writer__photo" src="{{ w.photo }}" alt="{{ w.name }}" loading="lazy"
-             style="object-position:{{ w.photo_pos or 'center center' }}">
-        {% else %}
-        <span class="op-writer__photo op-writer__photo--ph">{{ w.name[:1] }}</span>
-        {% endif %}
-        <div class="op-writer__name">{{ w.name }}</div>
-        {% if w.role %}<div class="op-writer__role">{{ w.role }}</div>{% endif %}
-        <span class="op-writer__count">{{ w.count }}편</span>
-      </a>
-      {% endfor %}
+      {# ─── WRITERS STRIP (필진 소개) ─── #}
+      {% if writers %}
+      <div class="op-divider" style="margin-top:2rem"></div>
+      <section class="op-writers">
+        <div class="op-cards__label">필진 소개</div>
+        <div class="op-writers__strip">
+          {% for w in writers %}
+          <a href="{{ url_for('public.article_list', sc_section_code='S1N2') }}&sc_area=N&sc_word={{ w.name }}" class="op-writer">
+            {% if w.photo %}
+            <img class="op-writer__photo" src="{{ w.photo }}" alt="{{ w.name }}" loading="lazy"
+                 style="object-position:{{ w.photo_pos or 'center center' }}">
+            {% else %}
+            <span class="op-writer__photo op-writer__photo--ph">{{ w.name[:1] }}</span>
+            {% endif %}
+            <div class="op-writer__name">{{ w.name }}</div>
+            {% if w.role %}<div class="op-writer__role">{{ w.role }}</div>{% endif %}
+            <span class="op-writer__count">{{ w.count }}편</span>
+          </a>
+          {% endfor %}
+        </div>
+      </section>
+      {% endif %}
     </div>
-  </section>
-  {% endif %}
 
+    {# ─── 사이드바 ─── #}
+    <aside>
+      {% if banners.get('sidebar') %}
+      <div class="banner-area desk-only">
+        {% for b in banners['sidebar'] %}
+        <a href="{{ url_for('public.banner_click', banner_id=b.id) }}" target="_blank" rel="noopener">
+          {{ banner_img(b) }}
+        </a>
+        {% endfor %}
+      </div>
+      {% endif %}
+
+      {% if sidebar_opinion %}
+      <div class="desk-only">
+        <div class="sec-head" style="margin-top:0.5rem">
+          <i class="fa-solid fa-pen-nib"></i>
+          <span class="sec-head__title">오피니언</span>
+        </div>
+        <div class="sidebar-opinion">
+          {% for art in sidebar_opinion %}
+          <a href="/news/articleView.html?idxno={{ art.id }}" class="sidebar-opinion__item">
+            <div class="sidebar-opinion__avatar" style="{% if art.thumb_url %}background-image:url({{ art.thumb_url }}){% endif %}">
+              {% if not art.thumb_url %}{{ art.author_name[:1] if art.author_name else '필' }}{% endif %}
+            </div>
+            <div class="sidebar-opinion__body">
+              <div class="sidebar-opinion__title line-clamp-2">{{ art.title }}</div>
+              {% if art.author_title %}<div class="sidebar-opinion__author">{{ art.author_title }}</div>{% elif art.author_name and art.author_name != '웰다잉뉴스' %}<div class="sidebar-opinion__author">{{ art.author_name }}</div>{% endif %}
+            </div>
+          </a>
+          {% endfor %}
+        </div>
+      </div>
+      <div class="mob-only">
+        <div class="sec-head" style="margin-top:0.5rem">
+          <i class="fa-solid fa-pen-nib"></i>
+          <span class="sec-head__title">오피니언</span>
+        </div>
+        <div class="opinion-grid">
+          {% for art in sidebar_opinion %}
+          <a href="/news/articleView.html?idxno={{ art.id }}" class="opinion-card">
+            <div class="opinion-avatar">
+              {% if art.thumb_url %}
+              <img src="{{ art.thumb_url }}" alt="" style="object-position:{{ art.author_photo_pos or 'center center' }}">
+              {% else %}
+              {{ art.author_name[:1] if art.author_name else '필' }}
+              {% endif %}
+            </div>
+            {% if art.author_title %}
+            <div class="opinion-name">{{ art.author_title }}</div>
+            {% elif art.author_name and art.author_name != '웰다잉뉴스' %}
+            <div class="opinion-name">{{ art.author_name }}</div>
+            {% endif %}
+            <div class="opinion-title line-clamp-2">{{ art.title }}</div>
+          </a>
+          {% endfor %}
+        </div>
+      </div>
+      {% endif %}
+
+      {% if popular_today or popular_week %}
+      <div class="sec-head" style="margin-top:1.5rem">
+        <i class="fa-solid fa-arrow-trend-up"></i>
+        <span class="sec-head__title">많이 본 뉴스</span>
+      </div>
+      <div class="pop-tabs">
+        <button class="pop-tab pop-tab--active" onclick="switchPop(this,'popWeekSide')">주간</button>
+        <button class="pop-tab" onclick="switchPop(this,'popTodaySide')">오늘</button>
+      </div>
+      <div class="pop-list" id="popWeekSide">
+        {% for art in popular_week %}
+        <a href="/news/articleView.html?idxno={{ art.id }}" class="pop-item">
+          <span class="pop-num {{ 'pop-num--top' if loop.index <= 3 else 'pop-num--rest' }}">{{ loop.index }}</span>
+          <span class="pop-title line-clamp-2">{{ art.title }}</span>
+        </a>
+        {% endfor %}
+      </div>
+      <div class="pop-list" id="popTodaySide" style="display:none">
+        {% for art in popular_today %}
+        <a href="/news/articleView.html?idxno={{ art.id }}" class="pop-item">
+          <span class="pop-num {{ 'pop-num--top' if loop.index <= 3 else 'pop-num--rest' }}">{{ loop.index }}</span>
+          <span class="pop-title line-clamp-2">{{ art.title }}</span>
+        </a>
+        {% endfor %}
+      </div>
+      {% endif %}
+
+      {% if banners.get('sidebar_bottom') %}
+      <div class="banner-area desk-only" style="margin-top:1.25rem">
+        {% for b in banners['sidebar_bottom'] %}
+        <a href="{{ url_for('public.banner_click', banner_id=b.id) }}" target="_blank" rel="noopener">
+          {{ banner_img(b) }}
+        </a>
+        {% endfor %}
+      </div>
+      {% endif %}
+    </aside>
+  </div>
 </div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+function switchPop(btn, panelId) {
+  document.querySelectorAll('.pop-tab').forEach(function(t){ t.classList.remove('pop-tab--active'); });
+  btn.classList.add('pop-tab--active');
+  document.querySelectorAll('.pop-list').forEach(function(p){ p.style.display = 'none'; });
+  document.getElementById(panelId).style.display = '';
+}
+</script>
 {% endblock %}

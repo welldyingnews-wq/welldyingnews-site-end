@@ -777,10 +777,6 @@ def article_list():
     # 오피니언 섹션 전용 템플릿
     is_opinion = section and section.code == 'S1N2' and not sc_word
     if is_opinion:
-        all_items = pagination.items
-        featured_article = all_items[0] if all_items and page == 1 else None
-        card_articles = all_items[1:] if featured_article else all_items
-
         # 필진 집계 (1페이지만)
         writers = []
         if page == 1:
@@ -810,15 +806,18 @@ def article_list():
                 })
 
         return render_template('public/article_list_opinion.html',
-                               articles=card_articles,
-                               featured_article=featured_article,
+                               articles=pagination.items,
                                writers=writers,
                                pagination=pagination,
                                section=section,
                                subsection=subsection,
                                sc_section_code=sc_section_code,
                                sc_sub_section_code=sc_sub_section_code,
-                               view_type=view_type)
+                               view_type=view_type,
+                               sidebar_opinion=sidebar_opinion,
+                               sidebar_popular=sidebar_popular,
+                               popular_today=popular_today,
+                               popular_week=popular_week)
 
     return render_template('public/article_list.html',
                            articles=pagination.items,
