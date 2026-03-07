@@ -1843,7 +1843,7 @@ aside .sec-head { margin-bottom: 0.5rem; }
   .data-strip__item { padding: 0 0.75rem; }
   .data-strip__label { font-size: 0.7rem; }
   .data-strip__value { font-size: 1rem; }
-  .data-strip__more { display: none; }
+  .data-strip__more { font-size: 0.7rem; }
 }
 
 /* ============================================================
