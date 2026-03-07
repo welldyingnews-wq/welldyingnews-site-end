@@ -112,6 +112,25 @@ def create_app():
         except Exception:
             return dict(welldying_stats={})
 
+    @app.context_processor
+    def inject_ticker_articles():
+        """모든 페이지에 속보 티커용 기사 주입"""
+        from flask import request as req
+        if req.blueprints and req.blueprints[0] == 'admin':
+            return dict(ticker_articles=[])
+        from app.models import Article
+        from datetime import datetime
+        try:
+            now = datetime.now()
+            articles = Article.query.filter(
+                Article.recognition == 'E',
+                Article.is_deleted == False,
+                db.or_(Article.embargo_date <= now, Article.embargo_date.is_(None))
+            ).order_by(db.func.coalesce(Article.embargo_date, Article.created_at).desc()).limit(10).all()
+            return dict(ticker_articles=articles)
+        except Exception:
+            return dict(ticker_articles=[])
+
     # Blueprint 등록
     from app.admin import admin_bp
     from app.public import public_bp

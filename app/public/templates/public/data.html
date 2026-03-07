@@ -2,6 +2,18 @@
 
 {% block title %}웰다잉 데이터 — 웰다잉뉴스{% endblock %}
 {% block meta_description %}<meta name="description" content="고독사, 호스피스, 사전연명의료의향서, 조력사망 등 한국과 세계의 죽음 관련 핵심 통계를 한눈에 볼 수 있는 데이터 대시보드입니다.">{% endblock %}
+{% block og_meta %}
+<meta property="og:type" content="website">
+<meta property="og:title" content="웰다잉 데이터 — 한국과 세계의 죽음 관련 핵심 통계">
+<meta property="og:site_name" content="웰다잉뉴스">
+<meta property="og:description" content="고독사, 호스피스, 사전연명의료의향서, 조력사망 등 한국과 세계의 죽음 관련 핵심 통계를 한눈에 볼 수 있는 데이터 대시보드입니다.">
+<meta property="og:url" content="{{ canonical_url }}">
+<meta property="og:image" content="{{ site_url }}/static/images/og_default.jpg">
+<meta property="og:image:width" content="1200">
+<meta property="og:image:height" content="630">
+<meta property="og:image:type" content="image/jpeg">
+<meta name="twitter:card" content="summary_large_image">
+{% endblock %}
 
 {# ── 값 포맷 매크로 ── #}
 {% macro fmt_value(s) %}
@@ -135,8 +147,27 @@
           <div class="data-card__meta">{{ fmt_period(s) }}{{ fmt_meta(s) }}</div>
         </div>
       </div>
-      {% else %}
+      {# OECD 자살률 한국/평균 통합 카드 #}
+      {% elif s.indicator_key == 'oecd_suicide_kr' and s.display_format and s.display_format.startswith('oecd_avg:') %}
+      {% set oecd_avg = s.display_format.split(':')[1]|float %}
+      <div class="data-card data-card--alert">
+        <div class="data-card__body">
+          <div class="data-card__label">OECD 자살률</div>
+          <div class="data-card__combined-row">
+            <div class="data-card__combined-item">
+              <span class="data-card__period data-card__period--annual">한국</span>
+              <span class="data-card__number--inline">{{ '{:.1f}'.format(s.value) }}<span class="data-card__unit">명/10만</span></span>
+            </div>
+            <div class="data-card__combined-item">
+              <span class="data-card__period data-card__period--cumul">평균</span>
+              <span class="data-card__number--inline">{{ '{:.1f}'.format(oecd_avg) }}<span class="data-card__unit">명/10만</span></span>
+            </div>
+          </div>
+          <div class="data-card__meta">{{ fmt_meta(s) }}</div>
+        </div>
+      </div>
       {# 일반 카드 (조력사망 외 카테고리) #}
+      {% else %}
       <div class="data-card{% if s.delta_pct and s.delta_dir == 'up' %} data-card--alert{% endif %}">
         <div class="data-card__body">
           <div class="data-card__label">{{ s.label }}</div>

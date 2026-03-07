@@ -590,12 +590,13 @@ def data_page():
 
     # 카테고리별 그룹핑 (순서 유지)
     from collections import OrderedDict
-    CATEGORY_ORDER = ['연명의료', '사회적고립', '사망', '호스피스', '자살', '고령화', '장례', '돌봄', '국제비교', '조력사망']
+    CATEGORY_ORDER = ['연명의료', '사회적고립', '사망', '호스피스', '자살', '고령화', '장례', '돌봄', '장기기증', '국제비교', '조력사망']
     CATEGORY_ICONS = {
         '연명의료': 'fa-file-signature', '사회적고립': 'fa-house-chimney-crack',
         '사망': 'fa-chart-line', '호스피스': 'fa-heart-pulse',
         '자살': 'fa-exclamation-triangle', '고령화': 'fa-person-cane',
         '장례': 'fa-cross', '돌봄': 'fa-hand-holding-heart',
+        '장기기증': 'fa-hand-holding-medical',
         '국제비교': 'fa-globe', '조력사망': 'fa-scale-balanced',
     }
     categories = OrderedDict()

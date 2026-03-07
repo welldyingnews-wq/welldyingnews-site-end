@@ -103,6 +103,25 @@
 </div>
 {% endif %}
 
+<!-- =========== BREAKING TICKER (속보) =========== -->
+{% if ticker_articles %}
+<div class="ticker">
+  <div class="ticker__inner">
+    <span class="ticker__badge">최신</span>
+    <div class="ticker__track">
+      <div class="ticker__scroll" id="tickerScroll">
+        {% for art in ticker_articles %}
+        <span class="ticker__item"><a href="/news/articleView.html?idxno={{ art.id }}">{{ art.title }}</a></span>
+        {% endfor %}
+        {% for art in ticker_articles %}
+        <span class="ticker__item"><a href="/news/articleView.html?idxno={{ art.id }}">{{ art.title }}</a></span>
+        {% endfor %}
+      </div>
+    </div>
+  </div>
+</div>
+{% endif %}
+
 <!-- =========== HEADER =========== -->
 <header class="header">
   <div class="header__main">
@@ -252,7 +271,6 @@
 
 <!-- =========== MAIN CONTENT =========== -->
 <main>
-{% block pre_data_strip %}{% endblock %}
 
 <!-- =========== DATA STRIP (웰다잉 핵심 지표) =========== -->
 {% set strip_stats = welldying_stats.values()|selectattr('show_on_strip')|list %}
