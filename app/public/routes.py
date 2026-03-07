@@ -774,6 +774,52 @@ def article_list():
             Schedule.title.contains(sc_word)
         ).order_by(Schedule.event_date.desc()).limit(5).all()
 
+    # 오피니언 섹션 전용 템플릿
+    is_opinion = section and section.code == 'S1N2' and not sc_word
+    if is_opinion:
+        all_items = pagination.items
+        featured_article = all_items[0] if all_items and page == 1 else None
+        card_articles = all_items[1:] if featured_article else all_items
+
+        # 필진 집계 (1페이지만)
+        writers = []
+        if page == 1:
+            opinion_q = _get_published_query().filter(Article.section_id == section.id)
+            if subsection:
+                opinion_q = opinion_q.filter(Article.subsection_id == subsection.id)
+            writer_rows = db.session.query(
+                Article.author_name,
+                Article.author_title,
+                Article.author_photo,
+                Article.author_photo_pos,
+                Article.author_affiliation,
+                db.func.count(Article.id).label('cnt')
+            ).filter(
+                Article.id.in_(opinion_q.with_entities(Article.id).subquery().select())
+            ).filter(
+                Article.author_photo.isnot(None),
+                Article.author_photo != ''
+            ).group_by(Article.author_name).order_by(db.text('cnt DESC')).limit(10).all()
+            for r in writer_rows:
+                writers.append({
+                    'name': r.author_name,
+                    'role': r.author_affiliation or r.author_title or '',
+                    'photo': r.author_photo,
+                    'photo_pos': r.author_photo_pos or 'center center',
+                    'count': r.cnt
+                })
+
+        return render_template('public/article_list_opinion.html',
+                               articles=card_articles,
+                               featured_article=featured_article,
+                               writers=writers,
+                               pagination=pagination,
+                               section=section,
+                               subsection=subsection,
+                               sc_section_code=sc_section_code,
+                               sc_sub_section_code=sc_sub_section_code,
+                               view_type=view_type)
+
     return render_template('public/article_list.html',
                            articles=pagination.items,
                            pagination=pagination,
