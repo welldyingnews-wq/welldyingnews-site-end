@@ -252,6 +252,38 @@
 
 <!-- =========== MAIN CONTENT =========== -->
 <main>
+{% block pre_data_strip %}{% endblock %}
+
+<!-- =========== DATA STRIP (웰다잉 핵심 지표) =========== -->
+{% set strip_stats = welldying_stats.values()|selectattr('show_on_strip')|list %}
+{% if strip_stats %}
+<div class="data-strip">
+  <div class="data-strip__inner">
+    <a href="/data" class="data-strip__more">데이터 더보기 <i class="fa-solid fa-chevron-right"></i></a>
+    {% for s in strip_stats %}
+    <a href="/data" class="data-strip__item">
+      <span class="data-strip__label">{{ s.label }}</span>
+      {% if s.display_format == '%' %}
+      <span class="data-strip__value">{{ '{:.1f}'.format(s.value) }}</span>
+      <span class="data-strip__unit">%</span>
+      {% elif s.value == s.value|int and s.value|int > 0 %}
+      <span class="data-strip__value">{{ '{:,}'.format(s.value|int) }}</span>
+      <span class="data-strip__unit">{{ s.unit }}</span>
+      {% else %}
+      <span class="data-strip__value">{{ '{:,.1f}'.format(s.value) }}</span>
+      <span class="data-strip__unit">{{ s.unit }}</span>
+      {% endif %}
+      {% if s.delta_pct %}
+      <span class="data-strip__delta data-strip__delta--{{ s.delta_dir }}">
+        {{ '▲' if s.delta_dir == 'up' else '▼' }}{{ '{:.1f}'.format(s.delta_pct) }}%
+      </span>
+      {% endif %}
+    </a>
+    {% endfor %}
+  </div>
+</div>
+{% endif %}
+
 {% block content %}{% endblock %}
 </main>
 
@@ -397,6 +429,51 @@ function toggleMobSub(btn) {
 })();
 </script>
 {% block extra_js %}{% endblock %}
+<script>
+/* ===== Data Strip Count-Up ===== */
+(function(){
+  function countUp(el, target, duration){
+    var start = 0, startTime = null;
+    var isFloat = String(target).indexOf('.') !== -1;
+    var dec = isFloat ? (String(target).split('.')[1]||'').length : 0;
+    function step(ts){
+      if(!startTime) startTime = ts;
+      var p = Math.min((ts - startTime) / duration, 1);
+      var ease = p === 1 ? 1 : 1 - Math.pow(2, -10 * p);
+      var val = start + (target - start) * ease;
+      if(isFloat){
+        el.textContent = val.toFixed(dec).replace(/\B(?=(\d{3})+(?!\d))/g, ',');
+      } else {
+        el.textContent = Math.floor(val).toLocaleString('en-US');
+      }
+      if(p < 1) requestAnimationFrame(step);
+      else el.textContent = isFloat ? target.toFixed(dec).replace(/\B(?=(\d{3})+(?!\d))/g, ',') : Math.floor(target).toLocaleString('en-US');
+    }
+    requestAnimationFrame(step);
+  }
+  var vals = document.querySelectorAll('.data-strip__value');
+  if(vals.length){
+    vals.forEach(function(el){
+      var raw = el.textContent.trim().replace(/,/g, '');
+      var num = parseFloat(raw);
+      if(isNaN(num) || num === 0) return;
+      el.dataset.target = raw;
+      el.textContent = '0';
+    });
+    var obs = new IntersectionObserver(function(entries){
+      entries.forEach(function(entry){
+        if(entry.isIntersecting && entry.target.dataset.target){
+          var num = parseFloat(entry.target.dataset.target);
+          countUp(entry.target, num, 800);
+          delete entry.target.dataset.target;
+          obs.unobserve(entry.target);
+        }
+      });
+    }, {threshold: 0.2});
+    vals.forEach(function(el){ if(el.dataset.target) obs.observe(el); });
+  }
+})();
+</script>
 <script>
 /* Sticky sidebar: CSS sticky + JS로 양방향 top 값 조정 */
 (function(){

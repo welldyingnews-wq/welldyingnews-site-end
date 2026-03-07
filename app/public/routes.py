@@ -301,6 +301,30 @@ def inject_sections():
             'site_url': site_url, 'canonical_url': canonical_url}
 
 
+def _get_real_ip():
+    """nginx 프록시 뒤에서 실제 클라이언트 IP 추출"""
+    forwarded = request.headers.get('X-Forwarded-For', '')
+    if forwarded:
+        return forwarded.split(',')[0].strip()
+    return request.remote_addr or '0.0.0.0'
+
+
+_BOT_PATTERN = re.compile(
+    r'bot|crawl|spider|slurp|Mediapartners|Feedfetcher|DotBot|MJ12bot'
+    r'|Yandex|Baiduspider|SemrushBot|AhrefsBot|PetalBot|BLEXBot'
+    r'|DataForSeo|Bytespider|GPTBot|ClaudeBot|CCBot|Wget|curl|python-requests',
+    re.I
+)
+
+
+def _is_bot():
+    """User-Agent 기반 봇 판별"""
+    ua = request.headers.get('User-Agent', '')
+    if not ua:
+        return True
+    return bool(_BOT_PATTERN.search(ua))
+
+
 def _detect_device():
     """User-Agent에서 디바이스 유형 감지"""
     ua = request.headers.get('User-Agent', '')
@@ -333,11 +357,13 @@ def _classify_referrer(referrer_url):
 
 @public_bp.before_request
 def track_visitor():
-    """사이트 방문자(UV) 추적 — IP 기반 일별 중복 제거"""
+    """사이트 방문자(UV) 추적 — IP 기반 일별 중복 제거, 봇 제외"""
     if request.path.startswith('/static'):
         return
+    if _is_bot():
+        return
     today = datetime.now().date()
-    ip = request.remote_addr or '0.0.0.0'
+    ip = _get_real_ip()
     # 이미 오늘 기록된 방문자인지 확인
     exists = VisitorLog.query.filter_by(
         ip_address=ip, date=today, article_id=None
@@ -549,7 +575,6 @@ def _fetch_welldying_stats():
 def index():
     ctx = _build_index_context(hero_slots=4)
     ctx['bottom_section_articles'] = _build_bottom_section_articles()
-    ctx['welldying_stats'] = _fetch_welldying_stats()
     return render_template('public/index.html', **ctx)
 
 
@@ -785,50 +810,38 @@ def article_view():
             )
         abort(404)
 
-    # 조회수 — IP 기반 일별 중복 제거
-    today = datetime.now().date()
-    ip = request.remote_addr or '0.0.0.0'
-    already_viewed = VisitorLog.query.filter_by(
-        ip_address=ip, date=today, article_id=article.id
-    ).first()
-    if not already_viewed:
-        # VisitorLog 기록
-        device = _detect_device()
-        referrer = _classify_referrer(request.referrer)
-        db.session.add(VisitorLog(ip_address=ip, date=today, article_id=article.id,
-                                  user_agent=device, referrer_source=referrer))
-        # Article 누적 조회수
-        article.view_count += 1
-        # PageView 일별 집계
-        pv = PageView.query.filter_by(article_id=article.id, date=today).first()
-        if not pv:
-            pv = PageView(article_id=article.id, date=today, view_count=0, unique_count=0)
-            db.session.add(pv)
-            db.session.flush()
-        pv.view_count += 1
-        pv.unique_count += 1
-        # DailyStat 기사PV 증가
-        stat = DailyStat.query.filter_by(date=today).first()
-        if not stat:
-            stat = DailyStat(date=today, page_views=0, unique_visitors=0, article_views=0)
-            db.session.add(stat)
-            db.session.flush()
-        stat.article_views += 1
-        stat.page_views += 1
-        db.session.commit()
-    else:
-        # 중복 방문이라도 PV(총 조회) 카운트는 증가
-        pv = PageView.query.filter_by(article_id=article.id, date=today).first()
-        if not pv:
-            pv = PageView(article_id=article.id, date=today, view_count=0, unique_count=0)
-            db.session.add(pv)
-            db.session.flush()
-        pv.view_count += 1
-        stat = DailyStat.query.filter_by(date=today).first()
-        if stat:
-            stat.page_views += 1
+    # 조회수 — IP 기반 일별 중복 제거, 봇 제외
+    if not _is_bot():
+        today = datetime.now().date()
+        ip = _get_real_ip()
+        already_viewed = VisitorLog.query.filter_by(
+            ip_address=ip, date=today, article_id=article.id
+        ).first()
+        if not already_viewed:
+            # VisitorLog 기록
+            device = _detect_device()
+            referrer = _classify_referrer(request.referrer)
+            db.session.add(VisitorLog(ip_address=ip, date=today, article_id=article.id,
+                                      user_agent=device, referrer_source=referrer))
+            # Article 누적 조회수
+            article.view_count += 1
+            # PageView 일별 집계
+            pv = PageView.query.filter_by(article_id=article.id, date=today).first()
+            if not pv:
+                pv = PageView(article_id=article.id, date=today, view_count=0, unique_count=0)
+                db.session.add(pv)
+                db.session.flush()
+            pv.view_count += 1
+            pv.unique_count += 1
+            # DailyStat 기사PV 증가
+            stat = DailyStat.query.filter_by(date=today).first()
+            if not stat:
+                stat = DailyStat(date=today, page_views=0, unique_visitors=0, article_views=0)
+                db.session.add(stat)
+                db.session.flush()
             stat.article_views += 1
-        db.session.commit()
+            stat.page_views += 1
+            db.session.commit()
 
     # 관련 기사: 수동 설정 우선, 없으면 같은 2차섹션 자동
     relations = ArticleRelation.query.filter_by(
@@ -994,7 +1007,7 @@ def comment_write():
         author_name=author_name or '익명',
         content=content,
         password=generate_password_hash(password) if password else '',
-        ip_address=request.remote_addr or ''
+        ip_address=_get_real_ip()
     )
     db.session.add(comment)
     db.session.commit()
@@ -1042,7 +1055,7 @@ def comment_vote():
         return jsonify({'error': 'invalid'}), 400
 
     comment = ArticleComment.query.get_or_404(comment_id)
-    ip = request.remote_addr or ''
+    ip = _get_real_ip()
     member_id = session.get('member_id')
 
     # 중복 투표 확인 (IP 또는 회원 기준)
@@ -1219,7 +1232,7 @@ def event_submit():
         phone=phone,
         subject=subject,
         content=content,
-        ip_address=request.remote_addr,
+        ip_address=_get_real_ip(),
     )
 
     # 기사제보 파일 첨부 (Google Drive 지원)
@@ -1593,7 +1606,7 @@ def bbs_reply_write():
         author_name=member.name if member else (author_name or '익명'),
         password=generate_password_hash(password) if password and not member else '',
         content=content,
-        ip_address=request.remote_addr,
+        ip_address=_get_real_ip(),
         member_id=member.id if member else None
     )
     db.session.add(reply)
@@ -1640,7 +1653,7 @@ def bbs_reply_vote():
         return jsonify({'error': 'invalid'}), 400
 
     reply = BoardReply.query.get_or_404(reply_id)
-    ip = request.remote_addr
+    ip = _get_real_ip()
     member_id = session.get('member_id')
 
     existing = BoardReplyVote.query.filter_by(reply_id=reply_id, vote_type=vote_type)

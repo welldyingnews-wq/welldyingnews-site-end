@@ -100,6 +100,18 @@ def create_app():
             return f'/static/{filename}?v={mtime}'
         return dict(static_v=static_v)
 
+    @app.context_processor
+    def inject_welldying_stats():
+        """모든 페이지에 welldying_stats 주입 (데이터 스트립용)"""
+        from app.models import WelldyingStat
+        try:
+            stats = {}
+            for row in WelldyingStat.query.filter_by(is_active=True).order_by(WelldyingStat.sort_order).all():
+                stats[row.indicator_key] = row
+            return dict(welldying_stats=stats)
+        except Exception:
+            return dict(welldying_stats={})
+
     # Blueprint 등록
     from app.admin import admin_bp
     from app.public import public_bp
