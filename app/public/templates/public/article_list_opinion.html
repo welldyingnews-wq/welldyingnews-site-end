@@ -130,28 +130,6 @@
       </nav>
       {% endif %}
 
-      {# ─── WRITERS STRIP (필진 소개) ─── #}
-      {% if writers %}
-      <div class="op-divider" style="margin-top:2rem"></div>
-      <section class="op-writers">
-        <div class="op-cards__label">필진 소개</div>
-        <div class="op-writers__strip">
-          {% for w in writers %}
-          <a href="{{ url_for('public.article_list', sc_section_code='S1N2') }}&sc_area=N&sc_word={{ w.name }}" class="op-writer">
-            {% if w.photo %}
-            <img class="op-writer__photo" src="{{ w.photo }}" alt="{{ w.name }}" loading="lazy"
-                 style="object-position:{{ w.photo_pos or 'center center' }}">
-            {% else %}
-            <span class="op-writer__photo op-writer__photo--ph">{{ w.name[:1] }}</span>
-            {% endif %}
-            <div class="op-writer__name">{{ w.name }}</div>
-            {% if w.role %}<div class="op-writer__role">{{ w.role }}</div>{% endif %}
-            <span class="op-writer__count">{{ w.count }}편</span>
-          </a>
-          {% endfor %}
-        </div>
-      </section>
-      {% endif %}
     </div>
 
     {# ─── 사이드바 ─── #}
