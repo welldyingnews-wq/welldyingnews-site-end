@@ -136,6 +136,9 @@
     </a>
     {% block header_title %}{% endblock %}
 
+    {% if updated_time %}
+    <span class="header__updated desk-only">{{ updated_time }}</span>
+    {% endif %}
   </div>
 
   <!-- Desktop category nav + search (우측 끝) -->
