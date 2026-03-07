@@ -116,8 +116,8 @@ ul, ol { list-style: none; }
   top: 50%;
   transform: translateY(-50%);
 }
-.quote-banner__mark--left { left: 0; }
-.quote-banner__mark--right { right: 0; }
+.quote-banner__mark--left { left: calc(50% - 250px); }
+.quote-banner__mark--right { right: calc(50% - 250px); }
 .quote-banner__text {
   font-family: 'Noto Serif KR', var(--font-serif);
   font-size: 0.9375rem;
