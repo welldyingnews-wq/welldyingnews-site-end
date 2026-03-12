@@ -48,10 +48,11 @@
                 </li>
 
                 <!-- 기사 -->
-                <li class="nav-group {% if 'article' in ep or ep == 'admin.approval' or ep == 'admin.article_comments' or ep == 'admin.article_structure' %}open{% endif %}">
+                <li class="nav-group {% if 'article' in ep or ep == 'admin.approval' or ep == 'admin.article_comments' or ep == 'admin.article_structure' or 'schedule' in ep %}open{% endif %}">
                     <a href="#" class="nav-group-toggle"><i class="bi bi-newspaper"></i> 기사 <i class="bi bi-chevron-down ms-auto"></i></a>
                     <ul class="nav-sub">
                         <li class="{% if ep == 'admin.article_new' %}active{% endif %}"><a href="{{ url_for('admin.article_new') }}">기사등록</a></li>
+                        <li class="{% if 'schedule' in ep %}active{% endif %}"><a href="{{ url_for('admin.schedule_list') }}">주요일정</a></li>
                         <li class="{% if ep == 'admin.draft_list' %}active{% endif %}"><a href="{{ url_for('admin.draft_list') }}">임시보관함</a></li>
                         <li class="{% if ep == 'admin.approval' %}active{% endif %}"><a href="{{ url_for('admin.approval') }}">승인관리</a></li>
                         <li class="{% if ep == 'admin.article_list' and not show_deleted %}active{% endif %}"><a href="{{ url_for('admin.article_list') }}">기사검색</a></li>
@@ -111,11 +112,10 @@
                 </li>
 
                 <!-- 플러그인 -->
-                <li class="nav-group {% if 'poll' in ep or 'schedule' in ep %}open{% endif %}">
+                <li class="nav-group {% if 'poll' in ep %}open{% endif %}">
                     <a href="#" class="nav-group-toggle"><i class="bi bi-puzzle"></i> 플러그인 <i class="bi bi-chevron-down ms-auto"></i></a>
                     <ul class="nav-sub">
                         <li class="{% if ep == 'admin.poll_list' %}active{% endif %}"><a href="{{ url_for('admin.poll_list') }}">설문조사</a></li>
-                        <li class="{% if 'schedule' in ep %}active{% endif %}"><a href="{{ url_for('admin.schedule_list') }}">주요일정</a></li>
                     </ul>
                 </li>
 
@@ -206,7 +206,7 @@ document.querySelectorAll('.nav-group-toggle').forEach(function(el) {
   var origFetch=window.fetch;
   window.fetch=function(url,opts){
     opts=opts||{};
-    if(opts.method&&opts.method.toUpperCase()==='POST'){
+    if(opts.method&&['POST','DELETE','PUT','PATCH'].indexOf(opts.method.toUpperCase())!==-1){
       opts.headers=opts.headers||{};
       if(opts.headers instanceof Headers){opts.headers.set('X-CSRFToken',token);}
       else{opts.headers['X-CSRFToken']=token;}

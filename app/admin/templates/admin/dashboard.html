@@ -401,6 +401,13 @@
                             </div>
                         </div>
                         <div class="db-bar-item">
+                            <span class="dot" style="background:#00809D"></span>
+                            <div class="bar-info">
+                                <div class="bar-label"><span class="name">빙</span><span class="pct" id="bing-pct">0%</span></div>
+                                <div class="bar-track"><div class="bar-fill" id="bing-bar" style="width:0;background:#00809D"></div></div>
+                            </div>
+                        </div>
+                        <div class="db-bar-item">
                             <span class="dot" style="background:#1877F2"></span>
                             <div class="bar-info">
                                 <div class="bar-label"><span class="name">페이스북</span><span class="pct" id="facebook-pct">0%</span></div>
@@ -412,6 +419,20 @@
                             <div class="bar-info">
                                 <div class="bar-label"><span class="name">카카오</span><span class="pct" id="kakao-pct">0%</span></div>
                                 <div class="bar-track"><div class="bar-fill" id="kakao-bar" style="width:0;background:#FEE500"></div></div>
+                            </div>
+                        </div>
+                        <div class="db-bar-item">
+                            <span class="dot" style="background:#000"></span>
+                            <div class="bar-info">
+                                <div class="bar-label"><span class="name">X(트위터)</span><span class="pct" id="twitter-pct">0%</span></div>
+                                <div class="bar-track"><div class="bar-fill" id="twitter-bar" style="width:0;background:#000"></div></div>
+                            </div>
+                        </div>
+                        <div class="db-bar-item">
+                            <span class="dot" style="background:#E4405F"></span>
+                            <div class="bar-info">
+                                <div class="bar-label"><span class="name">인스타그램</span><span class="pct" id="instagram-pct">0%</span></div>
+                                <div class="bar-track"><div class="bar-fill" id="instagram-bar" style="width:0;background:#E4405F"></div></div>
                             </div>
                         </div>
                         <div class="db-bar-item">
@@ -452,8 +473,8 @@
                             </tr>
                         </thead>
                         <tbody>
-                            {% set ref_labels = {'naver': '네이버', 'google': '구글', 'daum': '다음', 'facebook': '페이스북', 'kakao': '카카오', 'direct': '직접접속', 'other': '기타'} %}
-                            {% set ref_order = ['naver', 'google', 'daum', 'facebook', 'kakao', 'direct', 'other'] %}
+                            {% set ref_labels = {'naver': '네이버', 'google': '구글', 'daum': '다음', 'bing': '빙', 'facebook': '페이스북', 'kakao': '카카오', 'twitter': 'X(트위터)', 'instagram': '인스타그램', 'direct': '직접접속', 'other': '기타'} %}
+                            {% set ref_order = ['naver', 'google', 'daum', 'bing', 'facebook', 'kakao', 'twitter', 'instagram', 'direct', 'other'] %}
                             {% set ns = namespace(grand_pc=0, grand_mb=0, grand_tb=0) %}
                             {% for ref_key in ref_order %}
                             {% set row = cross_map.get(ref_key, {}) %}
@@ -830,14 +851,16 @@ new ApexCharts(document.querySelector("#cnDevices"), {
 
 // 유입경로
 var naverC={{ referrer_map.get('naver',0) }}, googleC={{ referrer_map.get('google',0) }};
-var daumC={{ referrer_map.get('daum',0) }}, fbC={{ referrer_map.get('facebook',0) }};
-var kakaoC={{ referrer_map.get('kakao',0) }}, directC={{ referrer_map.get('direct',0) }};
-var otherC={{ referrer_map.get('other',0) }};
-var refT = naverC+googleC+daumC+fbC+kakaoC+directC+otherC;
+var daumC={{ referrer_map.get('daum',0) }}, bingC={{ referrer_map.get('bing',0) }};
+var fbC={{ referrer_map.get('facebook',0) }}, kakaoC={{ referrer_map.get('kakao',0) }};
+var twitterC={{ referrer_map.get('twitter',0) }}, instaC={{ referrer_map.get('instagram',0) }};
+var directC={{ referrer_map.get('direct',0) }}, otherC={{ referrer_map.get('other',0) + referrer_map.get('internal',0) }};
+var refT = naverC+googleC+daumC+bingC+fbC+kakaoC+twitterC+instaC+directC+otherC;
 document.getElementById('referrer-total').textContent = refT;
 
-[{k:'naver',v:naverC},{k:'google',v:googleC},{k:'daum',v:daumC},{k:'facebook',v:fbC},
- {k:'kakao',v:kakaoC},{k:'direct',v:directC},{k:'other',v:otherC}].forEach(function(i){
+[{k:'naver',v:naverC},{k:'google',v:googleC},{k:'daum',v:daumC},{k:'bing',v:bingC},
+ {k:'facebook',v:fbC},{k:'kakao',v:kakaoC},{k:'twitter',v:twitterC},{k:'instagram',v:instaC},
+ {k:'direct',v:directC},{k:'other',v:otherC}].forEach(function(i){
     var p = refT>0?(i.v/refT*100).toFixed(1):0;
     var pe=document.getElementById(i.k+'-pct'), be=document.getElementById(i.k+'-bar');
     if(pe) pe.textContent=p+'%'; if(be) be.style.width=p+'%';
@@ -846,11 +869,11 @@ document.getElementById('referrer-total').textContent = refT;
 new ApexCharts(document.querySelector("#cnReferrer"), {
     chart: { type: 'donut', height: 200 },
     dataLabels: { enabled: false },
-    labels: ['네이버','구글','다음','페이스북','카카오','직접접속','기타'],
-    series: [naverC||0, googleC||0, daumC||0, fbC||0, kakaoC||0, directC||1, otherC||0],
+    labels: ['네이버','구글','다음','빙','페이스북','카카오','X(트위터)','인스타그램','직접접속','기타'],
+    series: [naverC||0, googleC||0, daumC||0, bingC||0, fbC||0, kakaoC||0, twitterC||0, instaC||0, directC||1, otherC||0],
     legend: { show: true, position: 'bottom', fontSize: '11px', fontFamily: 'inherit' },
     plotOptions: { pie: { donut: { size: '80%' } } },
-    colors: ['#2DB400','#4285F4','#1D6CE1','#1877F2','#FEE500','#999','#ccc']
+    colors: ['#2DB400','#4285F4','#1D6CE1','#00809D','#1877F2','#FEE500','#000','#E4405F','#999','#ccc']
 }).render();
 </script>
 {% endblock %}

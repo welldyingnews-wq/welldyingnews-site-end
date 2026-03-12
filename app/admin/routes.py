@@ -1,8 +1,11 @@
 import json
+import logging
 import os
 import uuid
 from datetime import datetime, timedelta
 from functools import wraps
+
+logger = logging.getLogger(__name__)
 
 from flask import (render_template, request, redirect, url_for, flash,
                    jsonify, current_app)
@@ -193,9 +196,11 @@ def dashboard():
     ).group_by(VisitorLog.referrer_source, VisitorLog.user_agent).all()
     cross_map = {}
     for ref, dev, cnt in cross_stats:
-        if ref not in cross_map:
-            cross_map[ref] = {}
-        cross_map[ref][dev] = cnt
+        # internal 유입은 other로 합산
+        key = 'other' if ref == 'internal' else ref
+        if key not in cross_map:
+            cross_map[key] = {}
+        cross_map[key][dev] = cross_map[key].get(dev, 0) + cnt
 
     # 구독/제보/저작권 신청 수
     subscribe_count = EventRequest.query.filter_by(event_code='event5', is_processed=False).count()
@@ -313,6 +318,7 @@ def article_edit(article_id):
 
 def _save_article(article):
     is_new = article is None
+    old_recognition = None if is_new else article.recognition
     if is_new:
         article = Article()
 
@@ -326,6 +332,15 @@ def _save_article(article):
     article.content = request.form.get('content', '')
     article.summary = request.form.get('summary', '')
     article.keyword = request.form.get('keyword', '')
+    article.sns_text = request.form.get('sns_text', '').strip()
+    sns_ch = []
+    if request.form.get('sns_x'):
+        sns_ch.append('x')
+    if request.form.get('sns_facebook'):
+        sns_ch.append('facebook')
+    if request.form.get('sns_instagram'):
+        sns_ch.append('instagram')
+    article.sns_channels = ','.join(sns_ch)
     article.author_name = request.form.get('author_name', '웰다잉뉴스')
     article.author_email = request.form.get('author_email', 'welldyingnews@naver.com')
     article.author_title = request.form.get('author_title', '')
@@ -355,21 +370,12 @@ def _save_article(article):
     else:
         article.embargo_date = None
 
-    # 썸네일 업로드
-    thumbnail = request.files.get('thumbnail')
-    if thumbnail and thumbnail.filename:
-        from app.utils.cloud_storage import upload_file
-        safe_name, _ = _validate_upload(thumbnail, ALLOWED_IMAGE_EXT)
-        if not safe_name:
-            flash('허용되지 않는 이미지 형식입니다.', 'error')
-        else:
-            filepath = os.path.join(current_app.config['UPLOAD_FOLDER'], safe_name)
-            thumbnail.save(filepath)
-            url = upload_file(filepath, folder='welldying/thumbnails')
-            if not url:
-                flash('썸네일 업로드에 실패했습니다.', 'error')
-            else:
-                article.thumbnail_path = url
+    # 대표이미지: 본문 이미지 URL 선택 방식
+    thumbnail_url = request.form.get('thumbnail_url', '').strip()
+    if thumbnail_url:
+        article.thumbnail_path = thumbnail_url
+    elif not thumbnail_url and not article.thumbnail_path:
+        article.thumbnail_path = ''
 
     # 필진 프로필 사진
     if request.form.get('delete_author_photo') == '1':
@@ -441,6 +447,24 @@ def _save_article(article):
             continue
 
     db.session.commit()
+
+    # SNS 자동 포스팅: 승인 상태로 변경 + 체크된 채널만
+    new_recognition = article.recognition
+    channels = article.sns_channels.split(',') if article.sns_channels else []
+    if new_recognition == 'E' and old_recognition != 'E' and channels:
+        from app.utils.social_post import post_to_x
+        posted = []
+        if 'x' in channels:
+            try:
+                tweet_id = post_to_x(article)
+                if tweet_id:
+                    posted.append('X(트위터)')
+            except Exception as e:
+                logger.error(f'X 자동 포스팅 실패: {e}')
+        # facebook, instagram은 API 연동 후 추가 예정
+        if posted:
+            flash(f'{", ".join(posted)}에 자동 포스팅되었습니다.', 'success')
+
     flash('기사가 저장되었습니다.', 'success')
     # [Feature 3] 저장 후 기사 목록으로 이동
     return redirect(url_for('admin.article_list'))
@@ -654,7 +678,9 @@ def find_related():
     if article_id:
         query = query.filter(Article.id != article_id)
     if sc_section_code:
-        query = query.filter_by(section_id=int(sc_section_code))
+        sec = Section.query.filter_by(code=sc_section_code).first()
+        if sec:
+            query = query.filter_by(section_id=sec.id)
     if sc_word:
         query = query.filter(Article.title.contains(sc_word))
 
@@ -691,6 +717,7 @@ def upload_image():
     if not upload or not upload.filename:
         return jsonify({'error': {'message': '파일이 없습니다.'}}), 400
 
+    original_name = upload.filename
     safe_name, ext = _validate_upload(upload, ALLOWED_EXT)
     if not safe_name:
         return jsonify({'error': {'message': '허용되지 않는 파일 형식입니다.'}}), 400
@@ -706,10 +733,12 @@ def upload_image():
     current_app.logger.info(f'[upload] 파일: {original_name}, ext={ext}, content_type={content_type}, is_image={is_image}, is_video={is_video}')
 
     # 파일 업로드
-    current_app.logger.info(f'[upload] 업로드 시도: {original_name}')
+    watermark = request.form.get('watermark') == '1'
+    current_app.logger.info(f'[upload] 업로드 시도: {original_name}, watermark={watermark}')
     resource_type = 'image' if is_image else ('video' if is_video else 'raw')
     file_size = os.path.getsize(filepath)
-    url = upload_file(filepath, folder='welldying/articles', resource_type=resource_type)
+    url = upload_file(filepath, folder='welldying/articles', resource_type=resource_type,
+                      watermark=(watermark and is_image))
     if not url:
         current_app.logger.error(f'[upload] 업로드 실패: {original_name}')
         return jsonify({'error': {'message': '파일 업로드에 실패했습니다.'}}), 500
@@ -770,6 +799,28 @@ def api_photo_favorite(photo_id):
     photo.is_favorite = not photo.is_favorite
     db.session.commit()
     return jsonify({'ok': True, 'is_favorite': photo.is_favorite})
+
+
+@admin_bp.route('/api/photos/<int:photo_id>', methods=['DELETE'])
+@admin_required
+def api_photo_delete(photo_id):
+    """포토DB 사진 삭제 (Cloudinary + DB)"""
+    photo = Photo.query.get_or_404(photo_id)
+    # Cloudinary에서 삭제 시도
+    from app.utils.cloud_storage import delete_file
+    if photo.file_url and 'cloudinary' in photo.file_url:
+        try:
+            delete_file(photo.file_url)
+        except Exception as e:
+            current_app.logger.warning(f'Cloudinary 삭제 실패: {e}')
+    elif photo.file_path and os.path.isfile(photo.file_path):
+        try:
+            os.remove(photo.file_path)
+        except OSError:
+            pass
+    db.session.delete(photo)
+    db.session.commit()
+    return jsonify({'ok': True})
 
 
 # ── 임시보관함 ──

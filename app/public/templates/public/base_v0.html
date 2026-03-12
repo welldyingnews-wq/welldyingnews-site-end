@@ -4,6 +4,7 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <meta name="csrf-token" content="{{ csrf_token() }}">
+<meta name="referrer" content="no-referrer-when-downgrade">
 {% if ga4_id %}
 <!-- Google Analytics 4 -->
 <script async src="https://www.googletagmanager.com/gtag/js?id={{ ga4_id }}"></script>
@@ -41,7 +42,12 @@
     "width": 300,
     "height": 60
   },
-  "sameAs": [],
+  "sameAs": [
+    "https://www.facebook.com/profile.php?id=100070193613113",
+    "https://x.com/welldying_news",
+    "https://www.youtube.com/channel/UCpmNApZlS3aDuI9h1taTTAw",
+    "https://www.instagram.com/welldyingnews/"
+  ],
   "contactPoint": {
     "@type": "ContactPoint",
     "email": "welldyingnews@naver.com",
@@ -326,8 +332,16 @@
 <footer class="footer">
   <div class="footer__inner">
     <div class="footer__brand">
-      <a href="/"><img src="/static/images/logo.png" alt="웰다잉뉴스" class="footer__brand-logo"></a>
-      <p class="footer__brand-desc">삶과 죽음의 존엄성을 전하는 미디어</p>
+      <div class="footer__brand-left">
+        <a href="/"><img src="/static/images/logo.png" alt="웰다잉뉴스" class="footer__brand-logo"></a>
+        <p class="footer__brand-desc">삶과 죽음의 존엄성을 전하는 미디어</p>
+      </div>
+      <div class="footer__sns">
+        <a href="https://www.facebook.com/profile.php?id=100070193613113" target="_blank" rel="noopener" class="footer__sns-btn" title="페이스북"><i class="fa-brands fa-facebook-f"></i></a>
+        <a href="https://x.com/welldying_news" target="_blank" rel="noopener" class="footer__sns-btn" title="X (트위터)"><i class="fa-brands fa-x-twitter"></i></a>
+        <a href="https://www.youtube.com/channel/UCpmNApZlS3aDuI9h1taTTAw" target="_blank" rel="noopener" class="footer__sns-btn" title="유튜브"><i class="fa-brands fa-youtube"></i></a>
+        <a href="https://www.instagram.com/welldyingnews/" target="_blank" rel="noopener" class="footer__sns-btn" title="인스타그램"><i class="fa-brands fa-instagram"></i></a>
+      </div>
     </div>
     <div class="footer__grid">
       <div class="footer__categories">
@@ -581,7 +595,7 @@ function toggleMobSub(btn) {
   var origFetch=window.fetch;
   window.fetch=function(url,opts){
     opts=opts||{};
-    if(opts.method&&opts.method.toUpperCase()==='POST'){
+    if(opts.method&&['POST','DELETE','PUT','PATCH'].indexOf(opts.method.toUpperCase())!==-1){
       opts.headers=opts.headers||{};
       if(opts.headers instanceof Headers){opts.headers.set('X-CSRFToken',token);}
       else{opts.headers['X-CSRFToken']=token;}

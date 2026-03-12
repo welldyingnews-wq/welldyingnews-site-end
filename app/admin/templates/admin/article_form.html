@@ -2,13 +2,17 @@
 {% block nav_title %}{{ '기사수정' if article and article.id else '기사등록' }}{% endblock %}
 
 {% block extra_head %}
-<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/dropzone@5.9.3/dist/min/dropzone.min.css">
 <link rel="stylesheet" href="https://cdn.ckeditor.com/ckeditor5/43.3.1/ckeditor5.css">
 <style>
     .ck-editor__editable {
         min-height: 400px;
         font-size: 21px !important;
     }
+    .ck-editor__editable figure.image { max-width: 100%; margin: 1em auto; display: table; }
+    .ck-editor__editable figure.image img { max-width: 100%; width: 100%; height: auto !important; object-fit: contain; display: block; }
+    .ck-editor__editable img { max-width: 100%; height: auto !important; }
+    .ck-editor__editable figure.image.image_resized { max-width: 100%; }
+    .ck-editor__editable figure.image.image_resized img { width: 100%; }
 
     .ck-editor__editable.ck-focused {
         border-color: #5e1985 !important;
@@ -74,74 +78,15 @@
         overflow-y: auto !important;
     }
 
-    .dz-area {
-        border: 2px dashed #ccc;
-        border-radius: 8px;
-        padding: 15px;
-        min-height: 100px;
-        background: #fafafa;
-        cursor: pointer;
-    }
-
-    .dz-area:hover {
-        border-color: #5e1985;
-        background: #f5f0fa;
-    }
-
-    .dz-area .dz-message {
-        text-align: center;
-        color: #999;
-        font-size: 14px;
-        margin: 10px 0;
-    }
-
-    .dz-area .dz-preview {
-        display: inline-block;
-        margin: 5px;
-    }
-
-    .dz-area .dz-preview .dz-image {
-        width: 100px;
-        height: 100px;
-        overflow: hidden;
-        border-radius: 4px;
-    }
-
-    .dz-area .dz-preview .dz-image img {
-        width: 100%;
-        height: 100%;
-        object-fit: cover;
-    }
-
-    .dz-uploaded-item {
-        display: inline-block;
-        margin: 4px;
-        position: relative;
-        cursor: pointer;
-    }
-
-    .dz-uploaded-item img {
-        width: 80px;
-        height: 80px;
-        object-fit: cover;
-        border-radius: 4px;
-        border: 2px solid #ddd;
-    }
-
-    .dz-uploaded-item:hover img {
-        border-color: #5e1985;
-    }
-
-    .dz-uploaded-item .dz-label {
-        display: block;
-        font-size: 10px;
-        text-align: center;
-        color: #666;
-        overflow: hidden;
-        text-overflow: ellipsis;
-        white-space: nowrap;
-        max-width: 80px;
-    }
+    /* 대표이미지 선택 */
+    .thumb-picker { border: 2px dashed #ccc; border-radius: 8px; padding: 12px; background: #fafafa; min-height: 60px; }
+    .thumb-picker-grid { display: flex; flex-wrap: wrap; gap: 8px; }
+    .thumb-picker-item { position: relative; cursor: pointer; border: 3px solid transparent; border-radius: 6px; overflow: hidden; width: 100px; height: 100px; transition: border-color .15s; }
+    .thumb-picker-item:hover { border-color: #5e1985; }
+    .thumb-picker-item.selected { border-color: #5e1985; }
+    .thumb-picker-item.selected::after { content: '대표'; position: absolute; top: 0; left: 0; right: 0; background: rgba(94,25,133,0.85); color: #fff; font-size: 11px; text-align: center; padding: 2px 0; font-weight: 700; }
+    .thumb-picker-item img { width: 100%; height: 100%; object-fit: cover; }
+    .thumb-picker-empty { color: #999; font-size: 13px; text-align: center; padding: 8px 0; }
 </style>
 {% endblock %}
 
@@ -375,26 +320,24 @@
             <div class="card mb-3">
                 <div class="card-body">
                     <label class="form-label fw-bold">부제목</label>
-                    <textarea name="subtitle" class="form-control" rows="2"
+                    <textarea name="subtitle" class="form-control" rows="5"
                         placeholder="부제목을 입력하세요">{{ article.subtitle if article else '' }}</textarea>
                 </div>
             </div>
 
-            <!-- 사진/파일 업로드 (Dropzone) -->
+            <!-- 대표이미지 선택 -->
             <div class="card mb-3">
                 <div class="card-header d-flex justify-content-between align-items-center py-2">
-                    <strong>사진/파일 업로드</strong>
-                    <div>
-                        <button type="button" class="btn btn-sm btn-outline-primary" data-bs-toggle="modal"
-                            data-bs-target="#photoDbModal"><i class="bi bi-images"></i> 포토DB</button>
-                        <small class="text-muted ms-2">드래그앤드롭 또는 클릭하여 업로드</small>
-                    </div>
+                    <strong>대표이미지</strong>
+                    <small class="text-muted">본문에 삽입된 이미지 중 선택 (자동 감지)</small>
                 </div>
                 <div class="card-body">
-                    <div id="mediaDropzone" class="dz-area">
-                        <div class="dz-message">파일을 여기에 끌어다 놓거나 클릭하여 업로드</div>
+                    <div class="thumb-picker">
+                        <div id="thumbPickerGrid" class="thumb-picker-grid">
+                            <div class="thumb-picker-empty" id="thumbPickerEmpty">본문에 이미지를 삽입하면 여기에 표시됩니다</div>
+                        </div>
                     </div>
-                    <div id="uploadedMedia" class="mt-2"></div>
+                    <input type="hidden" name="thumbnail_url" id="thumbnailUrl" value="{{ article.thumbnail_path if article and article.thumbnail_path else '' }}">
                 </div>
             </div>
 
@@ -416,6 +359,12 @@
                                     <option value="2.5">2.5</option>
                                     <option value="3.0">3.0</option>
                                 </select>
+                                <label class="form-check form-check-inline mb-0 ms-1" style="font-size:12px;cursor:pointer" title="이미지 업로드 시 워터마크 삽입">
+                                    <input type="checkbox" class="form-check-input" id="watermarkToggle" style="margin-top:2px">
+                                    <span class="form-check-label"><i class="bi bi-droplet-half"></i> 워터마크</span>
+                                </label>
+                                <button type="button" class="btn btn-outline-primary btn-sm" data-bs-toggle="modal" data-bs-target="#photoDbModal" title="포토DB에서 이미지 삽입"><i class="bi bi-images"></i> 포토DB</button>
+                                <button type="button" class="btn btn-outline-danger btn-sm" onclick="insertYouTube()" title="유튜브 영상 삽입"><i class="bi bi-youtube"></i> 유튜브</button>
                                 <button type="button" class="btn btn-outline-info btn-sm" data-bs-toggle="modal" data-bs-target="#tplModal" title="내용 템플릿"><i class="bi bi-file-earmark-richtext"></i> 템플릿</button>
                                 <button type="button" class="btn btn-outline-danger btn-sm" onclick="clearFormatting()" title="본문 서식 제거 (텍스트만 유지)"><i class="bi bi-eraser"></i> 서식제거</button>
                                 <button type="button" class="btn btn-outline-secondary btn-sm" id="fullscreenBtn"
@@ -442,6 +391,32 @@
                     <label class="form-label fw-bold">키워드</label>
                     <input type="text" name="keyword" class="form-control"
                         value="{{ article.keyword if article else '' }}" placeholder="쉼표로 구분하여 입력">
+                </div>
+            </div>
+
+            <div class="card mb-3">
+                <div class="card-body">
+                    <label class="form-label fw-bold"><i class="bi bi-send"></i> SNS 포스팅</label>
+                    <div class="d-flex gap-3 mb-2 mt-1">
+                        <div class="form-check">
+                            <input type="checkbox" name="sns_x" value="1" class="form-check-input" id="snsX"
+                                {{ 'checked' if article and article.sns_channels and 'x' in article.sns_channels else '' }}>
+                            <label class="form-check-label" for="snsX"><i class="bi bi-twitter-x"></i> X (트위터)</label>
+                        </div>
+                        <div class="form-check">
+                            <input type="checkbox" name="sns_facebook" value="1" class="form-check-input" id="snsFb"
+                                {{ 'checked' if article and article.sns_channels and 'facebook' in article.sns_channels else '' }}>
+                            <label class="form-check-label" for="snsFb"><i class="bi bi-facebook"></i> 페이스북</label>
+                        </div>
+                        <div class="form-check">
+                            <input type="checkbox" name="sns_instagram" value="1" class="form-check-input" id="snsIg"
+                                {{ 'checked' if article and article.sns_channels and 'instagram' in article.sns_channels else '' }}>
+                            <label class="form-check-label" for="snsIg"><i class="bi bi-instagram"></i> 인스타그램</label>
+                        </div>
+                    </div>
+                    <textarea name="sns_text" class="form-control" rows="3" maxlength="250"
+                        placeholder="승인 시 체크한 SNS에 자동 게시됩니다. 비워두면 기사 제목이 사용됩니다.">{{ article.sns_text if article and article.sns_text else '' }}</textarea>
+                    <div class="form-text">기사 URL과 해시태그(키워드)는 자동 추가됩니다. 최대 250자.</div>
                 </div>
             </div>
 
@@ -604,7 +579,6 @@
 {% endblock %}
 
 {% block extra_scripts %}
-<script src="https://cdn.jsdelivr.net/npm/dropzone@5.9.3/dist/min/dropzone.min.js"></script>
 <script type="importmap">
 {
     "imports": {
@@ -640,12 +614,18 @@
     import koTranslations from 'ckeditor5/translations/ko.js';
 
     // Custom Upload Adapter
+    var _editorRef = null; // 업로드 완료 후 캡션 추가용
     class MyUploadAdapter {
         constructor(loader) { this.loader = loader; }
         upload() {
             return this.loader.file.then(file => {
                 const data = new FormData();
                 data.append('upload', file);
+                // 워터마크 토글 체크
+                const wmCheck = document.getElementById('watermarkToggle');
+                if (wmCheck && wmCheck.checked) {
+                    data.append('watermark', '1');
+                }
                 return fetch('{{ url_for("admin.upload_image") }}', { method: 'POST', body: data })
                     .then(res => {
                         console.log('[CKEditor Upload] status:', res.status);
@@ -654,7 +634,8 @@
                     })
                     .then(result => {
                         console.log('[CKEditor Upload] 응답:', result);
-                        return { default: result.url };
+                        var uploadedUrl = result.url;
+                        return { default: uploadedUrl };
                     });
             });
         }
@@ -686,6 +667,22 @@
         }
     }
 
+    // 자주 쓰는 특수문자 플러그인
+    function FrequentSpecialCharsPlugin(editor) {
+        editor.plugins.get('SpecialCharacters').addItems('자주 쓰는 문자', [
+            { title: '저작권 ©', character: '©' },
+            { title: '가운뎃점 ·', character: '·' },
+            { title: '말줄임 …', character: '…' },
+            { title: '마름모 ◇', character: '◇' },
+            { title: '삼각형(채움) ▲', character: '▲' },
+            { title: '삼각형 △', character: '△' },
+            { title: '사각형 □', character: '□' },
+            { title: '사각형(채움) ■', character: '■' },
+            { title: '고 故', character: '故' },
+            { title: '중 中', character: '中' }
+        ], { label: '자주 쓰는 문자' });
+    }
+
     console.log('[CKEditor] 초기화 시작, #editor 요소:', document.querySelector('#editor'));
     ClassicEditor.create(document.querySelector('#editor'), {
         plugins: [
@@ -709,7 +706,8 @@
             FileRepository,
             GeneralHtmlSupport,
             MyUploadAdapterPlugin,
-            LineHeightPlugin
+            LineHeightPlugin,
+            FrequentSpecialCharsPlugin
         ],
         language: koTranslations,
         toolbar: {
@@ -740,7 +738,8 @@
             ]
         },
         image: {
-            insert: { type: 'block' },
+            insert: { type: 'block', integrations: ['upload', 'url'] },
+            resizeUnit: '%',
             toolbar: ['imageStyle:block', 'imageStyle:side', '|',
                 'toggleImageCaption', 'imageTextAlternative', '|',
                 'resizeImage:25', 'resizeImage:50', 'resizeImage:75', 'resizeImage:original'],
@@ -761,6 +760,10 @@
             allow: [{
                 name: /^(?!figure|img|figcaption|table|thead|tbody|tr|td|th|caption|ol|ul|li|a|blockquote|h[1-6]).*$/,
                 attributes: true, classes: true, styles: true
+            }, {
+                name: 'iframe',
+                attributes: ['src', 'width', 'height', 'frameborder', 'allow', 'allowfullscreen', 'title', 'referrerpolicy', 'loading'],
+                classes: true, styles: true
             }],
             disallow: [
                 { name: 'figure' },
@@ -834,25 +837,35 @@
                 if (el) window.toggleFullscreen();
             }
         });
-        // 이미지 업로드 후 자동으로 캡션 ON
-        editor.model.document.on('change:data', function () {
-            editor.model.change(function (writer) {
-                var root = editor.model.document.getRoot();
-                for (var child of root.getChildren()) {
-                    if (child.is('element', 'imageBlock') && !child.getAttribute('hasCaption')) {
-                        writer.setAttribute('hasCaption', true, child);
-                        // caption 자식이 없으면 생성
-                        var hasCaption = false;
-                        for (var c of child.getChildren()) {
-                            if (c.is('element', 'caption')) { hasCaption = true; break; }
-                        }
-                        if (!hasCaption) {
-                            var caption = writer.createElement('caption');
-                            writer.append(caption, child);
+        // 업로드 어댑터에서 캡션 추가할 수 있도록 에디터 참조 저장
+        _editorRef = editor;
+
+        // 이미지 삽입 시 자동으로 캡션 ON (post-fixer: CKEditor 공식 모델 보정 메커니즘)
+        editor.model.document.registerPostFixer(function (writer) {
+            var changed = false;
+            var root = editor.model.document.getRoot();
+            for (var i = 0; i < root.childCount; i++) {
+                var child = root.getChild(i);
+                if (child.name === 'imageBlock') {
+                    // caption 자식 요소 존재 확인
+                    var hasCaptionChild = false;
+                    for (var j = 0; j < child.childCount; j++) {
+                        if (child.getChild(j).name === 'caption') {
+                            hasCaptionChild = true;
+                            break;
                         }
                     }
+                    if (!hasCaptionChild) {
+                        writer.append(writer.createElement('caption'), child);
+                        changed = true;
+                    }
+                    if (!child.getAttribute('hasCaption')) {
+                        writer.setAttribute('hasCaption', true, child);
+                        changed = true;
+                    }
                 }
-            });
+            }
+            return changed;
         });
 
     }).catch(error => console.error('[CKEditor] 초기화 실패:', error));
@@ -866,6 +879,27 @@
             editor.model.insertContent(img);
         });
     }
+
+    // 유튜브 영상 삽입
+    window.insertYouTube = function() {
+        var input = prompt('유튜브 URL 또는 iframe 코드를 붙여넣으세요:');
+        if (!input || !window.editorInstance) return;
+        input = input.trim();
+        var videoId = null;
+        // iframe에서 src 추출
+        var srcMatch = input.match(/src=["'].*?youtube\.com\/embed\/([a-zA-Z0-9_-]+)/);
+        if (srcMatch) { videoId = srcMatch[1]; }
+        // 일반 URL 패턴
+        if (!videoId) {
+            var urlMatch = input.match(/(?:youtube\.com\/watch\?v=|youtu\.be\/|youtube\.com\/embed\/)([a-zA-Z0-9_-]+)/);
+            if (urlMatch) videoId = urlMatch[1];
+        }
+        if (!videoId) { alert('유튜브 URL을 인식할 수 없습니다.'); return; }
+        var iframe = '<iframe width="560" height="315" src="https://www.youtube.com/embed/' + videoId + '" title="YouTube video" frameborder="0" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share" referrerpolicy="strict-origin-when-cross-origin" allowfullscreen></iframe>';
+        var viewFragment = window.editorInstance.data.processor.toView(iframe);
+        var modelFragment = window.editorInstance.data.toModel(viewFragment);
+        window.editorInstance.model.insertContent(modelFragment);
+    };
 
     // form submit 시 CKEditor 내용을 textarea로 동기화
     document.querySelector('form').addEventListener('submit', function () {
@@ -910,60 +944,74 @@
     };
 </script>
 <script>
-    // Dropzone 초기화
-    Dropzone.autoDiscover = false;
-    var mediaDropzone = new Dropzone('#mediaDropzone', {
-        url: '{{ url_for("admin.upload_image") }}',
-        paramName: 'upload',
-        maxFilesize: 100,
-        acceptedFiles: 'image/*,video/*,.pdf,.doc,.docx,.hwp,.ppt,.pptx,.xls,.xlsx,.zip,.hwpx',
-        addRemoveLinks: false,
-        dictDefaultMessage: '파일을 여기에 끌어다 놓거나 클릭하여 업로드',
-        previewsContainer: '#mediaDropzone',
-        success: function (file, response) {
-            console.log('[Dropzone] 업로드 응답:', response);
-            if (response.url) {
-                var container = document.getElementById('uploadedMedia');
-                var div = document.createElement('div');
-                div.className = 'dz-uploaded-item';
-                div.title = '클릭하면 본문에 삽입';
-                var isImage = response.is_image;
-                var isVideo = response.is_video;
-                var displayName = response.filename || file.name;
-                if (isImage) {
-                    div.innerHTML = '<img src="' + response.url + '" alt="' + displayName + '"><div class="dz-label">' + displayName + '</div>';
-                } else if (isVideo) {
-                    div.innerHTML = '<div style="width:80px;height:80px;background:#1a1a2e;border-radius:4px;display:flex;align-items:center;justify-content:center;border:2px solid #ddd"><i class="bi bi-play-circle-fill" style="font-size:28px;color:#fff"></i></div><div class="dz-label">' + displayName + '</div>';
-                } else {
-                    var ext = file.name.split('.').pop().toUpperCase();
-                    div.innerHTML = '<div style="width:80px;height:80px;background:#eee;border-radius:4px;display:flex;align-items:center;justify-content:center;font-size:10px;text-align:center;border:2px solid #ddd"><i class="bi bi-file-earmark" style="font-size:24px"></i><br>' + ext + '</div><div class="dz-label">' + displayName + '</div>';
-                }
-                div.addEventListener('click', function () {
-                    console.log('[Dropzone] 클릭 — 본문 삽입, isImage:', isImage, 'isVideo:', isVideo);
-                    if (window.editorInstance) {
-                        if (isImage) {
-                            insertImageWithCaption(window.editorInstance, response.url);
-                        } else if (isVideo) {
-                            var html = '<figure class="media"><div data-oembed-url="' + response.url + '">' +
-                                '<video controls style="max-width:100%"><source src="' + response.url + '"></video>' +
-                                '</div></figure>';
-                            var viewFragment = window.editorInstance.data.processor.toView(html);
-                            var modelFragment = window.editorInstance.data.toModel(viewFragment);
-                            window.editorInstance.model.insertContent(modelFragment);
-                        } else {
-                            var html = '<p><a href="' + response.url + '" target="_blank">' + displayName + '</a></p>';
-                            var viewFragment = window.editorInstance.data.processor.toView(html);
-                            var modelFragment = window.editorInstance.data.toModel(viewFragment);
-                            window.editorInstance.model.insertContent(modelFragment);
-                        }
-                        window.editorInstance.editing.view.focus();
-                    }
-                });
-                container.appendChild(div);
-            }
-            this.removeFile(file);
+    // ── 대표이미지 선택 (본문 이미지 자동 감지) ──
+    var thumbGrid = document.getElementById('thumbPickerGrid');
+    var thumbEmpty = document.getElementById('thumbPickerEmpty');
+    var thumbInput = document.getElementById('thumbnailUrl');
+    var knownImages = new Set();
+
+    function refreshThumbPicker() {
+        if (!window.editorInstance) return;
+        var html = window.editorInstance.getData();
+        var tmp = document.createElement('div');
+        tmp.innerHTML = html;
+        var imgs = tmp.querySelectorAll('img');
+        var urls = [];
+        imgs.forEach(function(img) {
+            var src = img.getAttribute('src');
+            if (src && !src.startsWith('data:')) urls.push(src);
+        });
+
+        // 변경 없으면 skip
+        var urlSet = new Set(urls);
+        if (urls.length === knownImages.size) {
+            var same = true;
+            for (var u of urls) { if (!knownImages.has(u)) { same = false; break; } }
+            if (same) return;
         }
-    });
+        knownImages = urlSet;
+
+        // 그리드 리빌드
+        thumbGrid.innerHTML = '';
+        if (urls.length === 0) {
+            thumbGrid.innerHTML = '<div class="thumb-picker-empty">본문에 이미지를 삽입하면 여기에 표시됩니다</div>';
+            return;
+        }
+        // 현재 선택된 thumbnail이 유효한지 확인
+        if (thumbInput.value && !urlSet.has(thumbInput.value)) {
+            thumbInput.value = '';
+        }
+        // 선택된 게 없으면 첫 번째 이미지를 자동 선택
+        if (!thumbInput.value && urls.length > 0) {
+            thumbInput.value = urls[0];
+        }
+        urls.forEach(function(url) {
+            var div = document.createElement('div');
+            div.className = 'thumb-picker-item' + (thumbInput.value === url ? ' selected' : '');
+            div.innerHTML = '<img src="' + url + '">';
+            div.addEventListener('click', function() {
+                thumbInput.value = url;
+                thumbGrid.querySelectorAll('.thumb-picker-item').forEach(function(el) { el.classList.remove('selected'); });
+                div.classList.add('selected');
+            });
+            thumbGrid.appendChild(div);
+        });
+    }
+
+    // 에디터 변경 시 0.5초 디바운스로 갱신
+    var thumbTimer = null;
+    function onEditorChange() {
+        clearTimeout(thumbTimer);
+        thumbTimer = setTimeout(refreshThumbPicker, 500);
+    }
+    // editorInstance가 준비된 후 리스너 등록 (모듈 스크립트에서 설정)
+    var waitEditor = setInterval(function() {
+        if (window.editorInstance) {
+            clearInterval(waitEditor);
+            window.editorInstance.model.document.on('change:data', onEditorChange);
+            refreshThumbPicker(); // 수정 모드에서 기존 이미지 로드
+        }
+    }, 200);
 
     {% if article and article.id %}
     // 삭제 처리 (nested form 방지)
@@ -1148,7 +1196,10 @@
                 var div = document.createElement('div');
                 div.style.cssText = 'position:relative;cursor:pointer;border:1px solid #ddd;border-radius:4px;overflow:hidden';
                 div.innerHTML = '<img src="' + p.url + '" style="width:100%;height:80px;object-fit:cover" title="' + p.original_name + '">'
-                    + '<div style="position:absolute;top:2px;right:2px"><button type="button" onclick="event.stopPropagation();togglePhotoFav(' + p.id + ',this)" class="btn btn-sm p-0" style="font-size:14px;line-height:1">' + (p.is_favorite ? '⭐' : '☆') + '</button></div>'
+                    + '<div style="position:absolute;top:2px;right:2px;display:flex;gap:2px">'
+                    + '<button type="button" onclick="event.stopPropagation();togglePhotoFav(' + p.id + ',this)" class="btn btn-sm p-0" style="font-size:14px;line-height:1">' + (p.is_favorite ? '⭐' : '☆') + '</button>'
+                    + '<button type="button" onclick="event.stopPropagation();deletePhoto(' + p.id + ',this)" class="btn btn-sm p-0" style="font-size:12px;line-height:1;color:#dc3545" title="삭제">✕</button>'
+                    + '</div>'
                     + '<div style="font-size:9px;padding:2px 4px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">' + p.original_name + '</div>';
                 div.addEventListener('click', function () { insertPhotoToEditor(p.url); });
                 grid.appendChild(div);
@@ -1161,12 +1212,33 @@
             btn.textContent = data.is_favorite ? '⭐' : '☆';
         });
     }
-    function insertPhotoToEditor(url) {
-        if (window.editorInstance) {
-            insertImageWithCaption(window.editorInstance, url);
-        }
-        bootstrap.Modal.getInstance(document.getElementById('photoDbModal')).hide();
+    function deletePhoto(id, btn) {
+        if (!confirm('이 사진을 서버에서 완전히 삭제하시겠습니까?')) return;
+        fetch('/admin/api/photos/' + id, { method: 'DELETE' }).then(r => r.json()).then(data => {
+            if (data.ok) {
+                var card = btn.closest('div[style*="cursor"]');
+                if (card) card.remove();
+            } else {
+                alert(data.error || '삭제 실패');
+            }
+        });
     }
+    var _pendingPhotoUrl = null;
+    function insertPhotoToEditor(url) {
+        _pendingPhotoUrl = url;
+        var modal = bootstrap.Modal.getInstance(document.getElementById('photoDbModal'));
+        if (modal) modal.hide();
+    }
+    document.getElementById('photoDbModal').addEventListener('hidden.bs.modal', function () {
+        if (_pendingPhotoUrl && window.editorInstance) {
+            var url = _pendingPhotoUrl;
+            _pendingPhotoUrl = null;
+            window.editorInstance.focus();
+            setTimeout(function () {
+                window.editorInstance.execute('insertImage', { source: url });
+            }, 200);
+        }
+    });
     document.getElementById('photoDbModal').addEventListener('show.bs.modal', function () {
         photoPage = 1; photoQuery = ''; photoFav = false;
         document.getElementById('photoSearchInput').value = '';

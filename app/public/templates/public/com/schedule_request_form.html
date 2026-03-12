@@ -1,0 +1,173 @@
+<!-- 일정 등록 신청 폼 -->
+<div id="event-wrap" class="default-theme">
+
+    {% with messages = get_flashed_messages(with_categories=true) %}
+    {% if messages %}
+    {% for category, message in messages %}
+    <div class="event-flash {{ category }}">{{ message }}</div>
+    {% if category == 'success' %}
+    <script>alert('{{ message }}');</script>
+    {% endif %}
+    {% endfor %}
+    {% endif %}
+    {% endwith %}
+
+    <form method="POST" action="{{ url_for('public.event_submit') }}" enctype="multipart/form-data">
+        <input type="hidden" name="page_code" value="{{ page_code }}">
+
+        <section id="event-container">
+            <div class="event-content">
+
+                <!-- 개인정보 동의 -->
+                <div class="event-agree">
+                    <h3 class="event-agree-titles">개인정보보호를 위한 이용자 동의사항 <small class="show-for-sr">(필수)</small></h3>
+                    <textarea name="agreetext" class="event-agree-text" readonly>일정 등록 신청을 위해 아래와 같이 개인정보를 수집합니다.
+
+1. 수집 개인정보 항목 : 이름, 이메일, 전화번호
+2. 개인정보의 수집 및 이용목적 : 일정 등록 신청 처리 및 결과 안내
+3. 개인정보의 이용기간 : 신청 처리 완료 후 3개월간 보관하며, 이후 지체 없이 파기합니다.
+4. 개인정보 수집 동의 거부권 : 동의하지 않는 경우 일정 등록 신청이 불가능합니다.
+5. 그 밖의 사항은 개인정보처리방침을 준수합니다.</textarea>
+                    <label class="nd-checkbox check-primary text-center" for="useagree">
+                        <input type="checkbox" id="useagree" name="useagree" required>
+                        <span class="nd-checked size-15">개인정보보호를 위한 이용자 동의사항을 확인하였습니다.</span>
+                    </label>
+                </div>
+
+                <hr>
+
+                <!-- 행사 정보 섹션 -->
+                <div class="event-section-header">
+                    <h4><i class="fa-regular fa-calendar"></i> 행사 정보</h4>
+                </div>
+
+                <fieldset class="event-field">
+                    <label for="ev_subject"><em class="required">*</em> 행사명</label>
+                    <input type="text" name="subject" id="ev_subject" placeholder="예: 제5회 웰다잉 국제학술대회" required>
+                </fieldset>
+
+                <fieldset class="event-field">
+                    <label for="ev_category">카테고리</label>
+                    <select name="sch_category" id="ev_category">
+                        <option value="">-- 선택 --</option>
+                        <option value="교육">교육</option>
+                        <option value="세미나">세미나</option>
+                        <option value="토론회">토론회</option>
+                        <option value="공청회">공청회</option>
+                        <option value="학술대회">학술대회</option>
+                        <option value="예술">예술</option>
+                        <option value="행사">행사</option>
+                        <option value="강연">강연</option>
+                        <option value="상담">상담</option>
+                        <option value="모임">모임</option>
+                        <option value="공고">공고</option>
+                    </select>
+                </fieldset>
+
+                <fieldset class="event-field">
+                    <label for="ev_event_date"><em class="required">*</em> 시작일시</label>
+                    <input type="datetime-local" name="sch_event_date" id="ev_event_date" required
+                        style="width:100%;height:40px;padding:0 12px;font-size:.875rem;border:1px solid #d4d4d4;border-radius:5px">
+                </fieldset>
+
+                <fieldset class="event-field">
+                    <label for="ev_end_date">종료일시 <span style="font-weight:400;color:#999">(선택)</span></label>
+                    <input type="datetime-local" name="sch_end_date" id="ev_end_date"
+                        style="width:100%;height:40px;padding:0 12px;font-size:.875rem;border:1px solid #d4d4d4;border-radius:5px">
+                    <span class="help-text">비워두면 당일 행사로 처리됩니다.</span>
+                </fieldset>
+
+                <fieldset class="event-field">
+                    <label for="ev_location">장소</label>
+                    <input type="text" name="sch_location" id="ev_location" placeholder="예: 서울 코엑스 컨퍼런스룸 401호">
+                </fieldset>
+
+                <fieldset class="event-field">
+                    <label for="ev_contact_tel">문의 전화번호 <span style="font-weight:400;color:#999">(선택)</span></label>
+                    <input type="tel" name="sch_contact_tel" id="ev_contact_tel" placeholder="02-1234-5678">
+                </fieldset>
+
+                <fieldset class="event-field">
+                    <label for="ev_link">관련 링크 <span style="font-weight:400;color:#999">(선택)</span></label>
+                    <input type="text" name="sch_link_url" id="ev_link" placeholder="https://example.com/event-page">
+                    <span class="help-text">상세 안내 또는 참가 신청 페이지 URL</span>
+                </fieldset>
+
+                <fieldset class="event-field">
+                    <label for="ev_maintext">행사 설명</label>
+                    <textarea rows="4" name="maintext" id="ev_maintext" placeholder="행사 내용, 프로그램, 참가 방법 등을 자유롭게 작성해주세요."></textarea>
+                </fieldset>
+
+                <fieldset class="event-field">
+                    <label for="ev_file">첨부파일 <span style="font-weight:400;color:#999">(선택)</span></label>
+                    <input type="file" name="attachment" id="ev_file" accept=".jpg,.jpeg,.png,.gif,.pdf,.doc,.docx,.hwp,.zip,.pptx,.ppt,.xlsx,.xls"
+                        style="width:100%;padding:8px 0;font-size:.875rem">
+                    <span class="help-text">이미지, 문서, 압축파일 등 (최대 10MB)</span>
+                </fieldset>
+
+                <hr>
+
+                <!-- 신청자 정보 섹션 -->
+                <div class="event-section-header">
+                    <h4><i class="fa-regular fa-user"></i> 신청자 정보</h4>
+                </div>
+
+                <fieldset class="row expanded small-collapse medium-uncollapse">
+                    <div class="medium-3 large-2 columns">
+                        <label class="medium-middle" for="ev_name"><strong class="key-point">이름</strong></label>
+                    </div>
+                    <div class="medium-9 large-10 columns">
+                        <input type="text" name="name" id="ev_name" placeholder="홍길동" required>
+                    </div>
+                </fieldset>
+
+                <fieldset class="row expanded small-collapse medium-uncollapse">
+                    <div class="medium-3 large-2 columns">
+                        <label class="medium-middle" for="ev_email"><strong class="key-point">이메일</strong></label>
+                    </div>
+                    <div class="medium-9 large-10 columns">
+                        <input type="email" name="email" id="ev_email" placeholder="email@example.com" required>
+                    </div>
+                </fieldset>
+
+                <fieldset class="row expanded small-collapse medium-uncollapse">
+                    <div class="medium-3 large-2 columns">
+                        <label class="medium-middle" for="ev_tel"><strong class="key-point">연락처</strong></label>
+                    </div>
+                    <div class="medium-9 large-10 columns">
+                        <input type="tel" name="tel" id="ev_tel" placeholder="010-1234-5678" required>
+                    </div>
+                </fieldset>
+
+                <fieldset class="row expanded small-collapse medium-uncollapse">
+                    <div class="medium-3 large-2 columns">
+                        <label class="medium-middle" for="ev_org"><strong>소속/기관</strong></label>
+                    </div>
+                    <div class="medium-9 large-10 columns">
+                        <input type="text" name="sch_organization" id="ev_org" placeholder="소속 기관명">
+                    </div>
+                </fieldset>
+
+                {% if recaptcha_site_key %}
+                <fieldset class="row expanded small-collapse medium-uncollapse">
+                    <div class="medium-3 large-2 columns">
+                        <label class="medium-middle"><strong>자동등록방지</strong></label>
+                    </div>
+                    <div class="medium-9 large-10 columns">
+                        <div class="g-recaptcha" data-sitekey="{{ recaptcha_site_key }}"></div>
+                    </div>
+                </fieldset>
+                {% endif %}
+
+                <hr>
+                <div class="clearfix text-center" id="confirmBtn">
+                    <div class="button-group small-expanded">
+                        <button type="submit" class="button user-bg small-expanded"><i class="icon-check"></i>&nbsp;신청하기</button>
+                        <button type="reset" class="button nd-white"><i class="icon-refresh"></i>&nbsp;초기화</button>
+                    </div>
+                </div>
+
+            </div>
+        </section>
+    </form>
+</div>

@@ -1,5 +1,4 @@
 import type { Schedule } from '../types'
-import { CATEGORY_COLOR_MAP } from '../constants'
 import { formatDate } from '../utils/calendar'
 import EventBadge from './EventBadge'
 
@@ -38,7 +37,6 @@ export default function Sidebar({ recent, selectedCategory }: Props) {
         ) : (
           <div className="space-y-0">
             {filteredRecent.map(s => {
-              const color = CATEGORY_COLOR_MAP[s.category] || '#6B7280'
               const detailUrl = `/schedule/view/${s.id}`
               return (
                 <a
@@ -49,20 +47,13 @@ export default function Sidebar({ recent, selectedCategory }: Props) {
                   style={{ textDecoration: 'none' }}
                 >
                   <div className="flex gap-2.5">
-                    {/* Thumbnail */}
-                    {s.image_url ? (
+                    {/* Thumbnail - only show when image exists */}
+                    {s.image_url && (
                       <img
                         src={s.image_url}
                         alt={s.title}
                         className="w-16 h-12 object-cover rounded shrink-0"
                       />
-                    ) : (
-                      <div
-                        className="w-16 h-12 rounded shrink-0 flex items-center justify-center text-sm"
-                        style={{ backgroundColor: color + '18', color }}
-                      >
-                        <i className="fa-regular fa-calendar" />
-                      </div>
                     )}
                     {/* Info */}
                     <div className="flex-1 min-w-0">

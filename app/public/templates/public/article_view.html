@@ -147,6 +147,12 @@
         <span>수정 {{ article.updated_at.strftime('%Y.%m.%d %H:%M') if article.updated_at else (article.embargo_date or article.created_at).strftime('%Y.%m.%d %H:%M') }}</span>
       </div>
       <span class="aview-head__divider">|</span>
+      <div class="aview-head__sns">
+        <a href="https://www.facebook.com/profile.php?id=100070193613113" target="_blank" rel="noopener" class="aview-sns-btn" title="페이스북"><i class="fa-brands fa-facebook-f"></i></a>
+        <a href="https://x.com/welldying_news" target="_blank" rel="noopener" class="aview-sns-btn" title="X (트위터)"><i class="fa-brands fa-x-twitter"></i></a>
+        <a href="https://www.youtube.com/channel/UCpmNApZlS3aDuI9h1taTTAw" target="_blank" rel="noopener" class="aview-sns-btn" title="유튜브"><i class="fa-brands fa-youtube"></i></a>
+        <a href="https://www.instagram.com/welldyingnews/" target="_blank" rel="noopener" class="aview-sns-btn" title="인스타그램"><i class="fa-brands fa-instagram"></i></a>
+      </div>
       <div class="aview-head__share">
         <div class="aview-share-wrap">
           <button type="button" class="aview-share-btn aview-share-btn--main" title="공유"><i class="fa-solid fa-share-nodes"></i> 공유</button>
@@ -769,9 +775,11 @@ function switchPop(btn, panelId) {
   if (!sh || !body) return;
   var bar = document.getElementById('readBar');
   var catnav = document.querySelector('.catnav');
-  var trigger = catnav || document.getElementById('articleSub') || body;
+  var triggerFallback = document.getElementById('articleSub') || body;
+  var trigger = (catnav && catnav.offsetHeight > 0) ? catnav : triggerFallback;
   window.addEventListener('scroll', function(){
-    var triggerRect = trigger.getBoundingClientRect();
+    var activeTrigger = (catnav && catnav.offsetHeight > 0) ? catnav : triggerFallback;
+    var triggerRect = activeTrigger.getBoundingClientRect();
     var show = triggerRect.bottom <= 0;
     sh.classList.toggle('aview-sticky--show', show);
     if (bar) {

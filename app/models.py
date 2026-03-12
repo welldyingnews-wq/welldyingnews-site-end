@@ -192,6 +192,8 @@ class Article(db.Model):
     photo_caption = db.Column(db.Text, default='')  # 사진설명(캡션)
     serial_code_id = db.Column(db.Integer, db.ForeignKey('serial_code.id'), nullable=True)
     keyword = db.Column(db.String(500), default='')
+    sns_text = db.Column(db.Text, default='')  # SNS 포스팅용 커스텀 텍스트
+    sns_channels = db.Column(db.String(100), default='')  # 쉼표 구분: x,facebook,instagram
     view_count = db.Column(db.Integer, default=0)
     created_at = db.Column(db.DateTime, default=datetime.now)
     updated_at = db.Column(db.DateTime, default=datetime.now, onupdate=datetime.now)

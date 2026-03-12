@@ -63,6 +63,9 @@
       </a>
     </div>
   </div>
+  {% if section and section.code == 'S1N3' %}
+  <p class="alist-header__desc">웰다잉을 더 깊이 이해하는 데 도움이 될 영상들 모음입니다.<br>웰다잉뉴스 자체 제작 외 콘텐츠들은 정보 제공을 위해 해당 영상의 링크만 연결하고 있습니다.</p>
+  {% endif %}
 
   <!-- 2차 섹션 탭 (뉴스 S1N1 제외) -->
   {% if section and section.code != 'S1N1' and section.subsections.count() > 0 %}
@@ -179,7 +182,9 @@
           {% if article.thumb_url %}<i class="fa-regular fa-image alist-title-item__icon"></i>{% endif %}
           {% if article.subsection %}<span class="alist-title-item__cat">{{ article.subsection.name }}</span>{% endif %}
           <span class="alist-title-item__meta">{{ article.author_name }}</span>
+          {% if not section or section.code != 'S1N4' %}
           <span class="alist-title-item__meta">{{ (article.embargo_date or article.created_at).strftime('%m.%d %H:%M') }}</span>
+          {% endif %}
         </div>
         {% else %}
         <div class="alist-empty">등록된 기사가 없습니다.</div>

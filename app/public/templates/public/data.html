@@ -56,7 +56,7 @@
 
   <div class="data-page-header">
     <h1 class="data-page-title">웰다잉 데이터</h1>
-    <p class="data-page-desc">한국과 세계의 죽음 관련 핵심 통계를 한눈에 볼 수 있습니다.</p>
+    <p class="data-page-desc">국내·외 죽음 관련 핵심 통계를 한눈에 볼 수 있습니다.</p>
     <p class="data-page-disclaimer">*이 페이지의 데이터는 통계청, 보건복지부, 국립연명의료관리기관, 중앙호스피스센터, OECD, WHO, UN, 각국 보고서 등의 공식 통계를 기반으로 합니다. <br>일부 수치는 실시간으로 갱신되지 않으므로, 보도 등 공식 목적이 아닌 참고용으로만 활용해 주시기 바랍니다. <br>기관·보고서·국가에 따라 동일 지표의 수치가 다를 수 있습니다.</p>
   </div>
 
@@ -147,6 +147,52 @@
           <div class="data-card__meta">{{ fmt_period(s) }}{{ fmt_meta(s) }}</div>
         </div>
       </div>
+      {# OECD 사회적 고립 한국/평균 통합 카드 #}
+      {% elif s.indicator_key == 'oecd_isolation_kr' and s.display_format and s.display_format.startswith('oecd_avg:') %}
+      {% set oecd_avg = s.display_format.split(':')[1]|float %}
+      <div class="data-card data-card--alert">
+        <div class="data-card__body">
+          <div class="data-card__label">OECD 사회적 고립 비율</div>
+          <div class="data-card__sublabel">위기 시 도움받을 사람이 없다고 응답한 15세 이상 비율</div>
+          <div class="data-card__combined-row">
+            <div class="data-card__combined-item">
+              <span class="data-card__period data-card__period--annual">한국</span>
+              <span class="data-card__number--inline">{{ '{:.1f}'.format(s.value) }}<span class="data-card__unit">%</span></span>
+            </div>
+            <div class="data-card__combined-item">
+              <span class="data-card__period data-card__period--cumul">OECD 평균</span>
+              <span class="data-card__number--inline">{{ '{:.1f}'.format(oecd_avg) }}<span class="data-card__unit">%</span></span>
+            </div>
+          </div>
+          <div class="data-card__meta">{{ fmt_meta(s) }}</div>
+        </div>
+      </div>
+      {# 고독사 최초발견 주체 통합 카드 #}
+      {% elif s.indicator_key == 'lonely_death_discover_family' and ld_discovery|length >= 3 %}
+      <div class="data-card">
+        <div class="data-card__body">
+          <div class="data-card__label">고독사 최초 발견 주체</div>
+          <div class="data-card__combined-row data-card__combined-row--triple">
+            <div class="data-card__combined-item">
+              <span class="data-card__period data-card__period--cumul">가족</span>
+              <span class="data-card__number--inline">{{ '{:.0f}'.format(ld_discovery['lonely_death_discover_family'].value) }}<span class="data-card__unit">%</span></span>
+            </div>
+            <div class="data-card__combined-item">
+              <span class="data-card__period data-card__period--annual">임대인 등</span>
+              <span class="data-card__number--inline">{{ '{:.0f}'.format(ld_discovery['lonely_death_discover_third'].value) }}<span class="data-card__unit">%</span></span>
+            </div>
+            <div class="data-card__combined-item">
+              <span class="data-card__period data-card__period--annual">복지인력</span>
+              <span class="data-card__number--inline">{{ '{:.0f}'.format(ld_discovery['lonely_death_discover_welfare'].value) }}<span class="data-card__unit">%</span></span>
+            </div>
+          </div>
+          <div class="data-card__meta">{{ fmt_meta(ld_discovery['lonely_death_discover_family']) }}</div>
+        </div>
+      </div>
+      {# 최초발견 개별 항목은 통합카드에서 이미 표시 → 건너뛰기 #}
+      {% elif s.indicator_key in ('lonely_death_discover_third', 'lonely_death_discover_welfare') %}
+      {# 시계열 데이터 카드 건너뛰기 #}
+      {% elif s.indicator_key.startswith('lonely_death_ts_') %}
       {# OECD 자살률 한국/평균 통합 카드 #}
       {% elif s.indicator_key == 'oecd_suicide_kr' and s.display_format and s.display_format.startswith('oecd_avg:') %}
       {% set oecd_avg = s.display_format.split(':')[1]|float %}
@@ -192,24 +238,7 @@
   <!-- 시계열 차트 영역 -->
   {% if timeseries %}
   <div class="data-charts">
-    {% if timeseries.get('lonely_death') %}
-    <div class="data-chart-section">
-      <h2 class="data-chart-title">고독사 사망자 수 추이</h2>
-      <div class="data-chart-bar-group">
-        {% set ld_data = timeseries['lonely_death'] %}
-        {% set ld_max = ld_data|map(attribute='value')|max %}
-        {% for item in ld_data %}
-        <div class="data-chart-bar-item">
-          <div class="data-chart-bar-value">{{ '{:,.0f}'.format(item.value) }}</div>
-          <div class="data-chart-bar-track">
-            <div class="data-chart-bar-fill data-chart-bar-fill--alert" style="height: {{ (item.value / ld_max * 100)|round }}%"></div>
-          </div>
-          <div class="data-chart-bar-label">{{ item.year }}</div>
-        </div>
-        {% endfor %}
-      </div>
-      <p class="data-chart-source">출처: 보건복지부 고독사 실태조사</p>
-    </div>
+    {% if false and timeseries.get('lonely_death') %}
     {% endif %}
 
     {% if timeseries.get('total_deaths') %}

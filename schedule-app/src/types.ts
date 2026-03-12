@@ -12,4 +12,4 @@ export interface Schedule {
   is_active: boolean
 }
 
-export type CategoryKey = '교육' | '세미나' | '토론회' | '공청회' | '학술대회' | '예술' | '행사' | '강연' | '공고'
+export type CategoryKey = '교육' | '세미나' | '토론회' | '공청회' | '학술대회' | '예술' | '행사' | '강연' | '상담' | '모임' | '공고'

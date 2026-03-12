@@ -336,35 +336,97 @@ def _detect_device():
 
 
 def _classify_referrer(referrer_url):
-    """Referer 헤더에서 유입경로 분류"""
-    if not referrer_url:
-        return 'direct'
-    ref = referrer_url.lower()
-    if 'naver.com' in ref or 'naver.me' in ref:
-        return 'naver'
-    if 'google.' in ref or 'googleapis.com' in ref:
-        return 'google'
-    if 'daum.net' in ref or 'daum.co.kr' in ref:
-        return 'daum'
-    if 'facebook.com' in ref or 'fb.com' in ref or 'fbcdn.net' in ref:
-        return 'facebook'
-    if 'kakao' in ref:
+    """Referer 헤더 + UTM 파라미터 + User-Agent로 유입경로 분류"""
+    # 1) UTM 파라미터 우선 확인
+    utm_source = request.args.get('utm_source', '').lower()
+    if utm_source:
+        if 'naver' in utm_source:
+            return 'naver'
+        if 'google' in utm_source:
+            return 'google'
+        if 'daum' in utm_source:
+            return 'daum'
+        if 'facebook' in utm_source or 'fb' in utm_source:
+            return 'facebook'
+        if 'kakao' in utm_source:
+            return 'kakao'
+        if 'twitter' in utm_source or 'x.com' in utm_source:
+            return 'twitter'
+        return 'other'
+
+    # 2) Referer 헤더 분류
+    if referrer_url:
+        ref = referrer_url.lower()
+
+        # 내부 링크 (사이트 내 이동)
+        if request.host and request.host in ref:
+            return 'internal'
+
+        # 검색 엔진
+        if 'naver.com' in ref or 'naver.me' in ref:
+            return 'naver'
+        if 'google.' in ref or 'googleapis.com' in ref:
+            return 'google'
+        if 'daum.net' in ref or 'daum.co.kr' in ref or 'search.daum' in ref:
+            return 'daum'
+        if 'bing.com' in ref:
+            return 'bing'
+
+        # SNS
+        if 'facebook.com' in ref or 'fb.com' in ref or 'fbcdn.net' in ref:
+            return 'facebook'
+        if 'kakao' in ref:
+            return 'kakao'
+        if 'twitter.com' in ref or 't.co/' in ref or 'x.com' in ref:
+            return 'twitter'
+        if 'instagram.com' in ref:
+            return 'instagram'
+
+        return 'other'
+
+    # 3) Referer 없을 때: 인앱브라우저 User-Agent로 보완 분류
+    #    카카오톡, 네이버앱 등은 Referer를 보내지 않지만 UA에 앱 이름이 포함됨
+    ua = request.headers.get('User-Agent', '').lower()
+    if 'kakaotalk' in ua or 'kakaostory' in ua:
         return 'kakao'
-    if request.host and request.host in ref:
-        return 'direct'
-    return 'other'
+    if 'naver' in ua and ('inapp' in ua or 'whale' in ua):
+        return 'naver'
+    if 'fban' in ua or 'fbav' in ua:  # Facebook 인앱브라우저
+        return 'facebook'
+    if 'instagram' in ua:
+        return 'instagram'
+    if 'twitter' in ua:
+        return 'twitter'
+    if 'daumapps' in ua:
+        return 'daum'
+
+    return 'direct'
 
 
 @public_bp.before_request
 def track_visitor():
-    """사이트 방문자(UV) 추적 — IP 기반 일별 중복 제거, 봇 제외"""
-    if request.path.startswith('/static'):
+    """사이트 방문자(UV) + 페이지뷰(PV) 추적 — 봇 제외"""
+    if request.path.startswith(('/static', '/api/')):
         return
     if _is_bot():
         return
     today = datetime.now().date()
     ip = _get_real_ip()
-    # 이미 오늘 기록된 방문자인지 확인
+
+    # DailyStat 행이 없으면 생성
+    stat = DailyStat.query.filter_by(date=today).first()
+    if not stat:
+        stat = DailyStat(date=today, page_views=0, unique_visitors=0, article_views=0)
+        db.session.add(stat)
+        db.session.commit()
+
+    # PV: 원자적 UPDATE (동시 접속 시 누락 방지)
+    db.session.execute(
+        db.text('UPDATE daily_stat SET page_views = page_views + 1 WHERE date = :d'),
+        {'d': today}
+    )
+
+    # UV: IP 기반 일별 중복 제거
     exists = VisitorLog.query.filter_by(
         ip_address=ip, date=today, article_id=None
     ).first()
@@ -374,14 +436,12 @@ def track_visitor():
         log = VisitorLog(ip_address=ip, date=today, article_id=None,
                          user_agent=device, referrer_source=referrer)
         db.session.add(log)
-        # DailyStat UV 증가
-        stat = DailyStat.query.filter_by(date=today).first()
-        if not stat:
-            stat = DailyStat(date=today, page_views=0, unique_visitors=0, article_views=0)
-            db.session.add(stat)
-            db.session.flush()
-        stat.unique_visitors += 1
-        db.session.commit()
+        db.session.execute(
+            db.text('UPDATE daily_stat SET unique_visitors = unique_visitors + 1 WHERE date = :d'),
+            {'d': today}
+        )
+
+    db.session.commit()
 
 
 @public_bp.route('/main1/')
@@ -642,9 +702,23 @@ def data_page():
                 ad_combined[annual_key] = ad_lookup[cumul_key]
                 ad_skip.add(cumul_key)
 
-    return render_template('public/data.html', stats=stats, categories=categories, timeseries={},
+    # 시계열 데이터 구성
+    timeseries = {}
+    ld_ts = [stats[k] for k in sorted(stats) if k.startswith('lonely_death_ts_')]
+    if ld_ts:
+        timeseries['lonely_death'] = [{'year': s.year, 'value': s.value} for s in ld_ts]
+
+    # 고독사 최초발견 주체 통합 카드 전처리
+    ld_discovery = {}
+    disc_keys = ['lonely_death_discover_family', 'lonely_death_discover_third', 'lonely_death_discover_welfare']
+    for dk in disc_keys:
+        if dk in stats:
+            ld_discovery[dk] = stats[dk]
+
+    return render_template('public/data.html', stats=stats, categories=categories, timeseries=timeseries,
                            ad_clean_labels=ad_clean_labels, ad_combined=ad_combined,
-                           ad_skip=ad_skip, ad_countries_list=ad_countries_list)
+                           ad_skip=ad_skip, ad_countries_list=ad_countries_list,
+                           ld_discovery=ld_discovery)
 
 
 @public_bp.route('/v2/')
@@ -869,8 +943,11 @@ def article_view():
             referrer = _classify_referrer(request.referrer)
             db.session.add(VisitorLog(ip_address=ip, date=today, article_id=article.id,
                                       user_agent=device, referrer_source=referrer))
-            # Article 누적 조회수
-            article.view_count += 1
+            # Article 누적 조회수 (onupdate 트리거 우회 — updated_at 변경 방지)
+            db.session.execute(
+                db.text('UPDATE article SET view_count = view_count + 1 WHERE id = :aid'),
+                {'aid': article.id}
+            )
             # PageView 일별 집계
             pv = PageView.query.filter_by(article_id=article.id, date=today).first()
             if not pv:
@@ -879,14 +956,11 @@ def article_view():
                 db.session.flush()
             pv.view_count += 1
             pv.unique_count += 1
-            # DailyStat 기사PV 증가
-            stat = DailyStat.query.filter_by(date=today).first()
-            if not stat:
-                stat = DailyStat(date=today, page_views=0, unique_visitors=0, article_views=0)
-                db.session.add(stat)
-                db.session.flush()
-            stat.article_views += 1
-            stat.page_views += 1
+            # DailyStat 기사PV 증가 (page_views는 before_request에서 이미 카운트)
+            db.session.execute(
+                db.text('UPDATE daily_stat SET article_views = article_views + 1 WHERE date = :d'),
+                {'d': today}
+            )
             db.session.commit()
 
     # 관련 기사: 수동 설정 우선, 없으면 같은 2차섹션 자동
@@ -1185,6 +1259,7 @@ COM_PAGES = {
     'jb':          {'title': '기사제보',           'group': '고객센터',    'content': 'com/event_form.html', 'event_code': 'event4'},
     'copy':        {'title': '저작권문의',         'group': '고객센터',    'content': 'com/event_form.html', 'event_code': 'event3'},
     'jh':          {'title': '제휴문의',           'group': '고객센터',    'content': 'com/event_form.html', 'event_code': 'event2'},
+    'schedule-request': {'title': '일정 등록 신청', 'group': '고객센터', 'content': 'com/schedule_request_form.html', 'event_code': 'event6'},
 }
 
 COM_NAV = [
@@ -1311,11 +1386,112 @@ def event_submit():
         }
         req.extra_data = json.dumps(extra, ensure_ascii=False)
 
+    # 일정 등록 신청
+    if page['event_code'] == 'event6':
+        extra = {
+            'category': request.form.get('sch_category', ''),
+            'event_date': request.form.get('sch_event_date', ''),
+            'end_date': request.form.get('sch_end_date', ''),
+            'location': request.form.get('sch_location', ''),
+            'contact_tel': request.form.get('sch_contact_tel', ''),
+            'link_url': request.form.get('sch_link_url', ''),
+            'organization': request.form.get('sch_organization', ''),
+        }
+        # 첨부파일 처리
+        file = request.files.get('attachment')
+        if file and file.filename:
+            import os as _os
+            from werkzeug.utils import secure_filename
+            fname = secure_filename(file.filename)
+            upload_dir = _os.path.join('app', 'static', 'uploads', 'event')
+            _os.makedirs(upload_dir, exist_ok=True)
+            filepath = _os.path.join(upload_dir, f'{int(datetime.now().timestamp())}_{fname}')
+            file.save(filepath)
+            from app.utils.cloud_storage import upload_file
+            url = upload_file(filepath, folder='welldying/attachments', resource_type='raw')
+            if url:
+                extra['attachment'] = url
+                extra['filename'] = fname
+        req.extra_data = json.dumps(extra, ensure_ascii=False)
+
     db.session.add(req)
     db.session.commit()
 
+    # 이메일 알림 발송 (SMTP 설정 시)
+    if page['event_code'] == 'event6':
+        _send_schedule_request_email(req)
+        flash('일정 등록 신청을 완료하였습니다. 확인 후 연락드리겠습니다. 감사합니다.', 'success')
+        return redirect(url_for('public.com_page', page_code=page_code), code=303)
+
     flash('신청이 완료되었습니다. 감사합니다.', 'success')
     return redirect(url_for('public.com_page', page_code=page_code), code=303)
+
+
+def _send_schedule_request_email(req):
+    """일정 등록 신청 이메일 알림 발송"""
+    import os, smtplib, subprocess
+    from email.mime.text import MIMEText
+
+    to_email = os.environ.get('ADMIN_EMAIL', '')
+    if not to_email:
+        return
+
+    try:
+        extra = json.loads(req.extra_data) if req.extra_data else {}
+        body = f"""[웰다잉뉴스] 일정 등록 신청이 접수되었습니다.
+
+━━━━━━━━━━━━━━━━━━━━━━━━
+■ 행사 정보
+━━━━━━━━━━━━━━━━━━━━━━━━
+행사명: {req.subject}
+카테고리: {extra.get('category', '-')}
+시작일시: {extra.get('event_date', '-')}
+종료일시: {extra.get('end_date', '-') or '당일'}
+장소: {extra.get('location', '-') or '-'}
+문의전화: {extra.get('contact_tel', '-') or '-'}
+관련링크: {extra.get('link_url', '-') or '-'}
+
+행사설명:
+{req.content or '(없음)'}
+첨부파일: {extra.get('filename', '없음')} {extra.get('attachment', '')}
+
+━━━━━━━━━━━━━━━━━━━━━━━━
+■ 신청자 정보
+━━━━━━━━━━━━━━━━━━━━━━━━
+이름: {req.name}
+이메일: {req.email}
+연락처: {req.phone}
+소속/기관: {extra.get('organization', '-') or '-'}
+
+━━━━━━━━━━━━━━━━━━━━━━━━
+관리자 페이지에서 확인 후 일정을 등록해주세요.
+"""
+        # SMTP 설정이 있으면 외부 SMTP, 없으면 로컬 sendmail 사용
+        smtp_server = os.environ.get('SMTP_SERVER', '')
+        smtp_user = os.environ.get('SMTP_USER', '')
+        smtp_password = os.environ.get('SMTP_PASSWORD', '')
+
+        from_email = smtp_user or 'noreply@welldyingnews.com'
+        msg = MIMEText(body, 'plain', 'utf-8')
+        msg['Subject'] = f'[일정등록신청] {req.subject}'
+        msg['From'] = from_email
+        msg['To'] = to_email
+
+        if smtp_server and smtp_user and smtp_password:
+            smtp_port = int(os.environ.get('SMTP_PORT', '587'))
+            with smtplib.SMTP(smtp_server, smtp_port) as server:
+                server.starttls()
+                server.login(smtp_user, smtp_password)
+                server.send_message(msg)
+        else:
+            # 로컬 sendmail 사용
+            proc = subprocess.Popen(
+                ['/usr/sbin/sendmail', '-t', '-oi'],
+                stdin=subprocess.PIPE
+            )
+            proc.communicate(msg.as_bytes())
+    except Exception as e:
+        current_app.logger.error(f'일정 신청 이메일 발송 실패: {e}')
 
 
 # ===== 게시판 (BBS) =====
@@ -1383,8 +1559,11 @@ def bbs_view():
     if post.is_secret and not session.get(f'bbs_secret_{post.id}'):
         return render_template('public/bbs_secret.html', post=post, board=post.board)
 
-    # 조회수 증가
-    post.view_count += 1
+    # 조회수 증가 (onupdate 트리거 우회)
+    db.session.execute(
+        db.text('UPDATE board_post SET view_count = view_count + 1 WHERE id = :pid'),
+        {'pid': post.id}
+    )
     db.session.commit()
 
     # 댓글 정렬
@@ -2018,7 +2197,11 @@ def newsletter_archive():
 @public_bp.route('/newsletter/<slug>')
 def newsletter_view(slug):
     nl = Newsletter.query.filter_by(slug=slug, status='published').first_or_404()
-    nl.view_count = (nl.view_count or 0) + 1
+    # 조회수 증가 (onupdate 트리거 우회)
+    db.session.execute(
+        db.text('UPDATE newsletter SET view_count = COALESCE(view_count, 0) + 1 WHERE id = :nid'),
+        {'nid': nl.id}
+    )
     db.session.commit()
     sections = nl.sections
 
@@ -2151,7 +2334,17 @@ def api_schedules():
         Schedule.is_active == True
     ).order_by(Schedule.event_date.desc()).all()
 
+    import re
+    _img_re = re.compile(r'<img[^>]+src=["\']([^"\']+)["\']')
+
+    def _extract_first_img(content):
+        if not content:
+            return ''
+        m = _img_re.search(content)
+        return m.group(1) if m else ''
+
     def serialize(s):
+        image = s.image_url or _extract_first_img(s.content)
         return {
             'id': s.id,
             'title': s.title,
@@ -2162,7 +2355,7 @@ def api_schedules():
             'location': s.location or '',
             'category': s.category or '',
             'link_url': s.link_url or '',
-            'image_url': s.image_url or '',
+            'image_url': image,
             'is_active': s.is_active,
         }
 
@@ -2185,7 +2378,11 @@ def api_schedules_search():
         Schedule.title.contains(q)
     ).order_by(Schedule.event_date.desc()).limit(20).all()
 
+    import re
+    _img_re2 = re.compile(r'<img[^>]+src=["\']([^"\']+)["\']')
+
     def serialize(s):
+        image = s.image_url or (_img_re2.search(s.content or '') and _img_re2.search(s.content or '').group(1)) or ''
         return {
             'id': s.id,
             'title': s.title,
@@ -2196,7 +2393,7 @@ def api_schedules_search():
             'location': s.location or '',
             'category': s.category or '',
             'link_url': s.link_url or '',
-            'image_url': s.image_url or '',
+            'image_url': image,
             'is_active': s.is_active,
         }
 

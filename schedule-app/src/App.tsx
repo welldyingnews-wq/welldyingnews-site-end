@@ -82,7 +82,18 @@ export default function App() {
               웰다잉 관련 세미나, 학술대회, 행사 일정을 안내합니다.
             </p>
           </div>
-          {/* Search */}
+          {/* Actions */}
+          <div className="flex items-center gap-2 flex-wrap">
+          <a
+            href="/com/schedule-request.html"
+            target="_blank"
+            rel="noopener noreferrer"
+            className="inline-flex items-center gap-1.5 h-9 px-3 text-sm font-medium text-white bg-[#5e1985] rounded-lg
+              hover:bg-[#4a1369] transition-colors no-underline"
+          >
+            <i className="fa-solid fa-pen-to-square text-xs" />
+            일정 등록 신청
+          </a>
           <form onSubmit={handleSearch} className="flex items-center gap-1.5">
             <div className="relative">
               <input
@@ -104,6 +115,7 @@ export default function App() {
               검색
             </button>
           </form>
+          </div>
         </div>
       </div>
 

@@ -19,19 +19,12 @@ export default function EventCard({ schedule }: Props) {
       style={{ borderLeft: `4px solid ${color}`, textDecoration: 'none' }}
     >
       <div className="flex items-start gap-3">
-        {schedule.image_url ? (
+        {schedule.image_url && (
           <img
             src={schedule.image_url}
             alt={schedule.title}
             className="w-20 h-16 object-cover rounded shrink-0 transition-transform duration-200 hover:scale-105"
           />
-        ) : (
-          <div
-            className="w-20 h-16 rounded shrink-0 flex items-center justify-center text-white text-lg"
-            style={{ backgroundColor: color + '22', color }}
-          >
-            <i className="fa-regular fa-calendar" />
-          </div>
         )}
         <div className="flex-1 min-w-0">
           <div className="flex items-center gap-2 mb-1.5">

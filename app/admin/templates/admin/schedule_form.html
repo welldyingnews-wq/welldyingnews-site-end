@@ -46,7 +46,10 @@
                                 <textarea name="description" class="form-control" rows="2" placeholder="목록에 표시될 짧은 설명">{{ schedule.description if schedule else '' }}</textarea>
                             </div>
                             <div class="mb-3">
-                                <label class="form-label fw-bold">본문</label>
+                                <div class="d-flex align-items-center mb-1">
+                                    <label class="form-label fw-bold mb-0">본문</label>
+                                    <button type="button" class="btn btn-outline-secondary btn-sm ms-2" onclick="clearFormatting()" title="서식 제거 (이미지·줄바꿈 유지)"><i class="bi bi-eraser"></i> 서식삭제</button>
+                                </div>
                                 <textarea id="editor" name="content">{{ schedule.content if schedule else '' }}</textarea>
                             </div>
                         </div>
@@ -70,7 +73,7 @@
                                 <label class="form-label fw-bold">카테고리</label>
                                 <select name="category" class="form-select">
                                     <option value="">-- 선택 --</option>
-                                    {% for cat in ['교육', '세미나', '토론회', '공청회', '학술대회', '예술', '행사', '강연', '공고'] %}
+                                    {% for cat in ['교육', '세미나', '토론회', '공청회', '학술대회', '예술', '행사', '강연', '상담', '모임', '공고'] %}
                                     <option value="{{ cat }}" {% if schedule and schedule.category == cat %}selected{% endif %}>{{ cat }}</option>
                                     {% endfor %}
                                 </select>
@@ -81,17 +84,20 @@
                             </div>
                             <div class="mb-3">
                                 <label class="form-label fw-bold">대표 이미지</label>
-                                {% if schedule and schedule.image_url %}
-                                <div class="mb-2">
-                                    <img src="{{ schedule.image_url }}" class="image-preview" alt="대표 이미지">
+                                <div id="imagePreviewWrap" class="mb-2" {% if not (schedule and schedule.image_url) %}style="display:none"{% endif %}>
+                                    <img id="imagePreview" src="{{ schedule.image_url if schedule and schedule.image_url else '' }}" class="image-preview" alt="대표 이미지">
                                 </div>
-                                {% endif %}
                                 <div class="image-upload-area" id="imageUploadArea" onclick="document.getElementById('imageFile').click()">
                                     <i class="bi bi-cloud-arrow-up fs-3 text-muted"></i>
                                     <div class="text-muted small mt-1">클릭하여 이미지 업로드</div>
                                 </div>
                                 <input type="file" id="imageFile" name="image_file" accept="image/*" class="d-none" onchange="previewImage(this)">
-                                <input type="hidden" name="image_url" id="imageUrlField" value="{{ schedule.image_url if schedule else '' }}">
+                                <div class="mt-2">
+                                    <input type="text" name="image_url" id="imageUrlField" class="form-control form-control-sm"
+                                           value="{{ schedule.image_url if schedule else '' }}"
+                                           placeholder="또는 이미지 URL 붙여넣기"
+                                           oninput="previewImageUrl(this.value)">
+                                </div>
                             </div>
                             <div class="mb-3">
                                 <div class="form-check">
@@ -216,6 +222,83 @@
         }
     }).then(editor => {
         window.editorInstance = editor;
+
+        window.clearFormatting = function () {
+            if (!confirm('본문의 모든 서식(글꼴, 크기, 색상, 배경 등)을 제거합니다.\n이미지와 줄바꿈은 유지됩니다.\n계속하시겠습니까?')) return;
+            var html = editor.getData();
+            var tmp = document.createElement('div');
+            tmp.innerHTML = html;
+            tmp.querySelectorAll('*').forEach(function(el) {
+                if (el.tagName === 'IMG' || el.tagName === 'FIGURE' || el.tagName === 'FIGCAPTION') return;
+                el.removeAttribute('style');
+                el.removeAttribute('class');
+            });
+            tmp.querySelectorAll('span').forEach(function(span) {
+                span.replaceWith(document.createTextNode(span.textContent));
+            });
+            editor.setData(tmp.innerHTML);
+            editor.editing.view.focus();
+        };
+
+        // 폼 제출 전 base64 이미지를 서버에 업로드하여 URL로 교체
+        editor.model.document.on('change:data', () => {
+            const editable = editor.editing.view.getDomRoot();
+            if (!editable) return;
+            editable.querySelectorAll('img[src^="data:"]').forEach(img => {
+                if (img.dataset.uploading) return;
+                img.dataset.uploading = 'true';
+                fetch(img.src)
+                    .then(r => r.blob())
+                    .then(blob => {
+                        const ext = blob.type.split('/')[1] || 'png';
+                        const fd = new FormData();
+                        fd.append('upload', blob, 'pasted.' + ext);
+                        return fetch('{{ url_for("admin.upload_image") }}', { method: 'POST', body: fd });
+                    })
+                    .then(r => r.json())
+                    .then(result => {
+                        if (result.url) {
+                            const viewEl = editor.editing.view.domConverter.domToView(img);
+                            if (viewEl) {
+                                const modelEl = editor.editing.mapper.toModelElement(viewEl.parent) || editor.editing.mapper.toModelElement(viewEl);
+                                if (modelEl) {
+                                    editor.model.change(writer => {
+                                        writer.setAttribute('src', result.url, modelEl);
+                                    });
+                                }
+                            }
+                        }
+                    })
+                    .catch(() => {});
+            });
+        });
+
+        // 폼 제출 시 남아있는 base64 이미지를 동기적으로 업로드
+        document.querySelector('form').addEventListener('submit', async function(e) {
+            const html = editor.getData();
+            if (!html.includes('data:image/')) return;
+
+            e.preventDefault();
+            const tmp = document.createElement('div');
+            tmp.innerHTML = html;
+            const imgs = tmp.querySelectorAll('img[src^="data:"]');
+            for (const img of imgs) {
+                try {
+                    const resp = await fetch(img.src);
+                    const blob = await resp.blob();
+                    const ext = blob.type.split('/')[1] || 'png';
+                    const fd = new FormData();
+                    fd.append('upload', blob, 'pasted.' + ext);
+                    const uploadResp = await fetch('{{ url_for("admin.upload_image") }}', { method: 'POST', body: fd });
+                    const result = await uploadResp.json();
+                    if (result.url) img.src = result.url;
+                } catch (err) { console.error('base64 이미지 업로드 실패:', err); }
+            }
+            editor.setData(tmp.innerHTML);
+            // setData 후 hidden textarea 동기화
+            document.getElementById('editor').value = editor.getData();
+            this.submit();
+        });
     }).catch(err => console.error('CKEditor init error:', err));
 </script>
 <script>
@@ -224,8 +307,8 @@
         var file = input.files[0];
         var reader = new FileReader();
         reader.onload = function(e) {
-            var area = document.getElementById('imageUploadArea');
-            area.innerHTML = '<img src="' + e.target.result + '" class="image-preview" alt="미리보기">';
+            document.getElementById('imagePreview').src = e.target.result;
+            document.getElementById('imagePreviewWrap').style.display = '';
         };
         reader.readAsDataURL(file);
         var data = new FormData();
@@ -238,6 +321,17 @@
                 }
             })
             .catch(function(err) { console.error('이미지 업로드 실패:', err); });
+    }
+
+    function previewImageUrl(url) {
+        var wrap = document.getElementById('imagePreviewWrap');
+        var img = document.getElementById('imagePreview');
+        if (url && url.match(/^https?:\/\/.+/)) {
+            img.src = url;
+            wrap.style.display = '';
+        } else {
+            wrap.style.display = 'none';
+        }
     }
 </script>
 {% endblock %}

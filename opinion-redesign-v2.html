@@ -1,0 +1,745 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>웰다잉뉴스 — 오피니언 리디자인 v2</title>
+<link href="https://fonts.googleapis.com/css2?family=Noto+Serif+KR:wght@400;600;700;900&family=Noto+Sans+KR:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --ink: #1a1a1a;
+    --ink-light: #4a4a4a;
+    --ink-muted: #7a7a7a;
+    --cream: #faf8f5;
+    --warm-white: #f5f2ed;
+    --border: #e8e4de;
+    --border-light: #f0ece6;
+    --accent: #8b6914;
+    --accent-light: #b8941e;
+    --accent-bg: #fdf8ec;
+    --column-tag: #5c7a3d;
+    --contribute-tag: #6b5b8a;
+    --shadow-sm: 0 1px 3px rgba(0,0,0,0.04), 0 1px 2px rgba(0,0,0,0.06);
+    --shadow-md: 0 4px 16px rgba(0,0,0,0.06), 0 2px 6px rgba(0,0,0,0.04);
+    --shadow-lg: 0 12px 40px rgba(0,0,0,0.08), 0 4px 12px rgba(0,0,0,0.04);
+    --radius: 14px;
+    --radius-sm: 8px;
+  }
+
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+
+  body {
+    font-family: 'Noto Sans KR', sans-serif;
+    background: var(--cream);
+    color: var(--ink);
+    -webkit-font-smoothing: antialiased;
+    line-height: 1.7;
+  }
+
+  /* ─── HEADER ─── */
+  .opinion-header {
+    max-width: 1200px;
+    margin: 0 auto;
+    padding: 60px 24px 0;
+  }
+
+  .opinion-header__top {
+    display: flex;
+    align-items: flex-end;
+    justify-content: space-between;
+    border-bottom: 3px solid var(--ink);
+    padding-bottom: 20px;
+    margin-bottom: 12px;
+  }
+
+  .opinion-header__title {
+    font-family: 'Noto Serif KR', serif;
+    font-size: 42px;
+    font-weight: 900;
+    letter-spacing: -1.5px;
+    line-height: 1;
+  }
+
+  .opinion-header__sub {
+    font-size: 13px;
+    color: var(--ink-muted);
+    letter-spacing: 2px;
+    text-transform: uppercase;
+    font-weight: 500;
+  }
+
+  .opinion-tabs {
+    display: flex;
+    gap: 0;
+    margin-bottom: 48px;
+  }
+
+  .opinion-tab {
+    padding: 10px 20px;
+    font-size: 14px;
+    font-weight: 600;
+    color: var(--ink-muted);
+    cursor: pointer;
+    border-bottom: 2px solid transparent;
+    transition: all 0.25s ease;
+    text-decoration: none;
+  }
+  .opinion-tab:hover { color: var(--ink); }
+  .opinion-tab.active { color: var(--ink); border-bottom-color: var(--ink); }
+
+  /* ─── TAG ─── */
+  .tag {
+    display: inline-block;
+    font-size: 10px;
+    font-weight: 700;
+    letter-spacing: 1.5px;
+    text-transform: uppercase;
+    padding: 3px 10px;
+    border-radius: 4px;
+    width: fit-content;
+  }
+  .tag-column { background: #eef4e8; color: var(--column-tag); }
+  .tag-contribute { background: #f0ecf5; color: var(--contribute-tag); }
+
+  /* ═══════════════════════════════════════
+     FEATURED — 원형 포트레이트 중심
+     ═══════════════════════════════════════ */
+  .featured-section {
+    max-width: 1200px;
+    margin: 0 auto 56px;
+    padding: 0 24px;
+  }
+
+  .featured-card {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    background: white;
+    border-radius: var(--radius);
+    overflow: hidden;
+    box-shadow: var(--shadow-md);
+    transition: box-shadow 0.4s ease, transform 0.4s ease;
+    cursor: pointer;
+    text-decoration: none;
+    color: inherit;
+    min-height: 400px;
+  }
+
+  .featured-card:hover {
+    box-shadow: var(--shadow-lg);
+    transform: translateY(-3px);
+  }
+
+  .featured-card__portrait-wrap {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 20px;
+    padding: 48px 32px;
+    background: linear-gradient(160deg, #f7f4ef 0%, #eae5db 100%);
+    position: relative;
+  }
+
+  .featured-card__portrait-wrap::before {
+    content: '❝';
+    position: absolute;
+    top: 20px;
+    left: 28px;
+    font-size: 100px;
+    font-family: 'Noto Serif KR', serif;
+    color: rgba(139,105,20,0.06);
+    line-height: 1;
+  }
+
+  .featured-card__portrait {
+    width: 200px;
+    height: 200px;
+    border-radius: 50%;
+    object-fit: cover;
+    object-position: center top;
+    border: 5px solid white;
+    box-shadow: 0 8px 32px rgba(0,0,0,0.12), 0 2px 8px rgba(0,0,0,0.06);
+    transition: transform 0.5s ease, box-shadow 0.5s ease;
+  }
+
+  .featured-card:hover .featured-card__portrait {
+    transform: scale(1.04);
+    box-shadow: 0 12px 40px rgba(0,0,0,0.16), 0 4px 12px rgba(0,0,0,0.08);
+  }
+
+  .featured-card__portrait-info {
+    text-align: center;
+  }
+
+  .featured-card__portrait-name {
+    font-weight: 700;
+    font-size: 20px;
+    letter-spacing: -0.3px;
+    color: var(--ink);
+    margin-bottom: 4px;
+  }
+
+  .featured-card__portrait-role {
+    font-size: 13px;
+    color: var(--ink-muted);
+    font-weight: 500;
+  }
+
+  .featured-card__body {
+    padding: 48px 44px;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+  }
+
+  .featured-card__tag { margin-bottom: 20px; }
+
+  .featured-card__title {
+    font-family: 'Noto Serif KR', serif;
+    font-size: 27px;
+    font-weight: 700;
+    line-height: 1.5;
+    letter-spacing: -0.5px;
+    margin-bottom: 20px;
+  }
+
+  .featured-card__excerpt {
+    font-size: 15px;
+    line-height: 1.85;
+    color: var(--ink-light);
+    margin-bottom: 28px;
+    display: -webkit-box;
+    -webkit-line-clamp: 4;
+    -webkit-box-orient: vertical;
+    overflow: hidden;
+  }
+
+  .featured-card__date {
+    font-size: 12px;
+    color: var(--ink-muted);
+    padding-top: 20px;
+    border-top: 1px solid var(--border-light);
+  }
+
+  /* ═══════════════════════════════════════
+     CARD GRID — 얼굴 중심
+     ═══════════════════════════════════════ */
+  .cards-section {
+    max-width: 1200px;
+    margin: 0 auto;
+    padding: 0 24px 72px;
+  }
+
+  .cards-section__label {
+    font-size: 12px;
+    font-weight: 700;
+    letter-spacing: 3px;
+    text-transform: uppercase;
+    color: var(--ink-muted);
+    margin-bottom: 28px;
+    padding-left: 4px;
+  }
+
+  .cards-grid {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 28px;
+  }
+
+  .opinion-card {
+    background: white;
+    border-radius: var(--radius);
+    overflow: hidden;
+    box-shadow: var(--shadow-sm);
+    transition: all 0.35s ease;
+    cursor: pointer;
+    text-decoration: none;
+    color: inherit;
+    display: flex;
+    flex-direction: column;
+  }
+
+  .opinion-card:hover {
+    box-shadow: var(--shadow-lg);
+    transform: translateY(-4px);
+  }
+
+  /* 얼굴 영역 — 원형 */
+  .opinion-card__face {
+    position: relative;
+    padding: 36px 24px 20px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 14px;
+    background: linear-gradient(160deg, #f7f4ef 0%, #ece7dd 100%);
+  }
+
+  .opinion-card__face::before {
+    content: '❝';
+    position: absolute;
+    top: 8px;
+    right: 16px;
+    font-size: 56px;
+    font-family: 'Noto Serif KR', serif;
+    color: rgba(139,105,20,0.05);
+    line-height: 1;
+  }
+
+  .opinion-card__face-img {
+    width: 130px;
+    height: 130px;
+    border-radius: 50%;
+    object-fit: cover;
+    object-position: center top;
+    display: block;
+    border: 4px solid white;
+    box-shadow: 0 6px 24px rgba(0,0,0,0.1), 0 2px 6px rgba(0,0,0,0.05);
+    transition: transform 0.4s ease, box-shadow 0.4s ease;
+  }
+
+  .opinion-card:hover .opinion-card__face-img {
+    transform: scale(1.05);
+    box-shadow: 0 10px 32px rgba(0,0,0,0.14), 0 3px 8px rgba(0,0,0,0.06);
+  }
+
+  .opinion-card__face-overlay { display: none; }
+
+  .opinion-card__face-info {
+    text-align: center;
+  }
+
+  .opinion-card__face-name {
+    font-weight: 700;
+    font-size: 16px;
+    color: var(--ink);
+    letter-spacing: -0.2px;
+  }
+
+  .opinion-card__face-role {
+    font-size: 11px;
+    color: var(--ink-muted);
+    font-weight: 500;
+    margin-top: 2px;
+  }
+
+  /* 얼굴 없는 카드용 플레이스홀더 */
+  .opinion-card__face--placeholder {
+    background: linear-gradient(160deg, #eae5db 0%, #ddd7cb 100%);
+  }
+
+  .opinion-card__face--placeholder .placeholder-icon {
+    width: 130px;
+    height: 130px;
+    border-radius: 50%;
+    background: linear-gradient(135deg, var(--accent), var(--accent-light));
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 44px;
+    color: white;
+    font-family: 'Noto Serif KR', serif;
+    border: 4px solid white;
+    box-shadow: 0 6px 24px rgba(0,0,0,0.1);
+  }
+
+  /* 카드 본문 */
+  .opinion-card__body {
+    padding: 22px 24px 24px;
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+  }
+
+  .opinion-card__tag-row {
+    margin-bottom: 12px;
+  }
+
+  .opinion-card__title {
+    font-family: 'Noto Serif KR', serif;
+    font-size: 18px;
+    font-weight: 700;
+    line-height: 1.55;
+    letter-spacing: -0.3px;
+    margin-bottom: 10px;
+    display: -webkit-box;
+    -webkit-line-clamp: 2;
+    -webkit-box-orient: vertical;
+    overflow: hidden;
+  }
+
+  .opinion-card__excerpt {
+    font-size: 13.5px;
+    line-height: 1.75;
+    color: var(--ink-light);
+    flex: 1;
+    display: -webkit-box;
+    -webkit-line-clamp: 2;
+    -webkit-box-orient: vertical;
+    overflow: hidden;
+    margin-bottom: 16px;
+  }
+
+  .opinion-card__date {
+    font-size: 12px;
+    color: var(--ink-muted);
+    padding-top: 14px;
+    border-top: 1px solid var(--border-light);
+  }
+
+  /* ─── WRITERS STRIP ─── */
+  .writers-section {
+    max-width: 1200px;
+    margin: 0 auto;
+    padding: 0 24px 80px;
+  }
+
+  .writers-section__label {
+    font-size: 12px;
+    font-weight: 700;
+    letter-spacing: 3px;
+    text-transform: uppercase;
+    color: var(--ink-muted);
+    margin-bottom: 28px;
+    padding-left: 4px;
+  }
+
+  .writers-strip {
+    display: flex;
+    gap: 20px;
+    overflow-x: auto;
+    padding-bottom: 8px;
+    scrollbar-width: none;
+  }
+  .writers-strip::-webkit-scrollbar { display: none; }
+
+  .writer-card {
+    flex-shrink: 0;
+    width: 200px;
+    background: white;
+    border-radius: var(--radius-sm);
+    overflow: hidden;
+    box-shadow: var(--shadow-sm);
+    transition: all 0.3s ease;
+    cursor: pointer;
+    text-decoration: none;
+    color: inherit;
+    padding: 28px 20px 24px;
+    text-align: center;
+  }
+
+  .writer-card:hover {
+    box-shadow: var(--shadow-md);
+    transform: translateY(-2px);
+  }
+
+  .writer-card__photo {
+    width: 100px;
+    height: 100px;
+    border-radius: 50%;
+    object-fit: cover;
+    object-position: center top;
+    display: block;
+    margin: 0 auto 16px;
+    border: 3px solid var(--border-light);
+    box-shadow: 0 4px 16px rgba(0,0,0,0.08);
+    transition: transform 0.3s ease;
+  }
+
+  .writer-card:hover .writer-card__photo {
+    transform: scale(1.05);
+  }
+
+  .writer-card__info {
+    text-align: center;
+  }
+
+  .writer-card__name {
+    font-weight: 700;
+    font-size: 15px;
+    margin-bottom: 2px;
+  }
+
+  .writer-card__role {
+    font-size: 12px;
+    color: var(--ink-muted);
+    margin-bottom: 8px;
+  }
+
+  .writer-card__count {
+    display: inline-block;
+    font-size: 11px;
+    font-weight: 600;
+    color: var(--accent);
+    background: var(--accent-bg);
+    padding: 2px 10px;
+    border-radius: 20px;
+  }
+
+  /* ─── DIVIDER ─── */
+  .section-divider {
+    max-width: 1200px;
+    margin: 0 auto 48px;
+    padding: 0 24px;
+    position: relative;
+    height: 1px;
+  }
+  .section-divider::after {
+    content: '';
+    position: absolute;
+    left: 24px; right: 24px;
+    height: 1px;
+    background: var(--border);
+  }
+
+  /* ─── RESPONSIVE ─── */
+  @media (max-width: 1024px) {
+    .featured-card { grid-template-columns: 1fr; }
+    .cards-grid { grid-template-columns: repeat(2, 1fr); }
+  }
+
+  @media (max-width: 640px) {
+    .opinion-header__title { font-size: 32px; }
+    .opinion-header__top {
+      flex-direction: column;
+      align-items: flex-start;
+      gap: 8px;
+    }
+    .featured-card__body { padding: 28px 24px; }
+    .featured-card__title { font-size: 22px; }
+    .cards-grid { grid-template-columns: 1fr; }
+  }
+
+  /* ─── ANIMATIONS ─── */
+  @keyframes fadeUp {
+    from { opacity: 0; transform: translateY(24px); }
+    to { opacity: 1; transform: translateY(0); }
+  }
+
+  .featured-card { animation: fadeUp 0.6s ease both; }
+  .opinion-card:nth-child(1) { animation: fadeUp 0.5s ease 0.1s both; }
+  .opinion-card:nth-child(2) { animation: fadeUp 0.5s ease 0.2s both; }
+  .opinion-card:nth-child(3) { animation: fadeUp 0.5s ease 0.3s both; }
+  .opinion-card:nth-child(4) { animation: fadeUp 0.5s ease 0.4s both; }
+  .opinion-card:nth-child(5) { animation: fadeUp 0.5s ease 0.5s both; }
+  .opinion-card:nth-child(6) { animation: fadeUp 0.5s ease 0.6s both; }
+</style>
+</head>
+<body>
+
+<!-- HEADER -->
+<div class="opinion-header">
+  <div class="opinion-header__top">
+    <h1 class="opinion-header__title">오피니언</h1>
+    <span class="opinion-header__sub">Opinion · Column · Essay</span>
+  </div>
+  <nav class="opinion-tabs">
+    <a href="#" class="opinion-tab active">전체</a>
+    <a href="#" class="opinion-tab">칼럼</a>
+    <a href="#" class="opinion-tab">기고</a>
+  </nav>
+</div>
+
+<!-- ═══ FEATURED ═══ -->
+<section class="featured-section">
+  <a href="/news/articleView.html?idxno=309" class="featured-card">
+    <div class="featured-card__portrait-wrap">
+      <img class="featured-card__portrait"
+           src="https://res.cloudinary.com/dxwhzvr6l/image/upload/v1772350825/welldying/authors/p2x2qlnkq2ekoc4ashc8.png"
+           alt="박진옥 사무국장">
+      <div class="featured-card__portrait-info">
+        <div class="featured-card__portrait-name">박진옥</div>
+        <div class="featured-card__portrait-role">나눔과나눔 사무국장</div>
+      </div>
+    </div>
+    <div class="featured-card__body">
+      <span class="tag tag-column featured-card__tag">칼럼</span>
+      <h2 class="featured-card__title">왜 우리의 시선은 이러한 여성에게만 향할까?</h2>
+      <p class="featured-card__excerpt">
+        "세상에 태어나자마자 하늘나라로 간 아기들" — 지난 6월 14일, 서울시립승화원에서 진행된 나눔과나눔 무연고사망자 장례에 32주 정도 된 아기를 위한 위패가 놓였다. 아직 주민등록번호도, 이름도 없는 아기를 위한 위패이기 때문에 "무명"으로 올렸다.
+      </p>
+      <div class="featured-card__date">2022.10.13</div>
+    </div>
+  </a>
+</section>
+
+<!-- ═══ CARDS ═══ -->
+<section class="cards-section">
+  <div class="cards-section__label">최신 오피니언</div>
+  <div class="cards-grid">
+
+    <!-- 고수진 교수 -->
+    <a href="/news/articleView.html?idxno=305" class="opinion-card">
+      <div class="opinion-card__face">
+        <img class="opinion-card__face-img"
+             src="https://res.cloudinary.com/dxwhzvr6l/image/upload/v1772350900/welldying/authors/lidhlhm3koqwpdh5phxm.jpg"
+             alt="고수진 교수">
+        <div class="opinion-card__face-overlay"></div>
+        <div class="opinion-card__face-info">
+          <div class="opinion-card__face-name">고수진</div>
+          <div class="opinion-card__face-role">교수</div>
+        </div>
+      </div>
+      <div class="opinion-card__body">
+        <div class="opinion-card__tag-row"><span class="tag tag-column">칼럼</span></div>
+        <h3 class="opinion-card__title">호스피스 현장에서의 영적 돌봄과 자원봉사</h3>
+        <p class="opinion-card__excerpt">말기 암환자를 진료하는 의사로서 매번 느끼지만, 환자들은 신체적 통증이 조절되면 자신의 존재 의미를 찾으면서 영적·실존적 고통을 가지게 된다.</p>
+        <div class="opinion-card__date">2022.10.12</div>
+      </div>
+    </a>
+
+    <!-- 김도봉 목사 -->
+    <a href="/news/articleView.html?idxno=304" class="opinion-card">
+      <div class="opinion-card__face">
+        <img class="opinion-card__face-img"
+             src="https://res.cloudinary.com/dxwhzvr6l/image/upload/v1772350980/welldying/authors/utalsrgywtnieaokg5xk.jpg"
+             alt="김도봉 목사">
+        <div class="opinion-card__face-overlay"></div>
+        <div class="opinion-card__face-info">
+          <div class="opinion-card__face-name">김도봉</div>
+          <div class="opinion-card__face-role">목사</div>
+        </div>
+      </div>
+      <div class="opinion-card__body">
+        <div class="opinion-card__tag-row"><span class="tag tag-column">칼럼</span></div>
+        <h3 class="opinion-card__title">임종기 환자와 가족들의 실제적, 필수적 요소 — 영적돌봄</h3>
+        <p class="opinion-card__excerpt">영적 돌봄이란 대상자의 가치관, 신앙관, 세계관을 다루는 전인적이며 총체적인 과정이다.</p>
+        <div class="opinion-card__date">2022.10.11</div>
+      </div>
+    </a>
+
+    <!-- 김옥라 명예이사장 -->
+    <a href="/news/articleView.html?idxno=265" class="opinion-card">
+      <div class="opinion-card__face">
+        <img class="opinion-card__face-img"
+             src="https://res.cloudinary.com/dxwhzvr6l/image/upload/v1772349778/welldying/authors/gt0rrswbvqxvwey5t5gb.png"
+             alt="김옥라 명예이사장">
+        <div class="opinion-card__face-overlay"></div>
+        <div class="opinion-card__face-info">
+          <div class="opinion-card__face-name">김옥라</div>
+          <div class="opinion-card__face-role">명예이사장</div>
+        </div>
+      </div>
+      <div class="opinion-card__body">
+        <div class="opinion-card__tag-row"><span class="tag tag-column">칼럼</span></div>
+        <h3 class="opinion-card__title">자원봉사는 호스피스 케어를 위한 필수역할이다</h3>
+        <p class="opinion-card__excerpt">"호스피스는 자원봉사 없이는 못 합니다." — Cicely Saunders 박사의 말이다.</p>
+        <div class="opinion-card__date">2022.10.10</div>
+      </div>
+    </a>
+
+    <!-- 세월호 칼럼 -->
+    <a href="/news/articleView.html?idxno=247" class="opinion-card">
+      <div class="opinion-card__face">
+        <img class="opinion-card__face-img"
+             src="https://res.cloudinary.com/dxwhzvr6l/image/upload/v1772351037/welldying/authors/rcml8tnghudr2hn5bwya.png"
+             alt="칼럼니스트">
+        <div class="opinion-card__face-overlay"></div>
+        <div class="opinion-card__face-info">
+          <div class="opinion-card__face-name">칼럼니스트</div>
+        </div>
+      </div>
+      <div class="opinion-card__body">
+        <div class="opinion-card__tag-row"><span class="tag tag-column">칼럼</span></div>
+        <h3 class="opinion-card__title">2014년 세월호, 선명하게 드러난 죽음을 대하는 태도</h3>
+        <p class="opinion-card__excerpt">1,073일의 기다림 끝에 세월호가 물 밖으로 모습을 드러냈다. 304명의 희생자를 잊을 수 없다.</p>
+        <div class="opinion-card__date">2022.10.10</div>
+      </div>
+    </a>
+
+    <!-- 이반 일리치 -->
+    <a href="/news/articleView.html?idxno=122" class="opinion-card">
+      <div class="opinion-card__face">
+        <img class="opinion-card__face-img"
+             src="https://res.cloudinary.com/dxwhzvr6l/image/upload/v1771902060/welldying/uploads/m02ci9btbr6jdtxq9keq.jpg"
+             alt="칼럼니스트">
+        <div class="opinion-card__face-overlay"></div>
+        <div class="opinion-card__face-info">
+          <div class="opinion-card__face-name">칼럼니스트</div>
+        </div>
+      </div>
+      <div class="opinion-card__body">
+        <div class="opinion-card__tag-row"><span class="tag tag-column">칼럼</span></div>
+        <h3 class="opinion-card__title">'이반 일리치의 죽음'을 통해 바라본 웰다잉</h3>
+        <p class="opinion-card__excerpt">톨스토이의 소설에서 이반 일리치의 부음을 전해 들은 친구들은 동상이몽에 빠진다.</p>
+        <div class="opinion-card__date">2022.10.09</div>
+      </div>
+    </a>
+
+    <!-- 웰빙에서 웰다잉으로 (사진 없음) -->
+    <a href="/news/articleView.html?idxno=126" class="opinion-card">
+      <div class="opinion-card__face opinion-card__face--placeholder">
+        <span class="placeholder-icon">✎</span>
+        <div class="opinion-card__face-overlay"></div>
+        <div class="opinion-card__face-info">
+          <div class="opinion-card__face-name">칼럼니스트</div>
+        </div>
+      </div>
+      <div class="opinion-card__body">
+        <div class="opinion-card__tag-row"><span class="tag tag-column">칼럼</span></div>
+        <h3 class="opinion-card__title">웰빙에서 웰다잉으로 — 웰빙문화의 그늘</h3>
+        <p class="opinion-card__excerpt">웰빙은 시대의 문화 트렌드를 넘어섰다. 주변에서 웰빙이 붙지 않는 소재를 찾기가 더 어렵다.</p>
+        <div class="opinion-card__date">2022.10.08</div>
+      </div>
+    </a>
+
+  </div>
+</section>
+
+<!-- DIVIDER -->
+<div class="section-divider"></div>
+
+<!-- ═══ WRITERS ═══ -->
+<section class="writers-section">
+  <div class="writers-section__label">필진 소개</div>
+  <div class="writers-strip">
+
+    <a href="#" class="writer-card">
+      <img class="writer-card__photo"
+           src="https://res.cloudinary.com/dxwhzvr6l/image/upload/v1772350825/welldying/authors/p2x2qlnkq2ekoc4ashc8.png"
+           alt="">
+      <div class="writer-card__info">
+        <div class="writer-card__name">박진옥</div>
+        <div class="writer-card__role">사무국장</div>
+        <span class="writer-card__count">칼럼 1편</span>
+      </div>
+    </a>
+
+    <a href="#" class="writer-card">
+      <img class="writer-card__photo"
+           src="https://res.cloudinary.com/dxwhzvr6l/image/upload/v1772350900/welldying/authors/lidhlhm3koqwpdh5phxm.jpg"
+           alt="">
+      <div class="writer-card__info">
+        <div class="writer-card__name">고수진</div>
+        <div class="writer-card__role">교수</div>
+        <span class="writer-card__count">칼럼 1편</span>
+      </div>
+    </a>
+
+    <a href="#" class="writer-card">
+      <img class="writer-card__photo"
+           src="https://res.cloudinary.com/dxwhzvr6l/image/upload/v1772350980/welldying/authors/utalsrgywtnieaokg5xk.jpg"
+           alt="">
+      <div class="writer-card__info">
+        <div class="writer-card__name">김도봉</div>
+        <div class="writer-card__role">목사</div>
+        <span class="writer-card__count">칼럼 1편</span>
+      </div>
+    </a>
+
+    <a href="#" class="writer-card">
+      <img class="writer-card__photo"
+           src="https://res.cloudinary.com/dxwhzvr6l/image/upload/v1772349778/welldying/authors/gt0rrswbvqxvwey5t5gb.png"
+           alt="">
+      <div class="writer-card__info">
+        <div class="writer-card__name">김옥라</div>
+        <div class="writer-card__role">명예이사장</div>
+        <span class="writer-card__count">칼럼 1편</span>
+      </div>
+    </a>
+
+  </div>
+</section>
+
+</body>
+</html>

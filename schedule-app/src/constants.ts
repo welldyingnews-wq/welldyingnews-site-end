@@ -10,6 +10,8 @@ export const CATEGORIES: { key: CategoryKey; label: string; color: string }[] = 
   { key: '예술',   label: '예술',   color: '#EC4899' },
   { key: '행사',   label: '행사',   color: '#F97316' },
   { key: '강연',   label: '강연',   color: '#06B6D4' },
+  { key: '상담',   label: '상담',   color: '#14B8A6' },
+  { key: '모임',   label: '모임',   color: '#A855F7' },
 ]
 
 export const CATEGORY_COLOR_MAP: Record<string, string> = Object.fromEntries(

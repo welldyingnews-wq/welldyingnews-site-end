@@ -5,6 +5,7 @@ from logging.handlers import RotatingFileHandler
 
 from flask import Flask, render_template
 from flask_login import LoginManager
+from werkzeug.middleware.proxy_fix import ProxyFix
 from flask_limiter import Limiter
 from flask_limiter.util import get_remote_address
 from flask_wtf.csrf import CSRFProtect
@@ -20,6 +21,9 @@ limiter = Limiter(key_func=get_remote_address, default_limits=[], storage_uri="m
 def create_app():
     app = Flask(__name__)
     app.config.from_object(Config)
+
+    # nginx 프록시 뒤에서 올바른 scheme/host/IP 인식
+    app.wsgi_app = ProxyFix(app.wsgi_app, x_for=1, x_proto=1, x_host=1, x_port=1, x_prefix=1)
 
     # ── 세션 보안 설정 ──
     from datetime import timedelta
@@ -37,6 +41,7 @@ def create_app():
 
     # CSRF 보호
     app.config.setdefault('WTF_CSRF_SSL_STRICT', False)  # HTTPS Referer 검증 완화
+    app.config.setdefault('WTF_CSRF_TIME_LIMIT', 3600 * 24)  # CSRF 토큰 24시간
     csrf.init_app(app)
 
     # Rate Limiter (로그인 무차별 대입 방지)
@@ -55,7 +60,7 @@ def create_app():
     def set_security_headers(response):
         response.headers.setdefault('X-Content-Type-Options', 'nosniff')
         response.headers.setdefault('X-Frame-Options', 'SAMEORIGIN')
-        response.headers.setdefault('Referrer-Policy', 'strict-origin-when-cross-origin')
+        response.headers.setdefault('Referrer-Policy', 'no-referrer-when-downgrade')
         response.headers.setdefault('X-XSS-Protection', '1; mode=block')
         if not app.debug:
             response.headers.setdefault('Strict-Transport-Security', 'max-age=31536000; includeSubDomains')
