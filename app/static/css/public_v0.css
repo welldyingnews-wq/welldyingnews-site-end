@@ -1081,7 +1081,11 @@ aside .sec-head { margin-bottom: 0.5rem; }
 .aview-body figure.image figcaption { display: block !important; caption-side: bottom; }
 .aview-body table { max-width: 100%; overflow-x: auto; display: block; }
 .aview-body iframe { max-width: 100%; aspect-ratio: 16/9; width: 100%; height: auto; border: none; border-radius: var(--radius); }
-.aview-body * { max-width: 100%; box-sizing: border-box; font-size: inherit !important; }
+.aview-body * { max-width: 100%; box-sizing: border-box; }
+.aview-body h1 { font-size: 2rem !important; font-weight: 700; margin: 1.2em 0 0.6em; }
+.aview-body h2 { font-size: 1.75rem !important; font-weight: 700; margin: 1.1em 0 0.5em; }
+.aview-body h3 { font-size: 1.5rem !important; font-weight: 600; margin: 1em 0 0.4em; }
+.aview-body h4 { font-size: 1.25rem !important; font-weight: 600; margin: 0.9em 0 0.3em; }
 
 /* Related articles */
 .aview-related { margin: 2rem 0; padding: 1.25rem; background: var(--secondary); border-radius: var(--radius-lg); }
@@ -1997,10 +2001,23 @@ aside .sec-head { margin-bottom: 0.5rem; }
   align-items: flex-start;
   transition: box-shadow 0.2s, transform 0.2s;
   border-left: 3px solid #5e1985;
+  animation: cardBorderGlow 4s ease-in-out infinite;
+}
+@keyframes cardBorderGlow {
+  0%, 100% { border-left-color: rgba(94,25,133,0.4); }
+  50% { border-left-color: rgba(139,92,246,0.95); }
 }
 .data-card:hover { box-shadow: var(--shadow-md); transform: translateY(-4px) scale(1.02); }
-.data-card--alert { border-left: 3px solid #E74C3C; }
-.data-card--positive { border-left: 3px solid #27AE60; }
+.data-card--alert { border-left: 3px solid #E74C3C; animation: cardBorderGlowAlert 4s ease-in-out infinite; }
+.data-card--positive { border-left: 3px solid #27AE60; animation: cardBorderGlowPositive 4s ease-in-out infinite; }
+@keyframes cardBorderGlowAlert {
+  0%, 100% { border-left-color: rgba(231,76,60,0.4); }
+  50% { border-left-color: rgba(231,76,60,0.95); }
+}
+@keyframes cardBorderGlowPositive {
+  0%, 100% { border-left-color: rgba(39,174,96,0.4); }
+  50% { border-left-color: rgba(39,174,96,0.95); }
+}
 .data-card__icon {
   width: 40px;
   height: 40px;

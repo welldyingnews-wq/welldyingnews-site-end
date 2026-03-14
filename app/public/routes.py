@@ -312,7 +312,7 @@ def _get_real_ip():
 _BOT_PATTERN = re.compile(
     r'bot|crawl|spider|slurp|Mediapartners|Feedfetcher|DotBot|MJ12bot'
     r'|Yandex|Baiduspider|SemrushBot|AhrefsBot|PetalBot|BLEXBot'
-    r'|DataForSeo|Bytespider|GPTBot|ClaudeBot|CCBot|Wget|curl|python-requests',
+    r'|DataForSeo|Bytespider|GPTBot|ClaudeBot|CCBot|Yeti|Wget|curl|python-requests',
     re.I
 )
 

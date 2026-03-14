@@ -39,17 +39,21 @@
 
     /* 에디터 툴바 sticky */
     #editorWrap { overflow: visible; }
-    .editor-sticky-toolbar {
+    /* 본문 card의 overflow를 visible로 해야 sticky가 동작 */
+    #editorStickyToolbar.editor-sticky-toolbar {
         position: sticky;
-        top: 0;
+        top: 56px;
         z-index: 100;
         background: #fff;
         margin: -8px -1rem 0;
         padding: 8px 1rem 0;
     }
-    .editor-sticky-toolbar.is-sticky {
+    #editorStickyToolbar.is-sticky {
         box-shadow: 0 2px 6px rgba(0,0,0,.1);
     }
+    /* card, card-body의 overflow:hidden이 sticky를 깨므로 해제 */
+    .card:has(#editorStickyToolbar) { overflow: visible !important; }
+    .card-body:has(#editorStickyToolbar) { overflow: visible !important; }
     /* CKEditor 자체 sticky panel 비활성화 (커스텀으로 대체) */
     .ck.ck-sticky-panel .ck-sticky-panel__content_sticky {
         position: static !important;
