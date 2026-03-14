@@ -2001,15 +2001,27 @@ aside .sec-head { margin-bottom: 0.5rem; }
   align-items: flex-start;
   transition: box-shadow 0.2s, transform 0.2s;
   border-left: 3px solid #5e1985;
-  animation: cardBorderGlow 4s ease-in-out infinite;
+  animation: cardBorderGlow var(--glow-dur, 4s) ease-in-out var(--glow-delay, 0s) infinite;
 }
 @keyframes cardBorderGlow {
   0%, 100% { border-left-color: rgba(94,25,133,0.4); }
   50% { border-left-color: rgba(139,92,246,0.95); }
 }
+.data-card:nth-child(1)  { --glow-dur: 3.2s; --glow-delay: 0.0s; }
+.data-card:nth-child(2)  { --glow-dur: 4.5s; --glow-delay: 1.7s; }
+.data-card:nth-child(3)  { --glow-dur: 3.8s; --glow-delay: 0.9s; }
+.data-card:nth-child(4)  { --glow-dur: 4.1s; --glow-delay: 2.4s; }
+.data-card:nth-child(5)  { --glow-dur: 3.5s; --glow-delay: 0.5s; }
+.data-card:nth-child(6)  { --glow-dur: 4.8s; --glow-delay: 1.2s; }
+.data-card:nth-child(7)  { --glow-dur: 3.3s; --glow-delay: 3.1s; }
+.data-card:nth-child(8)  { --glow-dur: 4.3s; --glow-delay: 0.3s; }
+.data-card:nth-child(9)  { --glow-dur: 3.7s; --glow-delay: 2.0s; }
+.data-card:nth-child(10) { --glow-dur: 4.6s; --glow-delay: 1.5s; }
+.data-card:nth-child(11) { --glow-dur: 3.4s; --glow-delay: 2.8s; }
+.data-card:nth-child(12) { --glow-dur: 4.0s; --glow-delay: 0.7s; }
 .data-card:hover { box-shadow: var(--shadow-md); transform: translateY(-4px) scale(1.02); }
-.data-card--alert { border-left: 3px solid #E74C3C; animation: cardBorderGlowAlert 4s ease-in-out infinite; }
-.data-card--positive { border-left: 3px solid #27AE60; animation: cardBorderGlowPositive 4s ease-in-out infinite; }
+.data-card--alert { border-left: 3px solid #E74C3C; animation-name: cardBorderGlowAlert; }
+.data-card--positive { border-left: 3px solid #27AE60; animation-name: cardBorderGlowPositive; }
 @keyframes cardBorderGlowAlert {
   0%, 100% { border-left-color: rgba(231,76,60,0.4); }
   50% { border-left-color: rgba(231,76,60,0.95); }
